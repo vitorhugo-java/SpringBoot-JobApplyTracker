@@ -1,11 +1,5 @@
-version: "3.9"
-
-# Production overrides – extend the base docker-compose.yml with:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 services:
-
-  # ── Spring Boot application ───────────────────────────────
   app:
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -21,32 +15,9 @@ services:
         -XX:MaxRAMPercentage=75.0
         -XX:+ExitOnOutOfMemoryError
         -Djava.security.egd=file:/dev/./urandom
-    restart: always
+    restart: unless-stopped
     deploy:
       resources:
         limits:
           cpus: "1.0"
           memory: 512M
-
-  # ── MariaDB ───────────────────────────────────────────────
-  mariadb:
-    environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MARIADB_DATABASE: ${DB_NAME:-jobtracker}
-      MARIADB_USER: ${SPRING_DATASOURCE_USERNAME}
-      MARIADB_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-    ports: []  # do not expose DB port in production
-    restart: always
-
-  # ── Prometheus ────────────────────────────────────────────
-  prometheus:
-    ports: []  # do not expose Prometheus externally in production
-    restart: always
-
-  # ── Grafana ───────────────────────────────────────────────
-  grafana:
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
-      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
-    restart: always
