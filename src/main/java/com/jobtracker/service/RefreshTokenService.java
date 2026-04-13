@@ -63,7 +63,7 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public void revokeAllByUserId(Long userId) {
+    public void revokeAllByUserId(UUID userId) {
         refreshTokenRepository.revokeAllByUserId(userId);
     }
 }

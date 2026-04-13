@@ -6,6 +6,8 @@ import com.jobtracker.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 public class SecurityUtils {
 
@@ -21,7 +23,7 @@ public class SecurityUtils {
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
     }
 
-    public Long getCurrentUserId() {
+    public UUID getCurrentUserId() {
         return getCurrentUser().getId();
     }
 }

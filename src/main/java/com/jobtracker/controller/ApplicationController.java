@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Tag(name = "Applications", description = "Job application management endpoints")
 @RestController
@@ -54,7 +55,7 @@ public class ApplicationController {
     )
     @GetMapping("/{id}")
     public ResponseEntity<ApplicationResponse> getById(
-            @Parameter(description = "Application ID", required = true) @PathVariable Long id) {
+            @Parameter(description = "Application ID", required = true) @PathVariable UUID id) {
         return ResponseEntity.ok(applicationService.getById(id));
     }
 
@@ -70,7 +71,7 @@ public class ApplicationController {
     )
     @PutMapping("/{id}")
     public ResponseEntity<ApplicationResponse> update(
-            @Parameter(description = "Application ID", required = true) @PathVariable Long id,
+            @Parameter(description = "Application ID", required = true) @PathVariable UUID id,
             @Valid @RequestBody ApplicationRequest request) {
         return ResponseEntity.ok(applicationService.update(id, request));
     }
@@ -86,7 +87,7 @@ public class ApplicationController {
     )
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApplicationResponse> updateStatus(
-            @Parameter(description = "Application ID", required = true) @PathVariable Long id,
+            @Parameter(description = "Application ID", required = true) @PathVariable UUID id,
             @Valid @RequestBody UpdateStatusRequest request) {
         return ResponseEntity.ok(applicationService.updateStatus(id, request));
     }
@@ -102,7 +103,7 @@ public class ApplicationController {
     )
     @PatchMapping("/{id}/reminder")
     public ResponseEntity<ApplicationResponse> updateReminder(
-            @Parameter(description = "Application ID", required = true) @PathVariable Long id,
+            @Parameter(description = "Application ID", required = true) @PathVariable UUID id,
             @Valid @RequestBody UpdateReminderRequest request) {
         return ResponseEntity.ok(applicationService.updateReminder(id, request));
     }
@@ -116,7 +117,7 @@ public class ApplicationController {
     )
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> delete(
-            @Parameter(description = "Application ID", required = true) @PathVariable Long id) {
+            @Parameter(description = "Application ID", required = true) @PathVariable UUID id) {
         applicationService.delete(id);
         return ResponseEntity.ok(Map.of("message", "Application deleted successfully"));
     }

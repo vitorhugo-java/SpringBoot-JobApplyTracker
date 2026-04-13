@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class ApplicationService {
@@ -65,16 +66,16 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public ApplicationResponse getById(Long id) {
-        Long userId = securityUtils.getCurrentUserId();
+    public ApplicationResponse getById(UUID id) {
+        UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
         return applicationMapper.toResponse(app);
     }
 
     @Transactional
-    public ApplicationResponse update(Long id, ApplicationRequest request) {
-        Long userId = securityUtils.getCurrentUserId();
+    public ApplicationResponse update(UUID id, ApplicationRequest request) {
+        UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
         mapRequestToEntity(request, app);
@@ -82,8 +83,8 @@ public class ApplicationService {
     }
 
     @Transactional
-    public ApplicationResponse updateStatus(Long id, UpdateStatusRequest request) {
-        Long userId = securityUtils.getCurrentUserId();
+    public ApplicationResponse updateStatus(UUID id, UpdateStatusRequest request) {
+        UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
         app.setStatus(resolveStatus(request.status()));
@@ -91,8 +92,8 @@ public class ApplicationService {
     }
 
     @Transactional
-    public ApplicationResponse updateReminder(Long id, UpdateReminderRequest request) {
-        Long userId = securityUtils.getCurrentUserId();
+    public ApplicationResponse updateReminder(UUID id, UpdateReminderRequest request) {
+        UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
         app.setRecruiterDmReminderEnabled(request.recruiterDmReminderEnabled());
@@ -100,8 +101,8 @@ public class ApplicationService {
     }
 
     @Transactional
-    public void delete(Long id) {
-        Long userId = securityUtils.getCurrentUserId();
+    public void delete(UUID id) {
+        UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
         applicationRepository.delete(app);
@@ -112,7 +113,7 @@ public class ApplicationService {
                                            LocalDate applicationDateFrom, LocalDate applicationDateTo,
                                            Boolean interviewScheduled, Boolean recruiterDmReminderEnabled,
                                            int page, int size, String sort) {
-        Long userId = securityUtils.getCurrentUserId();
+        UUID userId = securityUtils.getCurrentUserId();
 
         Sort sortObj = buildSort(sort);
         Pageable pageable = PageRequest.of(page, size, sortObj);
@@ -136,14 +137,14 @@ public class ApplicationService {
 
     @Transactional(readOnly = true)
     public List<ApplicationResponse> getUpcoming() {
-        Long userId = securityUtils.getCurrentUserId();
+        UUID userId = securityUtils.getCurrentUserId();
         return applicationRepository.findUpcomingByUserId(userId, LocalDateTime.now())
                 .stream().map(applicationMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public List<ApplicationResponse> getOverdue() {
-        Long userId = securityUtils.getCurrentUserId();
+        UUID userId = securityUtils.getCurrentUserId();
         return applicationRepository.findOverdueByUserId(userId, LocalDateTime.now())
                 .stream().map(applicationMapper::toResponse).toList();
     }
@@ -184,7 +185,7 @@ public class ApplicationService {
         return Sort.by(direction, field);
     }
 
-    private Specification<JobApplication> buildSpecification(Long userId, String status,
+    private Specification<JobApplication> buildSpecification(UUID userId, String status,
                                                                String recruiterName,
                                                                LocalDate applicationDateFrom,
                                                                LocalDate applicationDateTo,

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class DashboardService {
@@ -23,7 +24,7 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardSummaryResponse getSummary() {
-        Long userId = securityUtils.getCurrentUserId();
+        UUID userId = securityUtils.getCurrentUserId();
 
         long totalApplications = applicationRepository.countByUserId(userId);
 

@@ -5,11 +5,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Schema(description = "Job application details")
 public record ApplicationResponse(
-        @Schema(description = "Unique application ID", example = "1")
-        Long id,
+        @Schema(description = "Unique application ID", example = "550e8400-e29b-41d4-a716-446655440000")
+        UUID id,
         @Schema(description = "Job title or vacancy name", example = "Backend Engineer")
         String vacancyName,
         @Schema(description = "Recruiter name", example = "Jane Smith")
