@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:11.2
+    container_name: jobtracker-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: jobtracker
+      MYSQL_USER: jobtracker
+      MYSQL_PASSWORD: jobtracker
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: jobtracker-app
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:mariadb://db:3306/jobtracker?createDatabaseIfNotExist=true&characterEncoding=UTF-8&useUnicode=true
+      DB_USERNAME: jobtracker
+      DB_PASSWORD: jobtracker
+      JWT_SECRET: ${JWT_SECRET:-ChangeThisToASecureRandomSecretKeyInProductionAtLeast256BitsLong}
+      JWT_ACCESS_TOKEN_EXPIRATION_MS: 900000
+      JWT_REFRESH_TOKEN_EXPIRATION_MS: 604800000
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:

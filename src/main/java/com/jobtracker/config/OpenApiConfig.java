@@ -16,8 +16,8 @@ public class OpenApiConfig {
         final String securitySchemeName = "bearerAuth";
         return new OpenAPI()
                 .info(new Info()
-                        .title("Job Tracker API")
-                        .description("REST API for Job Application Tracker PWA")
+                        .title("Job Apply Tracker API")
+                        .description("API for tracking job applications")
                         .version("1.0.0"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
