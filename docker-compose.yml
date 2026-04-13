@@ -14,6 +14,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/jobtracker?createDatabaseIfNotExist=true&characterEncoding=UTF-8&useUnicode=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      # WARNING: Replace this secret before any production use. This value is for development only.
       JWT_SECRET: ChangeThisToAVeryLongSecretKeyForJWTTokensInDevelopment
       CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
     depends_on:

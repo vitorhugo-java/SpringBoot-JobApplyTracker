@@ -13,6 +13,8 @@ import com.jobtracker.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -125,7 +127,9 @@ public class AuthService {
     @Transactional
     public MessageResponse logout(LogoutRequest request) {
         refreshTokenService.revokeToken(request.refreshToken());
-        log.info("event=LOGOUT_SUCCESS");
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = (auth != null && auth.isAuthenticated()) ? auth.getName() : "unknown";
+        log.info("event=LOGOUT_SUCCESS userId={}", userId);
         return new MessageResponse("Logged out successfully");
     }
 
