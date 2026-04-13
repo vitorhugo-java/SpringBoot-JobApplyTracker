@@ -76,7 +76,9 @@ public class AuthService {
                 throw new BadCredentialsException("Invalid credentials");
             }
 
-            return buildAuthResponse(user);
+            return buildAuthResponse(user);  
+        } catch (BadCredentialsException e) {  
+            throw e;  
         } catch (Exception e) {
             span.error(e);
             throw e;
@@ -96,7 +98,9 @@ public class AuthService {
                     user.getEmail(), user.getPasswordHash(), Collections.emptyList());
             String accessToken = jwtService.generateToken(userDetails);
 
-            return new RefreshResponse(accessToken, newRefreshToken.getToken());
+            return buildAuthResponse(user);  
+        } catch (BadCredentialsException e) {  
+            throw e;  
         } catch (Exception e) {
             span.error(e);
             throw e;
