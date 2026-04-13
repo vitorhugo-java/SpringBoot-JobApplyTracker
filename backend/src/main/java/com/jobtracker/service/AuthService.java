@@ -128,8 +128,8 @@ public class AuthService {
     public MessageResponse logout(LogoutRequest request) {
         refreshTokenService.revokeToken(request.refreshToken());
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userId = (auth != null && auth.isAuthenticated()) ? auth.getName() : "unknown";
-        log.info("event=LOGOUT_SUCCESS userId={}", userId);
+        String userEmail = (auth != null && auth.isAuthenticated()) ? auth.getName() : "unknown";
+        log.info("event=LOGOUT_SUCCESS userEmail={}", userEmail);
         return new MessageResponse("Logged out successfully");
     }
 

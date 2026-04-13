@@ -20,6 +20,12 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
 
     @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        // Skip logging for actuator endpoints to avoid log spam from health probes and Prometheus scrapes
+        return request.getRequestURI().startsWith("/actuator");
+    }
+
+    @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
@@ -28,17 +34,17 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             long duration = System.currentTimeMillis() - start;
-            String userId = resolveUserId();
-            log.info("method={} path={} status={} duration={}ms userId={}",
+            String userEmail = resolveUserEmail();
+            log.info("method={} path={} status={} duration={}ms userEmail={}",
                     request.getMethod(),
                     request.getRequestURI(),
                     response.getStatus(),
                     duration,
-                    userId);
+                    userEmail);
         }
     }
 
-    private String resolveUserId() {
+    private String resolveUserEmail() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             return auth.getName();

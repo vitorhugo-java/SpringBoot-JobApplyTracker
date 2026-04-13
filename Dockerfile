@@ -39,9 +39,9 @@ USER appuser
 # Expose application port
 EXPOSE 8080
 
-# Health check – relies on Spring Actuator
+# Health check – relies on Spring Actuator management port
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+  CMD wget -qO- http://localhost:8081/actuator/health || exit 1
 
 # JVM tuning flags for containers (respects cgroup memory limits)
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
