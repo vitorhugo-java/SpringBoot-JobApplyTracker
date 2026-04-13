@@ -36,8 +36,9 @@ RUN chown -R appuser:appgroup /app
 
 USER appuser
 
-# Expose application port
+# Expose application port and management port
 EXPOSE 8080
+EXPOSE 8081
 
 # Health check – relies on Spring Actuator management port
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
