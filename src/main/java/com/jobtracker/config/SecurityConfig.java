@@ -28,7 +28,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable) // CSRF protection disabled for stateless JWT REST API
+                // CSRF is safe to disable: this API uses stateless JWT Bearer token authentication,
+                // not cookie-based sessions. CSRF attacks require session cookies and do not apply here.
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
