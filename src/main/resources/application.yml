@@ -15,7 +15,8 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MariaDBDialect
-        format_sql: true
+        type.preferred_uuid_jdbc_type: BINARY
+        format_sql: false
   flyway:
     enabled: true
     locations: classpath:db/migration
