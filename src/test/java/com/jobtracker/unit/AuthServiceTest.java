@@ -36,6 +36,8 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
+    private static final UUID USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
     @Mock private UserRepository userRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtService jwtService;
@@ -50,14 +52,14 @@ class AuthServiceTest {
     @Test
     void register_shouldReturnAuthResponse_whenValidRequest() {
         RegisterRequest request = new RegisterRequest("John", "john@example.com", "pass1234", "pass1234");
-        User savedUser = buildUser(1L, "john@example.com");
+        User savedUser = buildUser(USER_UUID, "john@example.com");
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("hashed");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(jwtService.generateToken(any(UserDetails.class))).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken(any(User.class))).thenReturn(buildRefreshToken(savedUser));
-        when(authMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(1L, "John", "john@example.com"));
+        when(authMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(USER_UUID, "John", "john@example.com"));
 
         AuthResponse result = authService.register(request);
 
@@ -86,13 +88,13 @@ class AuthServiceTest {
     @Test
     void login_shouldReturnAuthResponse_whenValidCredentials() {
         LoginRequest request = new LoginRequest("john@example.com", "pass1234");
-        User user = buildUser(1L, "john@example.com");
+        User user = buildUser(USER_UUID, "john@example.com");
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(true);
         when(jwtService.generateToken(any(UserDetails.class))).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken(user)).thenReturn(buildRefreshToken(user));
-        when(authMapper.toUserResponse(user)).thenReturn(new UserResponse(1L, "John", "john@example.com"));
+        when(authMapper.toUserResponse(user)).thenReturn(new UserResponse(USER_UUID, "John", "john@example.com"));
 
         AuthResponse result = authService.login(request);
 
@@ -110,7 +112,7 @@ class AuthServiceTest {
     @Test
     void login_shouldThrow_whenPasswordDoesNotMatch() {
         LoginRequest request = new LoginRequest("john@example.com", "wrongpass");
-        User user = buildUser(1L, "john@example.com");
+        User user = buildUser(USER_UUID, "john@example.com");
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
         assertThatThrownBy(() -> authService.login(request))
@@ -119,7 +121,7 @@ class AuthServiceTest {
 
     @Test
     void refresh_shouldReturnNewTokens() {
-        User user = buildUser(1L, "john@example.com");
+        User user = buildUser(USER_UUID, "john@example.com");
         RefreshToken newToken = buildRefreshToken(user);
         when(refreshTokenService.verifyAndRotate(anyString())).thenReturn(newToken);
         when(jwtService.generateToken(any(UserDetails.class))).thenReturn("new-access-token");
@@ -155,7 +157,7 @@ class AuthServiceTest {
 
     @Test
     void resetPassword_shouldSucceed_whenValidRequest() {
-        User user = buildUser(1L, "john@example.com");
+        User user = buildUser(USER_UUID, "john@example.com");
         PasswordResetToken resetToken = buildPasswordResetToken(user);
         when(passwordResetService.verifyToken("valid-token")).thenReturn(resetToken);
         when(passwordEncoder.encode(anyString())).thenReturn("newhash");
@@ -166,10 +168,10 @@ class AuthServiceTest {
 
         assertThat(result.message()).contains("reset successfully");
         verify(passwordResetService).markTokenAsUsed(resetToken);
-        verify(refreshTokenService).revokeAllByUserId(1L);
+        verify(refreshTokenService).revokeAllByUserId(USER_UUID);
     }
 
-    private User buildUser(Long id, String email) {
+    private User buildUser(UUID id, String email) {
         User user = new User();
         user.setId(id);
         user.setName("John");
@@ -180,7 +182,7 @@ class AuthServiceTest {
 
     private RefreshToken buildRefreshToken(User user) {
         RefreshToken token = new RefreshToken();
-        token.setId(1L);
+        token.setId(UUID.randomUUID());
         token.setToken(UUID.randomUUID().toString());
         token.setUser(user);
         token.setRevoked(false);
@@ -190,7 +192,7 @@ class AuthServiceTest {
 
     private PasswordResetToken buildPasswordResetToken(User user) {
         PasswordResetToken prt = new PasswordResetToken();
-        prt.setId(1L);
+        prt.setId(UUID.randomUUID());
         prt.setToken("valid-token");
         prt.setUser(user);
         prt.setUsed(false);

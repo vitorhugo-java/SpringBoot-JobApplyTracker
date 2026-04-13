@@ -26,6 +26,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceTest {
 
+    private static final UUID USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
 
@@ -39,7 +41,7 @@ class RefreshTokenServiceTest {
 
     @Test
     void createRefreshToken_shouldPersistAndReturnToken() {
-        User user = buildUser(1L, "test@example.com");
+        User user = buildUser(USER_UUID, "test@example.com");
         RefreshToken saved = buildRefreshToken(user, false, LocalDateTime.now().plusDays(7));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(saved);
 
@@ -51,7 +53,7 @@ class RefreshTokenServiceTest {
 
     @Test
     void verifyAndRotate_shouldRevokeOldAndCreateNew() {
-        User user = buildUser(1L, "test@example.com");
+        User user = buildUser(USER_UUID, "test@example.com");
         String tokenValue = UUID.randomUUID().toString();
         RefreshToken existing = buildRefreshToken(user, false, LocalDateTime.now().plusDays(7));
         existing.setToken(tokenValue);
@@ -79,7 +81,7 @@ class RefreshTokenServiceTest {
 
     @Test
     void verifyAndRotate_shouldThrowWhenTokenRevoked() {
-        User user = buildUser(1L, "test@example.com");
+        User user = buildUser(USER_UUID, "test@example.com");
         RefreshToken revoked = buildRefreshToken(user, true, LocalDateTime.now().plusDays(7));
         when(refreshTokenRepository.findByToken(anyString())).thenReturn(Optional.of(revoked));
 
@@ -90,7 +92,7 @@ class RefreshTokenServiceTest {
 
     @Test
     void verifyAndRotate_shouldThrowWhenTokenExpired() {
-        User user = buildUser(1L, "test@example.com");
+        User user = buildUser(USER_UUID, "test@example.com");
         RefreshToken expired = buildRefreshToken(user, false, LocalDateTime.now().minusDays(1));
         when(refreshTokenRepository.findByToken(anyString())).thenReturn(Optional.of(expired));
 
@@ -101,7 +103,7 @@ class RefreshTokenServiceTest {
 
     @Test
     void revokeToken_shouldMarkTokenAsRevoked() {
-        User user = buildUser(1L, "test@example.com");
+        User user = buildUser(USER_UUID, "test@example.com");
         String tokenValue = UUID.randomUUID().toString();
         RefreshToken token = buildRefreshToken(user, false, LocalDateTime.now().plusDays(7));
         token.setToken(tokenValue);
@@ -123,11 +125,11 @@ class RefreshTokenServiceTest {
 
     @Test
     void revokeAllByUserId_shouldDelegateToRepository() {
-        refreshTokenService.revokeAllByUserId(1L);
-        verify(refreshTokenRepository).revokeAllByUserId(1L);
+        refreshTokenService.revokeAllByUserId(USER_UUID);
+        verify(refreshTokenRepository).revokeAllByUserId(USER_UUID);
     }
 
-    private User buildUser(Long id, String email) {
+    private User buildUser(UUID id, String email) {
         User user = new User();
         user.setId(id);
         user.setName("Test User");
@@ -138,7 +140,7 @@ class RefreshTokenServiceTest {
 
     private RefreshToken buildRefreshToken(User user, boolean revoked, LocalDateTime expiry) {
         RefreshToken token = new RefreshToken();
-        token.setId(1L);
+        token.setId(UUID.randomUUID());
         token.setToken(UUID.randomUUID().toString());
         token.setUser(user);
         token.setRevoked(revoked);

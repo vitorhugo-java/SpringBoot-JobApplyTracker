@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +36,10 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class ApplicationServiceTest {
+
+    private static final UUID USER_UUID  = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID APP_UUID   = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID OTHER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000099");
 
     @Mock private ApplicationRepository applicationRepository;
     @Mock private ApplicationMapper applicationMapper;
@@ -50,9 +55,9 @@ class ApplicationServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = buildUser(1L, "user@example.com");
-        app = buildApplication(1L, user);
-        response = buildApplicationResponse(1L);
+        user = buildUser(USER_UUID, "user@example.com");
+        app = buildApplication(APP_UUID, user);
+        response = buildApplicationResponse(APP_UUID);
     }
 
     @Test
@@ -63,49 +68,49 @@ class ApplicationServiceTest {
         when(applicationMapper.toResponse(app)).thenReturn(response);
 
         ApplicationResponse result = applicationService.create(request);
-        assertThat(result.id()).isEqualTo(1L);
+        assertThat(result.id()).isEqualTo(APP_UUID);
         verify(applicationRepository).save(any(JobApplication.class));
     }
 
     @Test
     void getById_shouldReturnApplication_whenFoundAndBelongsToUser() {
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(app));
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
         when(applicationMapper.toResponse(app)).thenReturn(response);
 
-        ApplicationResponse result = applicationService.getById(1L);
-        assertThat(result.id()).isEqualTo(1L);
+        ApplicationResponse result = applicationService.getById(APP_UUID);
+        assertThat(result.id()).isEqualTo(APP_UUID);
     }
 
     @Test
     void getById_shouldThrow_whenNotFound() {
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findByIdAndUserId(99L, 1L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> applicationService.getById(99L))
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(OTHER_UUID, USER_UUID)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> applicationService.getById(OTHER_UUID))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void update_shouldUpdateAndReturnResponse() {
         ApplicationRequest request = buildRequest();
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(app));
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
         when(applicationRepository.save(app)).thenReturn(app);
         when(applicationMapper.toResponse(app)).thenReturn(response);
 
-        ApplicationResponse result = applicationService.update(1L, request);
+        ApplicationResponse result = applicationService.update(APP_UUID, request);
         assertThat(result).isNotNull();
     }
 
     @Test
     void updateStatus_shouldUpdateStatus() {
         UpdateStatusRequest statusRequest = new UpdateStatusRequest("RH");
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(app));
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
         when(applicationRepository.save(app)).thenReturn(app);
         when(applicationMapper.toResponse(app)).thenReturn(response);
 
-        ApplicationResponse result = applicationService.updateStatus(1L, statusRequest);
+        ApplicationResponse result = applicationService.updateStatus(APP_UUID, statusRequest);
         assertThat(result).isNotNull();
         assertThat(app.getStatus()).isEqualTo(ApplicationStatus.RH);
     }
@@ -113,10 +118,10 @@ class ApplicationServiceTest {
     @Test
     void updateStatus_shouldThrow_whenInvalidStatus() {
         UpdateStatusRequest statusRequest = new UpdateStatusRequest("INVALID_STATUS");
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(app));
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
 
-        assertThatThrownBy(() -> applicationService.updateStatus(1L, statusRequest))
+        assertThatThrownBy(() -> applicationService.updateStatus(APP_UUID, statusRequest))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Invalid status value");
     }
@@ -124,36 +129,36 @@ class ApplicationServiceTest {
     @Test
     void updateReminder_shouldToggleReminder() {
         UpdateReminderRequest reminderRequest = new UpdateReminderRequest(true);
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(app));
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
         when(applicationRepository.save(app)).thenReturn(app);
         when(applicationMapper.toResponse(app)).thenReturn(response);
 
-        applicationService.updateReminder(1L, reminderRequest);
+        applicationService.updateReminder(APP_UUID, reminderRequest);
         assertThat(app.isRecruiterDmReminderEnabled()).isTrue();
     }
 
     @Test
     void delete_shouldDeleteApplication() {
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(app));
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
 
-        applicationService.delete(1L);
+        applicationService.delete(APP_UUID);
         verify(applicationRepository).delete(app);
     }
 
     @Test
     void delete_shouldThrow_whenNotFound() {
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findByIdAndUserId(99L, 1L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> applicationService.delete(99L))
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(OTHER_UUID, USER_UUID)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> applicationService.delete(OTHER_UUID))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @SuppressWarnings("unchecked")
     @Test
     void getAll_shouldReturnPagedResponse() {
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
         PageImpl<JobApplication> page = new PageImpl<>(List.of(app));
         when(applicationRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
         when(applicationMapper.toResponse(app)).thenReturn(response);
@@ -165,7 +170,7 @@ class ApplicationServiceTest {
 
     @Test
     void getAll_shouldThrow_whenInvalidSortField() {
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
         assertThatThrownBy(() -> applicationService.getAll(null, null, null, null, null, null, 0, 10, "invalidField,asc"))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Invalid sort field");
@@ -173,8 +178,8 @@ class ApplicationServiceTest {
 
     @Test
     void getUpcoming_shouldReturnList() {
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findUpcomingByUserId(eq(1L), any(LocalDateTime.class)))
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findUpcomingByUserId(eq(USER_UUID), any(LocalDateTime.class)))
                 .thenReturn(List.of(app));
         when(applicationMapper.toResponse(app)).thenReturn(response);
 
@@ -184,15 +189,15 @@ class ApplicationServiceTest {
 
     @Test
     void getOverdue_shouldReturnList() {
-        when(securityUtils.getCurrentUserId()).thenReturn(1L);
-        when(applicationRepository.findOverdueByUserId(eq(1L), any(LocalDateTime.class)))
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findOverdueByUserId(eq(USER_UUID), any(LocalDateTime.class)))
                 .thenReturn(Collections.emptyList());
 
         List<ApplicationResponse> result = applicationService.getOverdue();
         assertThat(result).isEmpty();
     }
 
-    private User buildUser(Long id, String email) {
+    private User buildUser(UUID id, String email) {
         User u = new User();
         u.setId(id);
         u.setName("Test User");
@@ -201,7 +206,7 @@ class ApplicationServiceTest {
         return u;
     }
 
-    private JobApplication buildApplication(Long id, User user) {
+    private JobApplication buildApplication(UUID id, User user) {
         JobApplication a = new JobApplication();
         a.setId(id);
         a.setVacancyName("Software Engineer");
@@ -220,7 +225,7 @@ class ApplicationServiceTest {
         );
     }
 
-    private ApplicationResponse buildApplicationResponse(Long id) {
+    private ApplicationResponse buildApplicationResponse(UUID id) {
         return new ApplicationResponse(id, "Software Engineer", "Recruiter", "HR",
                 "https://example.com/job", LocalDate.now(), false, false, null, "RH",
                 false, LocalDateTime.now(), LocalDateTime.now());
