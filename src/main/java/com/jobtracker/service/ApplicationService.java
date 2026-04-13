@@ -52,7 +52,6 @@ public class ApplicationService {
     public ApplicationResponse create(ApplicationRequest request) {
         Span span = tracer.nextSpan().name("create-application").start();
         try (Tracer.SpanInScope ignored = tracer.withSpan(span)) {
-            span.tag("vacancy", request.vacancyName() != null ? request.vacancyName() : "unknown");
             JobApplication app = new JobApplication();
             mapRequestToEntity(request, app);
             app.setUser(securityUtils.getCurrentUser());

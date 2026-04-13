@@ -40,6 +40,12 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
   metrics:
     tags:
       application: ${spring.application.name}
@@ -52,23 +58,6 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
-<<<<<<< HEAD:backend/src/main/resources/application.yml
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus,metrics  
-  tracing:
-    sampling:
-      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
-  otlp:
-    tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
-  metrics:
-    tags:
-      application: ${spring.application.name}
-=======
   group-configs:
     - group: auth
       display-name: Auth API
@@ -79,4 +68,3 @@ management:
     - group: dashboard
       display-name: Dashboard API
       paths-to-match: /api/dashboard/**
->>>>>>> origin/main:src/main/resources/application.yml

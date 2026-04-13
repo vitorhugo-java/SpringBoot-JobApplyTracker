@@ -86,17 +86,12 @@
             <version>2.5.0</version>
         </dependency>
 
-<<<<<<< HEAD:backend/pom.xml
-        <!-- Actuator (required for Micrometer observations) -->
-=======
         <!-- Actuator -->
->>>>>>> origin/main:pom.xml
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-<<<<<<< HEAD:backend/pom.xml
         <!-- Micrometer Tracing → OpenTelemetry bridge -->
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -109,25 +104,18 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
-        <!-- Prometheus metrics (coexists with tracing) -->
-=======
         <!-- Micrometer Prometheus Registry -->
->>>>>>> origin/main:pom.xml
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-<<<<<<< HEAD:backend/pom.xml
-=======
         <!-- Structured JSON logging -->
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
             <version>7.4</version>
         </dependency>
-
->>>>>>> origin/main:pom.xml
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -10,13 +10,10 @@ import com.jobtracker.exception.ConflictException;
 import com.jobtracker.exception.ResourceNotFoundException;
 import com.jobtracker.mapper.AuthMapper;
 import com.jobtracker.repository.UserRepository;
-<<<<<<< HEAD:backend/src/main/java/com/jobtracker/service/AuthService.java
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
-=======
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
->>>>>>> origin/main:src/main/java/com/jobtracker/service/AuthService.java
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -76,40 +73,30 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-<<<<<<< HEAD:backend/src/main/java/com/jobtracker/service/AuthService.java
         Span span = tracer.nextSpan().name("login").start();
         try (Tracer.SpanInScope ignored = tracer.withSpan(span)) {
             User user = userRepository.findByEmail(request.email())
-                    .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+                    .orElseThrow(() -> {
+                        log.warn("event=LOGIN_FAILURE reason=USER_NOT_FOUND email={}", request.email());
+                        return new BadCredentialsException("Invalid credentials");
+                    });
 
             if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+                log.warn("event=LOGIN_FAILURE reason=WRONG_PASSWORD userId={}", user.getId());
                 throw new BadCredentialsException("Invalid credentials");
             }
 
-            return buildAuthResponse(user);  
-        } catch (BadCredentialsException e) {  
-            throw e;  
+            log.info("event=LOGIN_SUCCESS userId={}", user.getId());
+            return buildAuthResponse(user);
+        } catch (BadCredentialsException e) {
+            // Expected auth failure – do not mark as span error
+            throw e;
         } catch (Exception e) {
             span.error(e);
             throw e;
         } finally {
             span.end();
         }
-=======
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> {
-                    log.warn("event=LOGIN_FAILURE reason=USER_NOT_FOUND email={}", request.email());
-                    return new BadCredentialsException("Invalid credentials");
-                });
-
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            log.warn("event=LOGIN_FAILURE reason=WRONG_PASSWORD userId={}", user.getId());
-            throw new BadCredentialsException("Invalid credentials");
-        }
-
-        log.info("event=LOGIN_SUCCESS userId={}", user.getId());
-        return buildAuthResponse(user);
->>>>>>> origin/main:src/main/java/com/jobtracker/service/AuthService.java
     }
 
     @Transactional
@@ -123,9 +110,7 @@ public class AuthService {
                     user.getEmail(), user.getPasswordHash(), Collections.emptyList());
             String accessToken = jwtService.generateToken(userDetails);
 
-            return buildAuthResponse(user);  
-        } catch (BadCredentialsException e) {  
-            throw e;  
+            return new RefreshResponse(accessToken, newRefreshToken.getToken());
         } catch (Exception e) {
             span.error(e);
             throw e;

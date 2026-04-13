@@ -12,6 +12,7 @@ import com.jobtracker.repository.UserRepository;
 import com.jobtracker.service.AuthService;
 import com.jobtracker.service.PasswordResetService;
 import com.jobtracker.service.RefreshTokenService;
+import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -40,6 +42,7 @@ class AuthServiceTest {
     @Mock private RefreshTokenService refreshTokenService;
     @Mock private PasswordResetService passwordResetService;
     @Mock private AuthMapper authMapper;
+    @Mock(answer = RETURNS_DEEP_STUBS) private Tracer tracer;
 
     @InjectMocks
     private AuthService authService;
