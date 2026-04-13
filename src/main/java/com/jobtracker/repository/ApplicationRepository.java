@@ -13,24 +13,25 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface ApplicationRepository extends JpaRepository<JobApplication, Long>, JpaSpecificationExecutor<JobApplication> {
+public interface ApplicationRepository extends JpaRepository<JobApplication, UUID>, JpaSpecificationExecutor<JobApplication> {
 
-    Optional<JobApplication> findByIdAndUserId(Long id, Long userId);
+    Optional<JobApplication> findByIdAndUserId(UUID id, UUID userId);
 
-    long countByUserId(Long userId);
+    long countByUserId(UUID userId);
 
-    long countByUserIdAndInterviewScheduledTrue(Long userId);
+    long countByUserIdAndInterviewScheduledTrue(UUID userId);
 
-    long countByUserIdAndRecruiterDmReminderEnabledTrue(Long userId);
+    long countByUserIdAndRecruiterDmReminderEnabledTrue(UUID userId);
 
     @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.status IN :statuses")
-    long countByUserIdAndStatusIn(@Param("userId") Long userId, @Param("statuses") List<ApplicationStatus> statuses);
+    long countByUserIdAndStatusIn(@Param("userId") UUID userId, @Param("statuses") List<ApplicationStatus> statuses);
 
     @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.nextStepDateTime IS NOT NULL AND a.nextStepDateTime > :now ORDER BY a.nextStepDateTime ASC")
-    List<JobApplication> findUpcomingByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+    List<JobApplication> findUpcomingByUserId(@Param("userId") UUID userId, @Param("now") LocalDateTime now);
 
     @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.nextStepDateTime IS NOT NULL AND a.nextStepDateTime < :now ORDER BY a.nextStepDateTime DESC")
-    List<JobApplication> findOverdueByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+    List<JobApplication> findOverdueByUserId(@Param("userId") UUID userId, @Param("now") LocalDateTime now);
 }
