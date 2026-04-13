@@ -10,14 +10,14 @@
         </encoder>
     </appender>
 
-    <!-- Human-readable appender for local development -->
+    <!-- Human-readable appender with trace/span correlation for local development -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] [%X{spanId:-}] %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Production profile: structured JSON -->
+    <!-- Production profile: structured JSON (LogstashEncoder includes MDC traceId/spanId automatically) -->
     <springProfile name="prod">
         <root level="INFO">
             <appender-ref ref="JSON_STDOUT"/>
@@ -27,7 +27,7 @@
         <logger name="org.hibernate.SQL" level="WARN"/>
     </springProfile>
 
-    <!-- Default / dev profile: human-readable -->
+    <!-- Default / dev profile: human-readable with trace correlation -->
     <springProfile name="!prod">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>

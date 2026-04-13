@@ -10,6 +10,7 @@ import com.jobtracker.mapper.ApplicationMapper;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.service.ApplicationService;
 import com.jobtracker.util.SecurityUtils;
+import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class ApplicationServiceTest {
@@ -37,6 +39,7 @@ class ApplicationServiceTest {
     @Mock private ApplicationRepository applicationRepository;
     @Mock private ApplicationMapper applicationMapper;
     @Mock private SecurityUtils securityUtils;
+    @Mock(answer = RETURNS_DEEP_STUBS) private Tracer tracer;
 
     @InjectMocks
     private ApplicationService applicationService;

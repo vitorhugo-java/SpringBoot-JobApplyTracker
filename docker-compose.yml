@@ -11,15 +11,18 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/jobtracker?createDatabaseIfNotExist=true&characterEncoding=UTF-8&useUnicode=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      # WARNING: Replace this secret before any production use. This value is for development only.
-      JWT_SECRET: ChangeThisToAVeryLongSecretKeyForJWTTokensInDevelopment
-      CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+      DB_URL: jdbc:mariadb://mariadb:3306/${DB_NAME:-jobtracker}?createDatabaseIfNotExist=true&characterEncoding=UTF-8&useUnicode=true
+      DB_USERNAME: ${DB_USERNAME:-jobtracker}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173"}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY:-1.0}
     depends_on:
       mariadb:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 30s
@@ -37,8 +40,10 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_DATABASE: jobtracker
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD is required}
+      MARIADB_DATABASE: ${DB_NAME:-jobtracker}
+      MARIADB_USER: ${DB_USERNAME:-jobtracker}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
@@ -47,6 +52,20 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - job-tracker-net
+    restart: unless-stopped
+
+  # ── Jaeger (distributed tracing) ─────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:1.57.0
+    container_name: job-tracker-jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC receiver
+      - "4318:4318"     # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     networks:
       - job-tracker-net
     restart: unless-stopped
@@ -82,8 +101,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
@@ -104,3 +123,4 @@ volumes:
 networks:
   job-tracker-net:
     driver: bridge
+

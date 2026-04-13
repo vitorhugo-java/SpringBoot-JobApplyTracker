@@ -1,21 +1,18 @@
 # ============================================================
 # Stage 1: Build
 # ============================================================
-FROM eclipse-temurin:21-jdk-alpine AS build
-
-# Install Maven
-RUN apk add --no-cache maven
+FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /workspace
 
 # Copy POM first to cache dependency layer
-COPY backend/pom.xml .
+COPY pom.xml .
 
 # Download dependencies (cached unless pom.xml changes)
 RUN mvn dependency:go-offline -B --no-transfer-progress
 
 # Copy source code and build the fat JAR, skipping tests
-COPY backend/src src
+COPY src src
 RUN mvn package -DskipTests -B --no-transfer-progress
 
 # ============================================================
@@ -29,10 +26,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 
 # Copy the built JAR from the build stage
-COPY --from=build /workspace/target/*.jar app.jar
-
-# Ensure the app directory is owned by the non-root user
-RUN chown -R appuser:appgroup /app
+COPY --from=build --chown=appuser:appgroup /workspace/target/*.jar app.jar
 
 USER appuser
 
