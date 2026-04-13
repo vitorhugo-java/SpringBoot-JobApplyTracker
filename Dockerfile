@@ -1,7 +1,10 @@
 # ============================================================
 # Stage 1: Build
 # ============================================================
-FROM maven:3.9-eclipse-temurin-21 AS build
+ARG GRAALVM_VERSION=21
+FROM ghcr.io/graalvm/native-image-community:${GRAALVM_VERSION} AS build
+
+RUN microdnf install -y maven && microdnf clean all
 
 WORKDIR /workspace
 
@@ -18,10 +21,12 @@ RUN mvn package -DskipTests -B --no-transfer-progress
 # ============================================================
 # Stage 2: Runtime
 # ============================================================
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM ghcr.io/graalvm/jdk-community:${GRAALVM_VERSION} AS runtime
 
 # Create a non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN microdnf install -y shadow-utils wget && microdnf clean all \
+  && groupadd -r appgroup \
+  && useradd -r -g appgroup -d /app -s /sbin/nologin appuser
 
 WORKDIR /app
 
