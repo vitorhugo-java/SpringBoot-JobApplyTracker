@@ -21,9 +21,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ApplicationService {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "createdAt", "updatedAt", "applicationDate", "status",
+            "vacancyName", "recruiterName", "nextStepDateTime"
+    );
 
     private final ApplicationRepository applicationRepository;
     private final ApplicationMapper applicationMapper;
@@ -156,6 +162,10 @@ public class ApplicationService {
         }
         String[] parts = sort.split(",");
         String field = parts[0].trim();
+        if (!ALLOWED_SORT_FIELDS.contains(field)) {
+            throw new BadRequestException("Invalid sort field: " + field +
+                    ". Allowed fields: " + ALLOWED_SORT_FIELDS);
+        }
         Sort.Direction direction = parts.length > 1 && parts[1].trim().equalsIgnoreCase("asc")
                 ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(direction, field);
