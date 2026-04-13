@@ -66,4 +66,9 @@ public class RefreshTokenService {
     public void revokeAllByUserId(UUID userId) {
         refreshTokenRepository.revokeAllByUserId(userId);
     }
+
+    @Transactional
+    public void cleanExpiredTokens() {
+        refreshTokenRepository.deleteAllByExpiryDateBefore(LocalDateTime.now());
+    }
 }

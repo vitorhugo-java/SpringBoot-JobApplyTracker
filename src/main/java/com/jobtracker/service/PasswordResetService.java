@@ -55,4 +55,9 @@ public class PasswordResetService {
         token.setUsed(true);
         passwordResetTokenRepository.save(token);
     }
+
+    @Transactional
+    public void cleanExpiredTokens() {
+        passwordResetTokenRepository.deleteAllByExpiryDateBefore(LocalDateTime.now());
+    }
 }
