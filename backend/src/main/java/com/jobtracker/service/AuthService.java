@@ -10,6 +10,8 @@ import com.jobtracker.exception.ConflictException;
 import com.jobtracker.exception.ResourceNotFoundException;
 import com.jobtracker.mapper.AuthMapper;
 import com.jobtracker.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +22,8 @@ import java.util.Collections;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -56,19 +60,24 @@ public class AuthService {
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user = userRepository.save(user);
-
+        log.info("event=REGISTRATION_SUCCESS email={} userId={}", user.getEmail(), user.getId());
         return buildAuthResponse(user);
     }
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> {
+                    log.warn("event=LOGIN_FAILURE reason=USER_NOT_FOUND email={}", request.email());
+                    return new BadCredentialsException("Invalid credentials");
+                });
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            log.warn("event=LOGIN_FAILURE reason=WRONG_PASSWORD userId={}", user.getId());
             throw new BadCredentialsException("Invalid credentials");
         }
 
+        log.info("event=LOGIN_SUCCESS userId={}", user.getId());
         return buildAuthResponse(user);
     }
 
@@ -116,6 +125,7 @@ public class AuthService {
     @Transactional
     public MessageResponse logout(LogoutRequest request) {
         refreshTokenService.revokeToken(request.refreshToken());
+        log.info("event=LOGOUT_SUCCESS");
         return new MessageResponse("Logged out successfully");
     }
 
