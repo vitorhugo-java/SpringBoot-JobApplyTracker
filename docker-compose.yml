@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        GRAALVM_VERSION: ${GRAALVM_VERSION:-21}
     container_name: job-tracker-app
     environment:
       DB_URL: jdbc:mariadb://mariadb:3306/${DB_NAME:-jobtracker}?createDatabaseIfNotExist=true&characterEncoding=UTF-8&useUnicode=true

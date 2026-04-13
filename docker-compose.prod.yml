@@ -1,6 +1,9 @@
 # docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 services:
   app:
+    build:
+      args:
+        GRAALVM_VERSION: ${GRAALVM_VERSION:-21}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
