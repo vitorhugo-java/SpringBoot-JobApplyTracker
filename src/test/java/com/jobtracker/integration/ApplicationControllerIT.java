@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -78,7 +79,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andReturn();
 
-        Long id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
         mockMvc.perform(get("/api/applications/{id}", id)
                         .header("Authorization", "Bearer " + accessToken))
@@ -88,7 +89,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
 
     @Test
     void getById_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(get("/api/applications/99999")
+        mockMvc.perform(get("/api/applications/{id}", UUID.randomUUID())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isNotFound());
     }
@@ -102,7 +103,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(create)))
                 .andReturn();
 
-        Long id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
         ApplicationRequest update = buildRequest("Senior Dev Updated");
         mockMvc.perform(put("/api/applications/{id}", id)
@@ -122,7 +123,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(create)))
                 .andReturn();
 
-        Long id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
         mockMvc.perform(patch("/api/applications/{id}/status", id)
                         .header("Authorization", "Bearer " + accessToken)
@@ -141,7 +142,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(create)))
                 .andReturn();
 
-        Long id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
         mockMvc.perform(delete("/api/applications/{id}", id)
                         .header("Authorization", "Bearer " + accessToken))
@@ -180,7 +181,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(create)))
                 .andReturn();
 
-        Long id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
         mockMvc.perform(patch("/api/applications/{id}/reminder", id)
                         .header("Authorization", "Bearer " + accessToken)

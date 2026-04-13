@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +55,7 @@ class ApplicationRepositoryIT extends AbstractIntegrationTest {
     @Test
     void findByIdAndUserId_shouldReturnEmpty_whenWrongUser() {
         JobApplication app = applicationRepository.save(buildApp("Frontend Dev", user));
-        Optional<JobApplication> result = applicationRepository.findByIdAndUserId(app.getId(), 999L);
+        Optional<JobApplication> result = applicationRepository.findByIdAndUserId(app.getId(), UUID.randomUUID());
         assertThat(result).isEmpty();
     }
 

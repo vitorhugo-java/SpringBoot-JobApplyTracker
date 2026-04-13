@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS job_applications (
     next_step_date_time          DATETIME,
     status                       VARCHAR(100)  NOT NULL,
     recruiter_dm_reminder_enabled BOOLEAN      NOT NULL DEFAULT FALSE,
-    user_id                      BIGINT        NOT NULL,
+    user_id                      BINARY(16)    NOT NULL,
     created_at                   DATETIME      NOT NULL,
     updated_at                   DATETIME      NOT NULL,
     INDEX idx_app_user_id (user_id),
