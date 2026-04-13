@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build project
+        run: mvn clean compile -B
+
+      - name: Run unit tests
+        run: mvn test -B -Dtest="JwtServiceTest,RefreshTokenServiceTest,AuthServiceTest,ApplicationServiceTest" -DfailIfNoTests=false
+
+      - name: Run integration tests
+        run: mvn test -B -Dtest="AuthControllerIT,ApplicationControllerIT,ApplicationRepositoryIT,JobTrackerApplicationTests" -DfailIfNoTests=false
+
+      - name: Run E2E tests
+        run: mvn test -B -Dtest="AuthE2ETest,ApplicationE2ETest" -DfailIfNoTests=false
+
+      - name: Full verify
+        run: mvn verify -B

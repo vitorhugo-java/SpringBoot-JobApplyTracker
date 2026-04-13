@@ -1,0 +1,169 @@
+package com.jobtracker.integration;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jobtracker.dto.auth.AuthResponse;
+import com.jobtracker.dto.auth.LoginRequest;
+import com.jobtracker.dto.auth.RegisterRequest;
+import com.jobtracker.repository.RefreshTokenRepository;
+import com.jobtracker.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+class AuthControllerIT extends AbstractIntegrationTest {
+
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private RefreshTokenRepository refreshTokenRepository;
+
+    @BeforeEach
+    void cleanDb() {
+        refreshTokenRepository.deleteAll();
+        userRepository.deleteAll();
+    }
+
+    @Test
+    void register_shouldReturn201_andAuthResponse() throws Exception {
+        RegisterRequest request = new RegisterRequest("Test User", "register@example.com", "pass1234", "pass1234");
+
+        MvcResult result = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.user.email").value("register@example.com"))
+                .andReturn();
+
+        AuthResponse response = objectMapper.readValue(result.getResponse().getContentAsString(), AuthResponse.class);
+        assertThat(response.accessToken()).isNotBlank();
+        assertThat(response.refreshToken()).isNotBlank();
+    }
+
+    @Test
+    void register_shouldReturn409_whenEmailAlreadyExists() throws Exception {
+        RegisterRequest request = new RegisterRequest("Test User", "duplicate@example.com", "pass1234", "pass1234");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void register_shouldReturn400_whenPasswordsDoNotMatch() throws Exception {
+        RegisterRequest request = new RegisterRequest("Test User", "mismatch@example.com", "pass1234", "different");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void login_shouldReturn200_andAuthResponse() throws Exception {
+        // First register
+        RegisterRequest reg = new RegisterRequest("Login User", "login@example.com", "pass1234", "pass1234");
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(reg)));
+
+        // Then login
+        LoginRequest login = new LoginRequest("login@example.com", "pass1234");
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(login)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.user.email").value("login@example.com"));
+    }
+
+    @Test
+    void login_shouldReturn401_whenBadCredentials() throws Exception {
+        LoginRequest login = new LoginRequest("nobody@example.com", "wrongpass");
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(login)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refresh_shouldReturnNewTokens() throws Exception {
+        RegisterRequest reg = new RegisterRequest("Refresh User", "refresh@example.com", "pass1234", "pass1234");
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reg)))
+                .andReturn();
+
+        AuthResponse auth = objectMapper.readValue(regResult.getResponse().getContentAsString(), AuthResponse.class);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\": \"" + auth.refreshToken() + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty());
+    }
+
+    @Test
+    void logout_shouldReturn200() throws Exception {
+        RegisterRequest reg = new RegisterRequest("Logout User", "logout@example.com", "pass1234", "pass1234");
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reg)))
+                .andReturn();
+
+        AuthResponse auth = objectMapper.readValue(regResult.getResponse().getContentAsString(), AuthResponse.class);
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\": \"" + auth.refreshToken() + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    @Test
+    void me_shouldReturn200_whenAuthenticated() throws Exception {
+        RegisterRequest reg = new RegisterRequest("Me User", "me@example.com", "pass1234", "pass1234");
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reg)))
+                .andReturn();
+
+        AuthResponse auth = objectMapper.readValue(regResult.getResponse().getContentAsString(), AuthResponse.class);
+
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + auth.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("me@example.com"));
+    }
+
+    @Test
+    void me_shouldReturn403_whenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void forgotPassword_shouldReturn200_regardlessOfEmailExistence() throws Exception {
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\": \"nobody@example.com\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+}

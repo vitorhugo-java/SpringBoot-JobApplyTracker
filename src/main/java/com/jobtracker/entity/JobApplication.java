@@ -43,7 +43,7 @@ public class JobApplication {
     private LocalDateTime nextStepDateTime;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 100, columnDefinition = "varchar(100)")
     private ApplicationStatus status;
 
     @Column(name = "recruiter_dm_reminder_enabled", nullable = false)
