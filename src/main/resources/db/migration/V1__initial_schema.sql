@@ -1,7 +1,7 @@
 -- V1: Initial schema
 
 CREATE TABLE IF NOT EXISTS users (
-    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id            BINARY(16)   NOT NULL PRIMARY KEY,
     name          VARCHAR(150) NOT NULL,
     email         VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -12,11 +12,11 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id          BINARY(16)   NOT NULL PRIMARY KEY,
     token       VARCHAR(512) NOT NULL,
     expiry_date DATETIME     NOT NULL,
     revoked     BOOLEAN      NOT NULL DEFAULT FALSE,
-    user_id     BIGINT       NOT NULL,
+    user_id     BINARY(16)   NOT NULL,
     created_at  DATETIME     NOT NULL,
     updated_at  DATETIME     NOT NULL,
     CONSTRAINT uk_refresh_tokens_token UNIQUE (token),
@@ -26,11 +26,11 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
-    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id          BINARY(16)   NOT NULL PRIMARY KEY,
     token       VARCHAR(512) NOT NULL,
     expiry_date DATETIME     NOT NULL,
     used        BOOLEAN      NOT NULL DEFAULT FALSE,
-    user_id     BIGINT       NOT NULL,
+    user_id     BINARY(16)   NOT NULL,
     created_at  DATETIME     NOT NULL,
     updated_at  DATETIME     NOT NULL,
     CONSTRAINT uk_prt_token UNIQUE (token),
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS job_applications (
-    id                           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id                           BINARY(16)    NOT NULL PRIMARY KEY,
     vacancy_name                 VARCHAR(255)  NOT NULL,
     recruiter_name               VARCHAR(255),
     vacancy_opened_by            VARCHAR(255)  NOT NULL,
