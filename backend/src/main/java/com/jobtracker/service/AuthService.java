@@ -10,6 +10,8 @@ import com.jobtracker.exception.ConflictException;
 import com.jobtracker.exception.ResourceNotFoundException;
 import com.jobtracker.mapper.AuthMapper;
 import com.jobtracker.repository.UserRepository;
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,19 +29,22 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final PasswordResetService passwordResetService;
     private final AuthMapper authMapper;
+    private final Tracer tracer;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        RefreshTokenService refreshTokenService,
                        PasswordResetService passwordResetService,
-                       AuthMapper authMapper) {
+                       AuthMapper authMapper,
+                       Tracer tracer) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.passwordResetService = passwordResetService;
         this.authMapper = authMapper;
+        this.tracer = tracer;
     }
 
     @Transactional
@@ -62,26 +67,42 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        Span span = tracer.nextSpan().name("login").start();
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span)) {
+            User user = userRepository.findByEmail(request.email())
+                    .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new BadCredentialsException("Invalid credentials");
+            if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+                throw new BadCredentialsException("Invalid credentials");
+            }
+
+            return buildAuthResponse(user);
+        } catch (Exception e) {
+            span.error(e);
+            throw e;
+        } finally {
+            span.end();
         }
-
-        return buildAuthResponse(user);
     }
 
     @Transactional
     public RefreshResponse refresh(RefreshTokenRequest request) {
-        RefreshToken newRefreshToken = refreshTokenService.verifyAndRotate(request.refreshToken());
-        User user = newRefreshToken.getUser();
+        Span span = tracer.nextSpan().name("token-refresh").start();
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span)) {
+            RefreshToken newRefreshToken = refreshTokenService.verifyAndRotate(request.refreshToken());
+            User user = newRefreshToken.getUser();
 
-        UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                user.getEmail(), user.getPasswordHash(), Collections.emptyList());
-        String accessToken = jwtService.generateToken(userDetails);
+            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                    user.getEmail(), user.getPasswordHash(), Collections.emptyList());
+            String accessToken = jwtService.generateToken(userDetails);
 
-        return new RefreshResponse(accessToken, newRefreshToken.getToken());
+            return new RefreshResponse(accessToken, newRefreshToken.getToken());
+        } catch (Exception e) {
+            span.error(e);
+            throw e;
+        } finally {
+            span.end();
+        }
     }
 
     @Transactional

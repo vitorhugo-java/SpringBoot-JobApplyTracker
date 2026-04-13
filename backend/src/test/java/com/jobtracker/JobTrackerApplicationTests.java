@@ -15,7 +15,8 @@ import org.springframework.test.context.TestPropertySource;
         "jwt.secret=TestSecretKeyThatIsAtLeast256BitsLongForTestingPurposesOnly",
         "jwt.access-token-expiration-ms=900000",
         "jwt.refresh-token-expiration-ms=604800000",
-        "cors.allowed-origins=http://localhost:3000"
+        "cors.allowed-origins=http://localhost:3000",
+        "management.tracing.sampling.probability=0.0"
 })
 class JobTrackerApplicationTests {
 

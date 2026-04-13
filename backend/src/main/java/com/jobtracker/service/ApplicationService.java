@@ -8,6 +8,8 @@ import com.jobtracker.exception.ResourceNotFoundException;
 import com.jobtracker.mapper.ApplicationMapper;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.util.SecurityUtils;
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,21 +36,33 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final ApplicationMapper applicationMapper;
     private final SecurityUtils securityUtils;
+    private final Tracer tracer;
 
     public ApplicationService(ApplicationRepository applicationRepository,
                                ApplicationMapper applicationMapper,
-                               SecurityUtils securityUtils) {
+                               SecurityUtils securityUtils,
+                               Tracer tracer) {
         this.applicationRepository = applicationRepository;
         this.applicationMapper = applicationMapper;
         this.securityUtils = securityUtils;
+        this.tracer = tracer;
     }
 
     @Transactional
     public ApplicationResponse create(ApplicationRequest request) {
-        JobApplication app = new JobApplication();
-        mapRequestToEntity(request, app);
-        app.setUser(securityUtils.getCurrentUser());
-        return applicationMapper.toResponse(applicationRepository.save(app));
+        Span span = tracer.nextSpan().name("create-application").start();
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span)) {
+            span.tag("vacancy", request.vacancyName() != null ? request.vacancyName() : "unknown");
+            JobApplication app = new JobApplication();
+            mapRequestToEntity(request, app);
+            app.setUser(securityUtils.getCurrentUser());
+            return applicationMapper.toResponse(applicationRepository.save(app));
+        } catch (Exception e) {
+            span.error(e);
+            throw e;
+        } finally {
+            span.end();
+        }
     }
 
     @Transactional(readOnly = true)
