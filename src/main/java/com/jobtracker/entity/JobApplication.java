@@ -4,6 +4,9 @@ import com.jobtracker.entity.enums.ApplicationStatus;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "job_applications", indexes = {
@@ -15,8 +18,9 @@ import java.time.LocalDateTime;
 public class JobApplication {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
+    @Column(name = "id", columnDefinition = "BINARY(16)", updatable = false, nullable = false)
+    private UUID id;
 
     @Column(name = "vacancy_name", nullable = false, length = 255)
     private String vacancyName;
@@ -70,8 +74,8 @@ public class JobApplication {
         updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getVacancyName() { return vacancyName; }
     public void setVacancyName(String vacancyName) { this.vacancyName = vacancyName; }
