@@ -8,6 +8,7 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 - **Spring Boot 3.2** (Web, Data JPA, Security, Validation)
 - **Spring Security** with stateless JWT authentication
 - **JWT + Refresh Tokens** (access: 15 min, refresh: 7 days with rotation)
+- **Resilience4j Rate Limiting** on auth endpoints
 - **MariaDB** (production) / **Testcontainers** (tests)
 - **Flyway** for DB migrations
 - **JUnit 5 + Mockito** (unit tests)
@@ -129,9 +130,15 @@ mvn test -Dtest="com.jobtracker.e2e.*"
 | `JWT_ACCESS_TOKEN_EXPIRATION_MS` | `900000` | Access token TTL (15 min) |
 | `JWT_REFRESH_TOKEN_EXPIRATION_MS` | `604800000` | Refresh token TTL (7 days) |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins |
+| `RATE_LIMIT_AUTH_LOGIN_LIMIT_FOR_PERIOD` | `10` | Max login requests allowed per refresh period |
+| `RATE_LIMIT_AUTH_LOGIN_REFRESH_PERIOD` | `1m` | Window used by the login rate limiter |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint (Jaeger/OpenTelemetry collector) |
 | `PROMETHEUS_URL` | `http://localhost:9090` | Prometheus base URL for observability integrations |
 | `SERVER_PORT` | `8080` | Server port |
+
+## Rate Limiting
+
+Auth endpoints are protected with Resilience4j rate limiters. When a limit is exceeded, the API returns `429 Too Many Requests` with the standard error payload used by the application.
 
 ## CI/CD
 
