@@ -1,5 +1,6 @@
 package com.jobtracker.controller;
 
+import com.jobtracker.ApiVersion;
 import com.jobtracker.dto.dashboard.DashboardSummaryResponse;
 import com.jobtracker.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Dashboard", description = "Dashboard summary statistics endpoints")
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping(ApiVersion.V1 + "/dashboard")
 public class DashboardController {
 
     private final DashboardService dashboardService;

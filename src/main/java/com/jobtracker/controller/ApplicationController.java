@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.jobtracker.ApiVersion;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ import java.util.UUID;
 
 @Tag(name = "Applications", description = "Job application management endpoints")
 @RestController
-@RequestMapping("/api/applications")
+@RequestMapping(ApiVersion.V1 + "/applications")
 public class ApplicationController {
 
     private final ApplicationService applicationService;
