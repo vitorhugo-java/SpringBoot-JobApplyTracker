@@ -4,6 +4,7 @@ import com.jobtracker.dto.auth.*;
 import com.jobtracker.mapper.AuthMapper;
 import com.jobtracker.service.AuthService;
 import com.jobtracker.util.SecurityUtils;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -36,10 +37,12 @@ public class AuthController {
             @ApiResponse(responseCode = "201", description = "User registered successfully",
                 content = @Content(schema = @Schema(implementation = AuthResponse.class))),
             @ApiResponse(responseCode = "400", description = "Validation error or passwords do not match"),
-            @ApiResponse(responseCode = "409", description = "Email already in use")
+            @ApiResponse(responseCode = "409", description = "Email already in use"),
+            @ApiResponse(responseCode = "429", description = "Too many requests")
         }
     )
     @PostMapping("/register")
+    @RateLimiter(name = "authRegister")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
@@ -50,10 +53,12 @@ public class AuthController {
         responses = {
             @ApiResponse(responseCode = "200", description = "Login successful",
                 content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+            @ApiResponse(responseCode = "401", description = "Invalid credentials"),
+            @ApiResponse(responseCode = "429", description = "Too many requests")
         }
     )
     @PostMapping("/login")
+    @RateLimiter(name = "authLogin")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
@@ -64,10 +69,12 @@ public class AuthController {
         responses = {
             @ApiResponse(responseCode = "200", description = "Token refreshed",
                 content = @Content(schema = @Schema(implementation = RefreshResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
+            @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token"),
+            @ApiResponse(responseCode = "429", description = "Too many requests")
         }
     )
     @PostMapping("/refresh")
+    @RateLimiter(name = "authRefresh")
     public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
     }
@@ -77,10 +84,12 @@ public class AuthController {
         description = "Sends a password reset token to the provided email address",
         responses = {
             @ApiResponse(responseCode = "200", description = "Reset email sent",
-                content = @Content(schema = @Schema(implementation = MessageResponse.class)))
+                content = @Content(schema = @Schema(implementation = MessageResponse.class))),
+            @ApiResponse(responseCode = "429", description = "Too many requests")
         }
     )
     @PostMapping("/forgot-password")
+    @RateLimiter(name = "authForgotPassword")
     public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         return ResponseEntity.ok(authService.forgotPassword(request));
     }
@@ -91,10 +100,12 @@ public class AuthController {
         responses = {
             @ApiResponse(responseCode = "200", description = "Password reset successful",
                 content = @Content(schema = @Schema(implementation = MessageResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid or expired reset token")
+            @ApiResponse(responseCode = "400", description = "Invalid or expired reset token"),
+            @ApiResponse(responseCode = "429", description = "Too many requests")
         }
     )
     @PostMapping("/reset-password")
+    @RateLimiter(name = "authResetPassword")
     public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         return ResponseEntity.ok(authService.resetPassword(request));
     }
@@ -104,10 +115,12 @@ public class AuthController {
         description = "Invalidates the provided refresh token",
         responses = {
             @ApiResponse(responseCode = "200", description = "Logged out successfully",
-                content = @Content(schema = @Schema(implementation = MessageResponse.class)))
+                content = @Content(schema = @Schema(implementation = MessageResponse.class))),
+            @ApiResponse(responseCode = "429", description = "Too many requests")
         }
     )
     @PostMapping("/logout")
+    @RateLimiter(name = "authLogout")
     public ResponseEntity<MessageResponse> logout(@Valid @RequestBody LogoutRequest request) {
         return ResponseEntity.ok(authService.logout(request));
     }
