@@ -1,5 +1,6 @@
 package com.jobtracker.exception;
 
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -47,6 +48,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class})
     public ResponseEntity<Map<String, Object>> handleBadCredentials(RuntimeException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+    }
+
+    @ExceptionHandler(RequestNotPermitted.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimitExceeded(RequestNotPermitted ex) {
+        log.warn("event=RATE_LIMIT_EXCEEDED message={}", ex.getMessage());
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, "Too many requests. Please try again later.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
