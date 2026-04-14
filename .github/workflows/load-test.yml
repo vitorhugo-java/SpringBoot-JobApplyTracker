@@ -1,0 +1,107 @@
+name: API Load Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  load-test:
+    name: Incremental Load Test (1 CPU / 4GB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Docker network
+        run: docker network create loadtest-net
+
+      - name: Build API image
+        run: docker build -t job-tracker:loadtest .
+
+      - name: Start MariaDB (test)
+        run: |
+          docker run -d \
+            --name loadtest-db \
+            --network loadtest-net \
+            -e MARIADB_ROOT_PASSWORD=root \
+            -e MARIADB_DATABASE=jobtracker \
+            -e MARIADB_USER=jobtracker \
+            -e MARIADB_PASSWORD=jobtracker \
+            mariadb:11
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if docker exec loadtest-db mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent; then
+              echo "MariaDB is ready"
+              exit 0
+            fi
+            echo "Waiting for MariaDB... ($i/30)"
+            sleep 2
+          done
+          echo "MariaDB did not become ready in time"
+          exit 1
+
+      - name: Start API with server-like limits (1 CPU / 4GB)
+        run: |
+          docker run -d \
+            --name loadtest-api \
+            --network loadtest-net \
+            --cpus=1 \
+            --memory=4g \
+            --memory-swap=4g \
+            -p 8080:8080 \
+            -p 8081:8081 \
+            -e DB_URL="jdbc:mariadb://loadtest-db:3306/jobtracker?createDatabaseIfNotExist=true&characterEncoding=UTF-8&useUnicode=true" \
+            -e DB_USERNAME="jobtracker" \
+            -e DB_PASSWORD="jobtracker" \
+            -e JWT_SECRET="LoadTestSecretKeyThatIsAtLeast256BitsLongAndOnlyForGithubActions" \
+            -e CORS_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:5173" \
+            -e OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317" \
+            -e PROMETHEUS_URL="http://localhost:9090" \
+            job-tracker:loadtest
+
+      - name: Wait for API health
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8081/actuator/health > /dev/null; then
+              echo "API is ready"
+              exit 0
+            fi
+            echo "Waiting for API... ($i/60)"
+            sleep 3
+          done
+          echo "API did not become ready in time"
+          docker logs loadtest-api || true
+          exit 1
+
+      - name: Run incremental k6 load test
+        run: |
+          docker run --rm \
+            --network host \
+            -e BASE_URL="http://127.0.0.1:8080" \
+            -e LOAD_TEST_EMAIL="loadtest@example.com" \
+            -e LOAD_TEST_PASSWORD="LoadTest#123" \
+            -v "${{ github.workspace }}/load-tests:/load-tests" \
+            grafana/k6:0.50.0 \
+            run /load-tests/api-load-test.js --summary-export=/load-tests/summary.json
+
+      - name: Upload k6 summary artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-load-test-summary
+          path: load-tests/summary.json
+
+      - name: Show API logs on failure
+        if: failure()
+        run: docker logs loadtest-api || true
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker rm -f loadtest-api loadtest-db || true
+          docker network rm loadtest-net || true
