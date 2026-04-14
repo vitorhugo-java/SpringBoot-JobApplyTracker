@@ -36,10 +36,6 @@ jwt:
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
 
-app:
-  monitoring:
-    prometheus-token: ${PROMETHEUS_SCRAPE_TOKEN:dev-prometheus-token}
-
 management:
   server:
     port: ${MANAGEMENT_PORT:8081}
