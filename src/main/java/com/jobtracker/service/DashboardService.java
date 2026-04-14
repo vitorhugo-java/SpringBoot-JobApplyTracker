@@ -37,7 +37,7 @@ public class DashboardService {
 
         long interviewsScheduled = applicationRepository.countByUserIdAndInterviewScheduledTrue(userId);
 
-        long overdueFollowUps = applicationRepository.findOverdueByUserId(userId, LocalDateTime.now()).size();
+        long overdueFollowUps = applicationRepository.findOverdueByUserId(userId, LocalDateTime.now().minusHours(6)).size();
 
         long dmRemindersEnabled = applicationRepository.countByUserIdAndRecruiterDmReminderEnabledTrue(userId);
 

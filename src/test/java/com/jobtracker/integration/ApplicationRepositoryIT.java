@@ -68,23 +68,25 @@ class ApplicationRepositoryIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void findUpcomingByUserId_shouldReturnFutureSteps() {
+    void findUpcomingByUserId_shouldReturnDmRemindersWithinFirst6Hours() {
         JobApplication app = buildApp("Upcoming", user);
-        app.setNextStepDateTime(LocalDateTime.now().plusDays(2));
+        app.setRecruiterDmReminderEnabled(true);
         applicationRepository.save(app);
 
-        var results = applicationRepository.findUpcomingByUserId(user.getId(), LocalDateTime.now());
+        var threshold = LocalDateTime.now().minusHours(6);
+        var results = applicationRepository.findUpcomingByUserId(user.getId(), threshold);
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getVacancyName()).isEqualTo("Upcoming");
     }
 
     @Test
-    void findOverdueByUserId_shouldReturnPastSteps() {
+    void findOverdueByUserId_shouldReturnDmRemindersAfter6Hours() {
         JobApplication app = buildApp("Overdue", user);
-        app.setNextStepDateTime(LocalDateTime.now().minusDays(1));
+        app.setRecruiterDmReminderEnabled(true);
         applicationRepository.save(app);
 
-        var results = applicationRepository.findOverdueByUserId(user.getId(), LocalDateTime.now());
+        var threshold = LocalDateTime.now().plusHours(1);
+        var results = applicationRepository.findOverdueByUserId(user.getId(), threshold);
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getVacancyName()).isEqualTo("Overdue");
     }

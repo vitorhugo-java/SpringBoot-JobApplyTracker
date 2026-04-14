@@ -147,8 +147,8 @@ public class ApplicationController {
     }
 
     @Operation(
-        summary = "Get upcoming applications",
-        description = "Returns applications with upcoming next-step dates",
+        summary = "Get upcoming recruiter DM reminders",
+        description = "Returns applications with recruiter DM reminder enabled and still inside the first 6 hours after creation",
         responses = {
             @ApiResponse(responseCode = "200", description = "List of upcoming applications")
         }
@@ -159,8 +159,8 @@ public class ApplicationController {
     }
 
     @Operation(
-        summary = "Get overdue applications",
-        description = "Returns applications whose next-step date has already passed",
+        summary = "Get overdue recruiter DM reminders",
+        description = "Returns applications with recruiter DM reminder enabled that have passed 6 hours since creation",
         responses = {
             @ApiResponse(responseCode = "200", description = "List of overdue applications")
         }

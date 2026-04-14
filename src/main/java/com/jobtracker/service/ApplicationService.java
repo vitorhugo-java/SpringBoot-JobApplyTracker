@@ -139,14 +139,16 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationResponse> getUpcoming() {
         UUID userId = securityUtils.getCurrentUserId();
-        return applicationRepository.findUpcomingByUserId(userId, LocalDateTime.now())
+        LocalDateTime reminderThreshold = LocalDateTime.now().minusHours(6);
+        return applicationRepository.findUpcomingByUserId(userId, reminderThreshold)
                 .stream().map(applicationMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public List<ApplicationResponse> getOverdue() {
         UUID userId = securityUtils.getCurrentUserId();
-        return applicationRepository.findOverdueByUserId(userId, LocalDateTime.now())
+        LocalDateTime reminderThreshold = LocalDateTime.now().minusHours(6);
+        return applicationRepository.findOverdueByUserId(userId, reminderThreshold)
                 .stream().map(applicationMapper::toResponse).toList();
     }
 
