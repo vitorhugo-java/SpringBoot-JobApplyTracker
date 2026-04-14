@@ -5,8 +5,11 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 @Configuration
 public class OpenApiConfig {
@@ -15,6 +18,7 @@ public class OpenApiConfig {
     public OpenAPI openAPI() {
         final String securitySchemeName = "bearerAuth";
         return new OpenAPI()
+                .servers(List.of(new Server().url("/api/v1").description("v1")))
                 .info(new Info()
                         .title("Job Apply Tracker API")
                         .description("API for tracking job applications")
