@@ -73,7 +73,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .body("status", equalTo("RH"))
                 .extract().response();
 
-        Long appId = createResponse.jsonPath().getLong("id");
+        String appId = createResponse.jsonPath().getString("id");
         assertThat(appId).isNotNull();
 
         // 2. Fetch by ID
@@ -82,7 +82,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .get("/api/applications/{id}", appId)
                 .then()
                 .statusCode(200)
-                .body("id", equalTo(appId.intValue()))
+                .body("id", equalTo(appId))
                 .body("vacancyName", equalTo("Software Engineer"));
 
         // 3. Update application
@@ -234,7 +234,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .post("/api/applications")
                 .then().statusCode(201).extract().response();
 
-        Long appId = createResponse.jsonPath().getLong("id");
+        String appId = createResponse.jsonPath().getString("id");
 
         // Register and login as user 2
         given()
