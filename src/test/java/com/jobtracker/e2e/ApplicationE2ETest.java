@@ -38,7 +38,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                           "confirmPassword": "pass1234"
                         }
                         """)
-                .post("/api/auth/register")
+                .post("/api/v1/auth/register")
                 .then().statusCode(201).extract().response();
 
         accessToken = register.jsonPath().getString("accessToken");
@@ -65,7 +65,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                           "recruiterDmReminderEnabled": false
                         }
                         """.formatted(applicationDate))
-                .post("/api/applications")
+                .post("/api/v1/applications")
                 .then()
                 .statusCode(201)
                 .body("id", notNullValue())
@@ -79,7 +79,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
         // 2. Fetch by ID
         given()
                 .header("Authorization", "Bearer " + accessToken)
-                .get("/api/applications/{id}", appId)
+                .get("/api/v1/applications/{id}", appId)
                 .then()
                 .statusCode(200)
                 .body("id", equalTo(appId))
@@ -102,7 +102,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                           "recruiterDmReminderEnabled": false
                         }
                         """.formatted(applicationDate))
-                .put("/api/applications/{id}", appId)
+                .put("/api/v1/applications/{id}", appId)
                 .then()
                 .statusCode(200)
                 .body("vacancyName", equalTo("Senior Software Engineer"))
@@ -114,7 +114,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body("{\"status\": \"Teste Técnico\"}")
-                .patch("/api/applications/{id}/status", appId)
+                .patch("/api/v1/applications/{id}/status", appId)
                 .then()
                 .statusCode(200)
                 .body("status", equalTo("Teste Técnico"));
@@ -124,7 +124,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body("{\"recruiterDmReminderEnabled\": true}")
-                .patch("/api/applications/{id}/reminder", appId)
+                .patch("/api/v1/applications/{id}/reminder", appId)
                 .then()
                 .statusCode(200)
                 .body("recruiterDmReminderEnabled", equalTo(true));
@@ -132,7 +132,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
         // 6. List all
         given()
                 .header("Authorization", "Bearer " + accessToken)
-                .get("/api/applications")
+                .get("/api/v1/applications")
                 .then()
                 .statusCode(200)
                 .body("content", hasSize(1))
@@ -141,7 +141,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
         // 7. Delete
         given()
                 .header("Authorization", "Bearer " + accessToken)
-                .delete("/api/applications/{id}", appId)
+                .delete("/api/v1/applications/{id}", appId)
                 .then()
                 .statusCode(200)
                 .body("message", equalTo("Application deleted successfully"));
@@ -149,7 +149,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
         // 8. Verify deleted
         given()
                 .header("Authorization", "Bearer " + accessToken)
-                .get("/api/applications/{id}", appId)
+                .get("/api/v1/applications/{id}", appId)
                 .then()
                 .statusCode(404);
     }
@@ -168,7 +168,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                          "rhAcceptedConnection": false, "interviewScheduled": false,
                          "status": "RH", "recruiterDmReminderEnabled": false}
                         """.formatted(applicationDate))
-                .post("/api/applications").then().statusCode(201);
+                .post("/api/v1/applications").then().statusCode(201);
 
         given()
                 .header("Authorization", "Bearer " + accessToken)
@@ -179,13 +179,13 @@ class ApplicationE2ETest extends AbstractE2ETest {
                          "rhAcceptedConnection": false, "interviewScheduled": true,
                          "status": "Teste Técnico", "recruiterDmReminderEnabled": false}
                         """.formatted(applicationDate))
-                .post("/api/applications").then().statusCode(201);
+                .post("/api/v1/applications").then().statusCode(201);
 
         // Filter by status
         given()
                 .header("Authorization", "Bearer " + accessToken)
                 .queryParam("status", "RH")
-                .get("/api/applications")
+                .get("/api/v1/applications")
                 .then()
                 .statusCode(200)
                 .body("totalElements", equalTo(1))
@@ -195,7 +195,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
         given()
                 .header("Authorization", "Bearer " + accessToken)
                 .queryParam("interviewScheduled", true)
-                .get("/api/applications")
+                .get("/api/v1/applications")
                 .then()
                 .statusCode(200)
                 .body("totalElements", equalTo(1))
@@ -212,7 +212,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                          "interviewScheduled": false, "status": "RH",
                          "recruiterDmReminderEnabled": false}
                         """)
-                .post("/api/applications")
+                .post("/api/v1/applications")
                 .then()
                 .statusCode(403);
     }
@@ -231,7 +231,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                          "interviewScheduled": false, "status": "RH",
                          "recruiterDmReminderEnabled": false}
                         """.formatted(applicationDate))
-                .post("/api/applications")
+                .post("/api/v1/applications")
                 .then().statusCode(201).extract().response();
 
         String appId = createResponse.jsonPath().getString("id");
@@ -243,12 +243,12 @@ class ApplicationE2ETest extends AbstractE2ETest {
                         {"name": "Other User", "email": "other@example.com",
                          "password": "pass1234", "confirmPassword": "pass1234"}
                         """)
-                .post("/api/auth/register");
+                .post("/api/v1/auth/register");
 
         Response loginResp = given()
                 .contentType("application/json")
                 .body("{\"email\": \"other@example.com\", \"password\": \"pass1234\"}")
-                .post("/api/auth/login")
+                .post("/api/v1/auth/login")
                 .then().statusCode(200).extract().response();
 
         String otherToken = loginResp.jsonPath().getString("accessToken");
@@ -256,7 +256,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
         // User 2 cannot access user 1's app
         given()
                 .header("Authorization", "Bearer " + otherToken)
-                .get("/api/applications/{id}", appId)
+                .get("/api/v1/applications/{id}", appId)
                 .then()
                 .statusCode(404);
     }

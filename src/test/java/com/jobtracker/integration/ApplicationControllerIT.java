@@ -38,7 +38,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         userRepository.deleteAll();
 
         RegisterRequest reg = new RegisterRequest("App User", "appuser@example.com", "pass1234", "pass1234");
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
                 .andReturn();
@@ -51,7 +51,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     void createApplication_shouldReturn201() throws Exception {
         ApplicationRequest request = buildRequest("Software Engineer");
 
-        mockMvc.perform(post("/api/applications")
+        mockMvc.perform(post("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -65,7 +65,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         void createApplication_shouldAllowBlankVacancyName() throws Exception {
                 ApplicationRequest request = buildRequest("   ");
 
-                mockMvc.perform(post("/api/applications")
+                mockMvc.perform(post("/api/v1/applications")
                                                 .header("Authorization", "Bearer " + accessToken)
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(objectMapper.writeValueAsString(request)))
@@ -78,7 +78,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     void createApplication_shouldReturn403_whenNotAuthenticated() throws Exception {
         ApplicationRequest request = buildRequest("Backend Dev");
 
-        mockMvc.perform(post("/api/applications")
+        mockMvc.perform(post("/api/v1/applications")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -87,7 +87,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     @Test
     void getById_shouldReturn200_whenFound() throws Exception {
         ApplicationRequest request = buildRequest("Senior Dev");
-        MvcResult createResult = mockMvc.perform(post("/api/applications")
+        MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -95,7 +95,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
 
         String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/api/applications/{id}", id)
+        mockMvc.perform(get("/api/v1/applications/{id}", id)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id));
@@ -103,7 +103,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
 
     @Test
     void getById_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(get("/api/applications/{id}", UUID.randomUUID())
+        mockMvc.perform(get("/api/v1/applications/{id}", UUID.randomUUID())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isNotFound());
     }
@@ -111,7 +111,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     @Test
     void updateApplication_shouldReturn200() throws Exception {
         ApplicationRequest create = buildRequest("Junior Dev");
-        MvcResult createResult = mockMvc.perform(post("/api/applications")
+        MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(create)))
@@ -120,7 +120,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
         ApplicationRequest update = buildRequest("Senior Dev Updated");
-        mockMvc.perform(put("/api/applications/{id}", id)
+        mockMvc.perform(put("/api/v1/applications/{id}", id)
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
@@ -131,7 +131,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     @Test
     void updateStatus_shouldReturn200() throws Exception {
         ApplicationRequest create = buildRequest("Status Test");
-        MvcResult createResult = mockMvc.perform(post("/api/applications")
+        MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(create)))
@@ -139,7 +139,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
 
         String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(patch("/api/applications/{id}/status", id)
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\": \"Teste Técnico\"}"))
@@ -150,7 +150,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     @Test
     void deleteApplication_shouldReturn200() throws Exception {
         ApplicationRequest create = buildRequest("Delete Me");
-        MvcResult createResult = mockMvc.perform(post("/api/applications")
+        MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(create)))
@@ -158,28 +158,28 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
 
         String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(delete("/api/applications/{id}", id)
+        mockMvc.perform(delete("/api/v1/applications/{id}", id)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Application deleted successfully"));
 
-        mockMvc.perform(get("/api/applications/{id}", id)
+        mockMvc.perform(get("/api/v1/applications/{id}", id)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void getAll_shouldReturnPagedResponse() throws Exception {
-        mockMvc.perform(post("/api/applications")
+        mockMvc.perform(post("/api/v1/applications")
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(buildRequest("App 1"))));
-        mockMvc.perform(post("/api/applications")
+        mockMvc.perform(post("/api/v1/applications")
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(buildRequest("App 2"))));
 
-        mockMvc.perform(get("/api/applications")
+        mockMvc.perform(get("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
@@ -189,7 +189,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     @Test
     void updateReminder_shouldReturn200() throws Exception {
         ApplicationRequest create = buildRequest("Reminder Test");
-        MvcResult createResult = mockMvc.perform(post("/api/applications")
+        MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(create)))
@@ -197,7 +197,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
 
         String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(patch("/api/applications/{id}/reminder", id)
+        mockMvc.perform(patch("/api/v1/applications/{id}/reminder", id)
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"recruiterDmReminderEnabled\": true}"))
