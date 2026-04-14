@@ -1,5 +1,6 @@
 package com.jobtracker.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,6 +20,9 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsConfig corsConfig;
     private final RequestLoggingFilter requestLoggingFilter;
+
+    @Value("${app.monitoring.prometheus-token}")
+    private String prometheusToken;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CorsConfig corsConfig,
             RequestLoggingFilter requestLoggingFilter) {
@@ -46,7 +50,8 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(requestLoggingFilter, JwtAuthenticationFilter.class);
+                .addFilterBefore(requestLoggingFilter, JwtAuthenticationFilter.class)
+                .addFilterBefore(new PrometheusTokenFilter(prometheusToken), RequestLoggingFilter.class);
 
         return http.build();
     }
