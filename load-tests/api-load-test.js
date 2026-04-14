@@ -26,7 +26,7 @@ function registerUser() {
     password,
   });
 
-  const response = http.post(`${baseUrl}/api/auth/register`, payload, {
+  const response = http.post(`${baseUrl}/api/v1/auth/register`, payload, {
     headers: { 'Content-Type': 'application/json' },
     tags: { endpoint: 'register' },
   });
@@ -42,7 +42,7 @@ function loginUser() {
     password,
   });
 
-  const response = http.post(`${baseUrl}/api/auth/login`, payload, {
+  const response = http.post(`${baseUrl}/api/v1/auth/login`, payload, {
     headers: { 'Content-Type': 'application/json' },
     tags: { endpoint: 'login' },
   });
@@ -77,7 +77,7 @@ export default function (data) {
     Authorization: `Bearer ${data.accessToken}`,
   };
 
-  const meResponse = http.get(`${baseUrl}/api/auth/me`, {
+  const meResponse = http.get(`${baseUrl}/api/v1/auth/me`, {
     headers,
     tags: { endpoint: 'me' },
   });
@@ -86,7 +86,7 @@ export default function (data) {
     'me status is 200': (r) => r.status === 200,
   });
 
-  const applicationsResponse = http.get(`${baseUrl}/api/applications?page=0&size=10`, {
+  const applicationsResponse = http.get(`${baseUrl}/api/v1/applications?page=0&size=10`, {
     headers,
     tags: { endpoint: 'applications' },
   });
