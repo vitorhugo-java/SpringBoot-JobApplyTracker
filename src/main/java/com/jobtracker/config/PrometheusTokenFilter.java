@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 
 public class PrometheusTokenFilter extends OncePerRequestFilter {
 
@@ -21,7 +23,9 @@ public class PrometheusTokenFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
         String token = request.getHeader("X-Prometheus-Token");
-        if (token == null || !token.equals(prometheusToken)) {
+        if (token == null || !MessageDigest.isEqual(
+                token.getBytes(StandardCharsets.UTF_8),
+                prometheusToken.getBytes(StandardCharsets.UTF_8))) {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }

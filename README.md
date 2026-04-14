@@ -148,17 +148,10 @@ scrape_configs:
   - job_name: job-tracker
     static_configs:
       - targets: ['app:8081']
-    authorization:
-      type: Bearer
-    params: {}
-    relabel_configs: []
     metrics_path: /actuator/prometheus
     scheme: http
-    # Custom header for token-based authentication
     scrape_interval: 15s
-    honor_labels: false
-    # Add the token header via `params` is not supported; use a proxy or
-    # the `headers` block (Prometheus ≥ 2.26):
+    # Requires Prometheus ≥ 2.26 for custom headers support
     headers:
       X-Prometheus-Token: "<your-token>"
 ```
