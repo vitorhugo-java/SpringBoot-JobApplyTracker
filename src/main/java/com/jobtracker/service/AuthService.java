@@ -10,6 +10,7 @@ import com.jobtracker.exception.ConflictException;
 import com.jobtracker.exception.ResourceNotFoundException;
 import com.jobtracker.mapper.AuthMapper;
 import com.jobtracker.repository.UserRepository;
+import com.jobtracker.util.SecurityUtils;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ public class AuthService {
     private final PasswordResetService passwordResetService;
     private final AuthMapper authMapper;
     private final Tracer tracer;
+    private final SecurityUtils securityUtils;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -43,7 +45,8 @@ public class AuthService {
                        RefreshTokenService refreshTokenService,
                        PasswordResetService passwordResetService,
                        AuthMapper authMapper,
-                       Tracer tracer) {
+                       Tracer tracer,
+                       SecurityUtils securityUtils) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -51,6 +54,7 @@ public class AuthService {
         this.passwordResetService = passwordResetService;
         this.authMapper = authMapper;
         this.tracer = tracer;
+        this.securityUtils = securityUtils;
     }
 
     @Transactional
@@ -155,6 +159,37 @@ public class AuthService {
         String userEmail = (auth != null && auth.isAuthenticated()) ? auth.getName() : "unknown";
         log.info("event=LOGOUT_SUCCESS userEmail={}", userEmail);
         return new MessageResponse("Logged out successfully");
+    }
+
+    @Transactional
+    public UserResponse updateProfile(UpdateProfileRequest request) {
+        User user = securityUtils.getCurrentUser();
+        user.setName(request.name().trim());
+        user = userRepository.save(user);
+        return authMapper.toUserResponse(user);
+    }
+
+    @Transactional
+    public MessageResponse changePassword(ChangePasswordRequest request) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new BadRequestException("Passwords do not match");
+        }
+
+        User user = securityUtils.getCurrentUser();
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("New password must be different from current password");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        refreshTokenService.revokeAllByUserId(user.getId());
+
+        return new MessageResponse("Password updated successfully");
     }
 
     private AuthResponse buildAuthResponse(User user) {
