@@ -59,6 +59,34 @@ management:
       percentiles-histogram:
         http.server.requests: true
 
+resilience4j:
+  ratelimiter:
+    instances:
+      authRegister:
+        limit-for-period: ${RATE_LIMIT_AUTH_REGISTER_LIMIT_FOR_PERIOD:5}
+        limit-refresh-period: ${RATE_LIMIT_AUTH_REGISTER_REFRESH_PERIOD:1m}
+        timeout-duration: ${RATE_LIMIT_AUTH_REGISTER_TIMEOUT_DURATION:0}
+      authLogin:
+        limit-for-period: ${RATE_LIMIT_AUTH_LOGIN_LIMIT_FOR_PERIOD:10}
+        limit-refresh-period: ${RATE_LIMIT_AUTH_LOGIN_REFRESH_PERIOD:1m}
+        timeout-duration: ${RATE_LIMIT_AUTH_LOGIN_TIMEOUT_DURATION:0}
+      authRefresh:
+        limit-for-period: ${RATE_LIMIT_AUTH_REFRESH_LIMIT_FOR_PERIOD:20}
+        limit-refresh-period: ${RATE_LIMIT_AUTH_REFRESH_REFRESH_PERIOD:1m}
+        timeout-duration: ${RATE_LIMIT_AUTH_REFRESH_TIMEOUT_DURATION:0}
+      authForgotPassword:
+        limit-for-period: ${RATE_LIMIT_AUTH_FORGOT_PASSWORD_LIMIT_FOR_PERIOD:3}
+        limit-refresh-period: ${RATE_LIMIT_AUTH_FORGOT_PASSWORD_REFRESH_PERIOD:1m}
+        timeout-duration: ${RATE_LIMIT_AUTH_FORGOT_PASSWORD_TIMEOUT_DURATION:0}
+      authResetPassword:
+        limit-for-period: ${RATE_LIMIT_AUTH_RESET_PASSWORD_LIMIT_FOR_PERIOD:5}
+        limit-refresh-period: ${RATE_LIMIT_AUTH_RESET_PASSWORD_REFRESH_PERIOD:1m}
+        timeout-duration: ${RATE_LIMIT_AUTH_RESET_PASSWORD_TIMEOUT_DURATION:0}
+      authLogout:
+        limit-for-period: ${RATE_LIMIT_AUTH_LOGOUT_LIMIT_FOR_PERIOD:20}
+        limit-refresh-period: ${RATE_LIMIT_AUTH_LOGOUT_REFRESH_PERIOD:1m}
+        timeout-duration: ${RATE_LIMIT_AUTH_LOGOUT_TIMEOUT_DURATION:0}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

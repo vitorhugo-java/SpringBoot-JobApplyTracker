@@ -31,3 +31,31 @@ logging:
   level:
     root: WARN
     com.jobtracker: INFO
+
+resilience4j:
+  ratelimiter:
+    instances:
+      authRegister:
+        limit-for-period: 1000
+        limit-refresh-period: 1m
+        timeout-duration: 0
+      authLogin:
+        limit-for-period: 1000
+        limit-refresh-period: 1m
+        timeout-duration: 0
+      authRefresh:
+        limit-for-period: 1000
+        limit-refresh-period: 1m
+        timeout-duration: 0
+      authForgotPassword:
+        limit-for-period: 1000
+        limit-refresh-period: 1m
+        timeout-duration: 0
+      authResetPassword:
+        limit-for-period: 1000
+        limit-refresh-period: 1m
+        timeout-duration: 0
+      authLogout:
+        limit-for-period: 1000
+        limit-refresh-period: 1m
+        timeout-duration: 0
