@@ -121,6 +121,38 @@ mvn test -Dtest="com.jobtracker.e2e.*"
 
 > **Note:** Integration and E2E tests require Docker to be running (Testcontainers pulls a MariaDB image automatically).
 
+## Seed Fake Data
+
+This project includes a startup seeder that can generate fake job applications using the Java library `net.datafaker:datafaker`.
+
+The seeder is disabled by default and only runs when explicitly enabled.
+
+Required parameters:
+
+- `APP_SEED_ENABLED=true`
+- `APP_SEED_USER_EMAIL=<existing user email>`
+
+Optional:
+
+- `APP_SEED_COUNT=1000` (default is `1000`)
+
+Example with Maven:
+
+```bash
+export APP_SEED_ENABLED=true
+export APP_SEED_USER_EMAIL=user@example.com
+export APP_SEED_COUNT=1000
+mvn spring-boot:run
+```
+
+Example with `java -jar`:
+
+```bash
+APP_SEED_ENABLED=true APP_SEED_USER_EMAIL=user@example.com APP_SEED_COUNT=1500 java -jar target/job-tracker-1.0.0.jar
+```
+
+If `APP_SEED_ENABLED=true` and `APP_SEED_USER_EMAIL` is not provided (or the user does not exist), the application startup fails with a clear error.
+
 ## Environment Variables
 
 | Variable | Default | Description |

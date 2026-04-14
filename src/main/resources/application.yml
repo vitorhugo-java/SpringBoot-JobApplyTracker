@@ -102,3 +102,9 @@ springdoc:
     - group: dashboard
       display-name: Dashboard API
       paths-to-match: /api/dashboard/**
+
+app:
+  seed:
+    enabled: ${APP_SEED_ENABLED:false}
+    user-email: ${APP_SEED_USER_EMAIL:}
+    count: ${APP_SEED_COUNT:1000}
