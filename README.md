@@ -129,6 +129,8 @@ mvn test -Dtest="com.jobtracker.e2e.*"
 | `JWT_ACCESS_TOKEN_EXPIRATION_MS` | `900000` | Access token TTL (15 min) |
 | `JWT_REFRESH_TOKEN_EXPIRATION_MS` | `604800000` | Refresh token TTL (7 days) |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint (Jaeger/OpenTelemetry collector) |
+| `PROMETHEUS_URL` | `http://localhost:9090` | Prometheus base URL for observability integrations |
 | `SERVER_PORT` | `8080` | Server port |
 
 ## CI/CD
