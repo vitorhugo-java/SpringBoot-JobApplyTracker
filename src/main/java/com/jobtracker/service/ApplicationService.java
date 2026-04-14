@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -150,7 +151,7 @@ public class ApplicationService {
     }
 
     private void mapRequestToEntity(ApplicationRequest request, JobApplication app) {
-        app.setVacancyName(request.vacancyName());
+        app.setVacancyName(normalizeOptionalText(request.vacancyName()));
         app.setRecruiterName(request.recruiterName());
         app.setVacancyOpenedBy(request.vacancyOpenedBy());
         app.setVacancyLink(request.vacancyLink());
@@ -183,6 +184,10 @@ public class ApplicationService {
         Sort.Direction direction = parts.length > 1 && parts[1].trim().equalsIgnoreCase("asc")
                 ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(direction, field);
+    }
+
+    private String normalizeOptionalText(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     private Specification<JobApplication> buildSpecification(UUID userId, String status,
