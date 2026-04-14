@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -59,6 +60,19 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.vacancyName").value("Software Engineer"))
                 .andExpect(jsonPath("$.status").value("RH"));
     }
+
+        @Test
+        void createApplication_shouldAllowBlankVacancyName() throws Exception {
+                ApplicationRequest request = buildRequest("   ");
+
+                mockMvc.perform(post("/api/applications")
+                                                .header("Authorization", "Bearer " + accessToken)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.id").exists())
+                                .andExpect(jsonPath("$.vacancyName").value(nullValue()));
+        }
 
     @Test
     void createApplication_shouldReturn403_whenNotAuthenticated() throws Exception {
