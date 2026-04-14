@@ -22,7 +22,7 @@ public class JobApplication {
     @Column(name = "id", columnDefinition = "BINARY(16)", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "vacancy_name", nullable = false, length = 255)
+    @Column(name = "vacancy_name", length = 255)
     private String vacancyName;
 
     @Column(name = "recruiter_name", length = 255)

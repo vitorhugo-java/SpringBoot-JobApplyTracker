@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Schema(description = "Request payload for creating or updating a job application")
 public record ApplicationRequest(
         @Schema(description = "Job title or vacancy name", example = "Backend Engineer")
-        @NotBlank(message = "Vacancy name is required")
         String vacancyName,
 
         @Schema(description = "Name of the recruiter (optional)", example = "Jane Smith")
