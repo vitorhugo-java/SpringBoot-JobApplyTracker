@@ -138,4 +138,34 @@ public class AuthController {
     public ResponseEntity<UserResponse> me() {
         return ResponseEntity.ok(authMapper.toUserResponse(securityUtils.getCurrentUser()));
     }
+
+    @Operation(
+        summary = "Update current user profile",
+        description = "Updates the currently authenticated user's profile data",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Profile updated",
+                content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validation error"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+        }
+    )
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(authService.updateProfile(request));
+    }
+
+    @Operation(
+        summary = "Change current user password",
+        description = "Changes the currently authenticated user's password",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Password changed",
+                content = @Content(schema = @Schema(implementation = MessageResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validation error or wrong current password"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+        }
+    )
+    @PutMapping("/me/password")
+    public ResponseEntity<MessageResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return ResponseEntity.ok(authService.changePassword(request));
+    }
 }
