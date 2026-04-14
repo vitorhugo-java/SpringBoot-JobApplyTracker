@@ -134,7 +134,36 @@ mvn test -Dtest="com.jobtracker.e2e.*"
 | `RATE_LIMIT_AUTH_LOGIN_REFRESH_PERIOD` | `1m` | Window used by the login rate limiter |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint (Jaeger/OpenTelemetry collector) |
 | `PROMETHEUS_URL` | `http://localhost:9090` | Prometheus base URL for observability integrations |
+| `PROMETHEUS_SCRAPE_TOKEN` | *(required)* | Secret token Prometheus must send in `X-Prometheus-Token` header |
 | `SERVER_PORT` | `8080` | Server port |
+
+## Monitoring Security
+
+The `/actuator/**` endpoints are protected by a shared secret token. Every request to these endpoints must include the `X-Prometheus-Token` header whose value matches the `PROMETHEUS_SCRAPE_TOKEN` environment variable. Requests missing or providing an incorrect token receive a `401 Unauthorized` response.
+
+Configure your Prometheus `scrape_configs` to send the header:
+
+```yaml
+scrape_configs:
+  - job_name: job-tracker
+    static_configs:
+      - targets: ['app:8081']
+    authorization:
+      type: Bearer
+    params: {}
+    relabel_configs: []
+    metrics_path: /actuator/prometheus
+    scheme: http
+    # Custom header for token-based authentication
+    scrape_interval: 15s
+    honor_labels: false
+    # Add the token header via `params` is not supported; use a proxy or
+    # the `headers` block (Prometheus ≥ 2.26):
+    headers:
+      X-Prometheus-Token: "<your-token>"
+```
+
+> Set `PROMETHEUS_SCRAPE_TOKEN` to a strong random value in production and ensure it matches the value configured in Prometheus.
 
 ## Rate Limiting
 

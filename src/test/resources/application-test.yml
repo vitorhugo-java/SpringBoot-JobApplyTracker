@@ -22,6 +22,10 @@ jwt:
 cors:
   allowed-origins: http://localhost:3000
 
+app:
+  monitoring:
+    prometheus-token: test-prometheus-token
+
 management:
   tracing:
     sampling:
