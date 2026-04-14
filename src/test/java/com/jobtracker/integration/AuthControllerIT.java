@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class AuthControllerIT extends AbstractIntegrationTest {
@@ -165,5 +166,67 @@ class AuthControllerIT extends AbstractIntegrationTest {
                         .content("{\"email\": \"nobody@example.com\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    @Test
+    void updateProfile_shouldReturn200_whenAuthenticated() throws Exception {
+        RegisterRequest reg = new RegisterRequest("Profile User", "profile@example.com", "pass1234", "pass1234");
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reg)))
+                .andReturn();
+
+        AuthResponse auth = objectMapper.readValue(regResult.getResponse().getContentAsString(), AuthResponse.class);
+
+        mockMvc.perform(put("/api/auth/me")
+                        .header("Authorization", "Bearer " + auth.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"Updated Profile User\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Updated Profile User"))
+                .andExpect(jsonPath("$.email").value("profile@example.com"));
+    }
+
+    @Test
+    void changePassword_shouldReturn200_andAllowLoginWithNewPassword() throws Exception {
+        RegisterRequest reg = new RegisterRequest("Password User", "password-change@example.com", "pass1234", "pass1234");
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reg)))
+                .andReturn();
+
+        AuthResponse auth = objectMapper.readValue(regResult.getResponse().getContentAsString(), AuthResponse.class);
+
+        mockMvc.perform(put("/api/auth/me/password")
+                        .header("Authorization", "Bearer " + auth.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"pass1234\",\"newPassword\":\"newpass1234\",\"confirmPassword\":\"newpass1234\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password updated successfully"));
+
+        LoginRequest login = new LoginRequest("password-change@example.com", "newpass1234");
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(login)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty());
+    }
+
+    @Test
+    void changePassword_shouldReturn400_whenCurrentPasswordIsInvalid() throws Exception {
+        RegisterRequest reg = new RegisterRequest("Password User", "password-invalid@example.com", "pass1234", "pass1234");
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reg)))
+                .andReturn();
+
+        AuthResponse auth = objectMapper.readValue(regResult.getResponse().getContentAsString(), AuthResponse.class);
+
+        mockMvc.perform(put("/api/auth/me/password")
+                        .header("Authorization", "Bearer " + auth.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"wrong1234\",\"newPassword\":\"newpass1234\",\"confirmPassword\":\"newpass1234\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Current password is incorrect"));
     }
 }
