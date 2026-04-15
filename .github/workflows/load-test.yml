@@ -83,11 +83,6 @@ jobs:
       - name: Run incremental k6 load test
         run: |
           chmod -R 777 "${{ github.workspace }}/load-tests"
-          echo "--- Diagnostic: testing registration endpoint before k6 ---"
-          curl -v -X POST http://127.0.0.1:8080/api/auth/register \
-            -H "Content-Type: application/json" \
-            -d '{"email":"diag@example.com","password":"Diag#1234","confirmPassword":"Diag#1234","name":"Diag"}' || true
-          echo "--- End diagnostic ---"
           docker run --rm \
             --network host \
             --user $(id -u):$(id -g) \
@@ -98,12 +93,14 @@ jobs:
             grafana/k6:0.50.0 \
             run /load-tests/api-load-test.js --summary-export=/load-tests/summary.json
 
-      - name: Upload k6 summary artifact
+      - name: Upload k6 reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: k6-load-test-summary
-          path: load-tests/summary.json
+          name: k6-load-test-results
+          path: |
+            load-tests/summary.json
+            load-tests/report.html
 
       - name: Show API logs on failure
         if: failure()
