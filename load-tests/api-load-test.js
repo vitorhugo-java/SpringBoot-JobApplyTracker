@@ -53,7 +53,7 @@ function loginUser() {
       try {
         const body = r.json();
         return Boolean(body.accessToken);
-      } catch {
+      } catch (e) {
         return false;
       }
     },
@@ -65,6 +65,11 @@ function loginUser() {
 export function setup() {
   registerUser();
   const loginResponse = loginUser();
+
+  if (loginResponse.status !== 200) {
+    throw new Error(`Login failed with status ${loginResponse.status}: ${loginResponse.body}`);
+  }
+
   const body = loginResponse.json();
 
   return {
