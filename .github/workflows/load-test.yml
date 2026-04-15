@@ -86,7 +86,7 @@ jobs:
           echo "--- Diagnostic: testing registration endpoint before k6 ---"
           curl -v -X POST http://127.0.0.1:8080/api/auth/register \
             -H "Content-Type: application/json" \
-            -d '{"email":"diag@example.com","password":"Diag#1234","name":"Diag"}' || true
+            -d '{"email":"diag@example.com","password":"Diag#1234","confirmPassword":"Diag#1234","name":"Diag"}' || true
           echo "--- End diagnostic ---"
           docker run --rm \
             --network host \
