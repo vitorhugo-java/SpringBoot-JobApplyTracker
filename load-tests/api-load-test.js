@@ -22,8 +22,9 @@ const password = __ENV.LOAD_TEST_PASSWORD || 'LoadTest#123';
 function registerUser() {
   const payload = JSON.stringify({
     name: 'Load Test User',
-    email,
-    password,
+    email: email,
+    password: password,
+    confirmPassword: password
   });
 
   const response = http.post(`${baseUrl}/api/auth/register`, payload, {
