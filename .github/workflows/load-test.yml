@@ -82,8 +82,15 @@ jobs:
 
       - name: Run incremental k6 load test
         run: |
+          chmod -R 777 "${{ github.workspace }}/load-tests"
+          echo "--- Diagnostic: testing registration endpoint before k6 ---"
+          curl -v -X POST http://127.0.0.1:8080/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"email":"diag@example.com","password":"Diag#1234","name":"Diag"}' || true
+          echo "--- End diagnostic ---"
           docker run --rm \
             --network host \
+            --user $(id -u):$(id -g) \
             -e BASE_URL="http://127.0.0.1:8080" \
             -e LOAD_TEST_EMAIL="loadtest@example.com" \
             -e LOAD_TEST_PASSWORD="LoadTest#123" \
