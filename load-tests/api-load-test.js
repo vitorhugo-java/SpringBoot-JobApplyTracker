@@ -1,7 +1,5 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
-import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js"
 
 export const options = {
   stages: [
@@ -76,13 +74,6 @@ export function setup() {
 
   return {
     accessToken: body.accessToken,
-  };
-}
-
-export function handleSummary(data) {
-  return {
-    "/load-tests/report.html": htmlReport(data),
-    "stdout": textSummary(data, { indent: " ", enableColors: true }),
   };
 }
 
