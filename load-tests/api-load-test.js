@@ -1,17 +1,18 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js"
 
 export const options = {
   stages: [
-    { duration: '30s', target: 5 },
-    { duration: '30s', target: 15 },
-    { duration: '45s', target: 30 },
-    { duration: '45s', target: 50 },
-    { duration: '30s', target: 0 },
+    { duration: '1m', target: 50 },  // Aquecimento
+    { duration: '3m', target: 200 }, // Carga pesada
+    { duration: '3m', target: 500 }, // Stress - Aqui o filho chora e a mãe não vê huahuahua
+    { duration: '2m', target: 0 },   // Resfriamento
   ],
   thresholds: {
-    http_req_failed: ['rate<0.02'],
-    http_req_duration: ['p(95)<1000'],
+    http_req_failed: ['rate<0.05'], // Aceitamos até 5% de erro no estresse
+    http_req_duration: ['p(95)<2000'], // Se passar de 2s, a API tá morrendo
   },
 };
 
@@ -75,6 +76,13 @@ export function setup() {
 
   return {
     accessToken: body.accessToken,
+  };
+}
+
+export function handleSummary(data) {
+  return {
+    "/load-tests/report.html": htmlReport(data),
+    "stdout": textSummary(data, { indent: " ", enableColors: true }),
   };
 }
 
