@@ -3,15 +3,14 @@ import { check, sleep } from 'k6';
 
 export const options = {
   stages: [
-    { duration: '30s', target: 5 },
-    { duration: '30s', target: 15 },
-    { duration: '45s', target: 30 },
-    { duration: '45s', target: 50 },
-    { duration: '30s', target: 0 },
+    { duration: '1m', target: 50 },  // Aquecimento
+    { duration: '3m', target: 200 }, // Carga pesada
+    { duration: '3m', target: 500 }, // Stress - Aqui o filho chora e a mãe não vê huahuahua
+    { duration: '2m', target: 0 },   // Resfriamento
   ],
   thresholds: {
-    http_req_failed: ['rate<0.02'],
-    http_req_duration: ['p(95)<1000'],
+    http_req_failed: ['rate<0.05'], // Aceitamos até 5% de erro no estresse
+    http_req_duration: ['p(95)<2000'], // Se passar de 2s, a API tá morrendo
   },
 };
 
@@ -22,8 +21,9 @@ const password = __ENV.LOAD_TEST_PASSWORD || 'LoadTest#123';
 function registerUser() {
   const payload = JSON.stringify({
     name: 'Load Test User',
-    email,
-    password,
+    email: email,
+    password: password,
+    confirmPassword: password
   });
 
   const response = http.post(`${baseUrl}/api/v1/auth/register`, payload, {
@@ -53,7 +53,7 @@ function loginUser() {
       try {
         const body = r.json();
         return Boolean(body.accessToken);
-      } catch {
+      } catch (e) {
         return false;
       }
     },
@@ -65,6 +65,11 @@ function loginUser() {
 export function setup() {
   registerUser();
   const loginResponse = loginUser();
+
+  if (loginResponse.status !== 200) {
+    throw new Error(`Login failed with status ${loginResponse.status}: ${loginResponse.body}`);
+  }
+
   const body = loginResponse.json();
 
   return {

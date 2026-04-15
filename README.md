@@ -170,6 +170,24 @@ If `APP_SEED_ENABLED=true` and `APP_SEED_USER_EMAIL` is not provided (or the use
 | `PROMETHEUS_URL` | `http://localhost:9090` | Prometheus base URL for observability integrations |
 | `SERVER_PORT` | `8080` | Server port |
 
+## Monitoring
+
+Spring Boot Actuator runs on a dedicated management port **8081**, completely separate from the main API port (8080). This port is **never exposed to the host machine** in Docker Compose — it is only reachable within the internal `infra_network` Docker network.
+
+Prometheus scrapes metrics directly from the container over the internal network:
+
+```yaml
+scrape_configs:
+  - job_name: job-tracker
+    static_configs:
+      - targets: ['app:8081']
+    metrics_path: /actuator/prometheus
+    scheme: http
+    scrape_interval: 15s
+```
+
+No authentication token is required — network-level isolation (Docker bridge network) is the security boundary. The Actuator is unreachable from outside the Docker network.
+
 ## Rate Limiting
 
 Auth endpoints are protected with Resilience4j rate limiters. When a limit is exceeded, the API returns `429 Too Many Requests` with the standard error payload used by the application.
