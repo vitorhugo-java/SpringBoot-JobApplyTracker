@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @Tag(name = "Applications", description = "Job application management endpoints")
 @RestController
-@RequestMapping("/api/applications")
+@RequestMapping("/api/v1/applications")
 public class ApplicationController {
 
     private final ApplicationService applicationService;
