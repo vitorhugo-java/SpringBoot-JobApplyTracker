@@ -38,7 +38,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                           "confirmPassword": "pass1234"
                         }
                         """)
-                .post("/api/auth/register")
+                .post("/api/v1/auth/register")
                 .then().statusCode(201).extract().response();
 
         accessToken = register.jsonPath().getString("accessToken");
@@ -243,12 +243,12 @@ class ApplicationE2ETest extends AbstractE2ETest {
                         {"name": "Other User", "email": "other@example.com",
                          "password": "pass1234", "confirmPassword": "pass1234"}
                         """)
-                .post("/api/auth/register");
+                .post("/api/v1/auth/register");
 
         Response loginResp = given()
                 .contentType("application/json")
                 .body("{\"email\": \"other@example.com\", \"password\": \"pass1234\"}")
-                .post("/api/auth/login")
+                .post("/api/v1/auth/login")
                 .then().statusCode(200).extract().response();
 
         String otherToken = loginResp.jsonPath().getString("accessToken");
