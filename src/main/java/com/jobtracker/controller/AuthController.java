@@ -1,6 +1,5 @@
 package com.jobtracker.controller;
 
-import com.jobtracker.ApiVersion;
 import com.jobtracker.dto.auth.*;
 import com.jobtracker.mapper.AuthMapper;
 import com.jobtracker.service.AuthService;
@@ -18,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Auth", description = "Authentication and user management endpoints")
 @RestController
-@RequestMapping(ApiVersion.V1 + "/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private final AuthService authService;

@@ -42,7 +42,7 @@ jwt:
   refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:604800000}
 
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,https://jobapply-web.hugojava.dev}
 
 management:
   server:
@@ -103,16 +103,10 @@ springdoc:
   group-configs:
     - group: auth
       display-name: Auth API
-      paths-to-match: /api/auth/**
+      paths-to-match: /api/v1/auth/**
     - group: applications
       display-name: Application API
-      paths-to-match: /api/applications/**
+      paths-to-match: /api/v1/applications/**
     - group: dashboard
       display-name: Dashboard API
-      paths-to-match: /api/dashboard/**
-
-app:
-  seed:
-    enabled: ${APP_SEED_ENABLED:false}
-    user-email: ${APP_SEED_USER_EMAIL:}
-    count: ${APP_SEED_COUNT:1000}
+      paths-to-match: /api/v1/dashboard/**

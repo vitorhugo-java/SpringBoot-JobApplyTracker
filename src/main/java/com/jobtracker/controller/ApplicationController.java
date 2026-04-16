@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.jobtracker.ApiVersion;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,7 @@ import java.util.UUID;
 
 @Tag(name = "Applications", description = "Job application management endpoints")
 @RestController
-@RequestMapping(ApiVersion.V1 + "/applications")
+@RequestMapping("/api/v1/applications")
 public class ApplicationController {
 
     private final ApplicationService applicationService;
@@ -147,8 +146,8 @@ public class ApplicationController {
     }
 
     @Operation(
-        summary = "Get upcoming recruiter DM reminders",
-        description = "Returns applications with recruiter DM reminder enabled and still inside the first 6 hours after creation",
+        summary = "Get upcoming applications",
+        description = "Returns applications with upcoming next-step dates",
         responses = {
             @ApiResponse(responseCode = "200", description = "List of upcoming applications")
         }
@@ -159,8 +158,8 @@ public class ApplicationController {
     }
 
     @Operation(
-        summary = "Get overdue recruiter DM reminders",
-        description = "Returns applications with recruiter DM reminder enabled that have passed 6 hours since creation",
+        summary = "Get overdue applications",
+        description = "Returns applications whose next-step date has already passed",
         responses = {
             @ApiResponse(responseCode = "200", description = "List of overdue applications")
         }
