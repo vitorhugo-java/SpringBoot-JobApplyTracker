@@ -3,6 +3,7 @@ package com.jobtracker.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -17,20 +18,18 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CorsConfig corsConfig;
     private final RequestLoggingFilter requestLoggingFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CorsConfig corsConfig,
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
             RequestLoggingFilter requestLoggingFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.corsConfig = corsConfig;
         this.requestLoggingFilter = requestLoggingFilter;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
+                .cors(Customizer.withDefaults())
                 // CSRF is safe to disable: this API uses stateless JWT Bearer token
                 // authentication,
                 // not cookie-based sessions. CSRF attacks require session cookies and do not
