@@ -38,7 +38,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         userRepository.deleteAll();
 
         RegisterRequest reg = new RegisterRequest("App User", "appuser@example.com", "pass1234", "pass1234");
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
                 .andReturn();

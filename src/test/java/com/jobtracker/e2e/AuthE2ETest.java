@@ -37,7 +37,7 @@ class AuthE2ETest extends AbstractE2ETest {
                         }
                         """)
                 .when()
-                .post("/api/auth/register")
+                .post("/api/v1/auth/register")
                 .then()
                 .statusCode(201)
                 .body("accessToken", notNullValue())
@@ -55,7 +55,7 @@ class AuthE2ETest extends AbstractE2ETest {
         given()
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
-                .get("/api/auth/me")
+                .get("/api/v1/auth/me")
                 .then()
                 .statusCode(200)
                 .body("email", equalTo("e2e@example.com"))
@@ -71,7 +71,7 @@ class AuthE2ETest extends AbstractE2ETest {
                         }
                         """)
                 .when()
-                .post("/api/auth/login")
+                .post("/api/v1/auth/login")
                 .then()
                 .statusCode(200)
                 .body("accessToken", notNullValue())
@@ -85,7 +85,7 @@ class AuthE2ETest extends AbstractE2ETest {
                 .contentType("application/json")
                 .body("{\"refreshToken\": \"" + loginRefreshToken + "\"}")
                 .when()
-                .post("/api/auth/refresh")
+                .post("/api/v1/auth/refresh")
                 .then()
                 .statusCode(200)
                 .body("accessToken", notNullValue())
@@ -100,7 +100,7 @@ class AuthE2ETest extends AbstractE2ETest {
                 .contentType("application/json")
                 .body("{\"refreshToken\": \"" + loginRefreshToken + "\"}")
                 .when()
-                .post("/api/auth/refresh")
+                .post("/api/v1/auth/refresh")
                 .then()
                 .statusCode(401);
 
@@ -109,7 +109,7 @@ class AuthE2ETest extends AbstractE2ETest {
                 .contentType("application/json")
                 .body("{\"refreshToken\": \"" + newRefreshToken + "\"}")
                 .when()
-                .post("/api/auth/logout")
+                .post("/api/v1/auth/logout")
                 .then()
                 .statusCode(200)
                 .body("message", containsString("Logged out"));
@@ -119,7 +119,7 @@ class AuthE2ETest extends AbstractE2ETest {
                 .contentType("application/json")
                 .body("{\"refreshToken\": \"" + newRefreshToken + "\"}")
                 .when()
-                .post("/api/auth/refresh")
+                .post("/api/v1/auth/refresh")
                 .then()
                 .statusCode(401);
     }
@@ -135,10 +135,10 @@ class AuthE2ETest extends AbstractE2ETest {
                 }
                 """;
 
-        given().contentType("application/json").body(body).post("/api/auth/register")
+        given().contentType("application/json").body(body).post("/api/v1/auth/register")
                 .then().statusCode(201);
 
-        given().contentType("application/json").body(body).post("/api/auth/register")
+        given().contentType("application/json").body(body).post("/api/v1/auth/register")
                 .then().statusCode(409);
     }
 
@@ -155,14 +155,14 @@ class AuthE2ETest extends AbstractE2ETest {
                           "confirmPassword": "pass1234"
                         }
                         """)
-                .post("/api/auth/register")
+                .post("/api/v1/auth/register")
                 .then().statusCode(201);
 
         // Login with wrong password
         given()
                 .contentType("application/json")
                 .body("{\"email\": \"wrongpass@example.com\", \"password\": \"badpass\"}")
-                .post("/api/auth/login")
+                .post("/api/v1/auth/login")
                 .then().statusCode(401);
     }
 
@@ -171,7 +171,7 @@ class AuthE2ETest extends AbstractE2ETest {
         given()
                 .contentType("application/json")
                 .body("{\"email\": \"doesnotexist@example.com\"}")
-                .post("/api/auth/forgot-password")
+                .post("/api/v1/auth/forgot-password")
                 .then().statusCode(200)
                 .body("message", notNullValue());
     }
@@ -180,7 +180,7 @@ class AuthE2ETest extends AbstractE2ETest {
     void protectedEndpoint_shouldReturn403_whenNoToken() {
         given()
                 .when()
-                .get("/api/auth/me")
+                .get("/api/v1/auth/me")
                 .then()
                 .statusCode(403);
     }

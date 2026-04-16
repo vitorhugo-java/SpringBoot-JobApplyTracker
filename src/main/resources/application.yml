@@ -103,7 +103,7 @@ springdoc:
   group-configs:
     - group: auth
       display-name: Auth API
-      paths-to-match: /api/auth/**
+      paths-to-match: /api/v1/auth/**
     - group: applications
       display-name: Application API
       paths-to-match: /api/applications/**
