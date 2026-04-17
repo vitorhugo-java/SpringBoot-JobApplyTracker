@@ -2,7 +2,6 @@ package com.jobtracker.unit;
 
 import com.jobtracker.config.JwtService;
 import com.jobtracker.dto.auth.*;
-import com.jobtracker.entity.PasswordResetToken;
 import com.jobtracker.entity.RefreshToken;
 import com.jobtracker.entity.User;
 import com.jobtracker.exception.BadRequestException;
@@ -65,6 +64,9 @@ class AuthServiceTest {
 
         assertThat(result.accessToken()).isEqualTo("access-token");
         assertThat(result.user().email()).isEqualTo("john@example.com");
+        // Refresh token is stored in ThreadLocal and should be cleared after retrieval
+        String refreshToken = authService.getLastRefreshToken();
+        assertThat(refreshToken).isNotNull();
         verify(userRepository).save(any(User.class));
     }
 
@@ -120,31 +122,50 @@ class AuthServiceTest {
     }
 
     @Test
-    void refresh_shouldReturnNewTokens() {
+    void refresh_shouldReturnNewAccessToken_andStoreRefreshTokenInThreadLocal() {
+        String incomingRefreshToken = "incoming-refresh-token";
         User user = buildUser(USER_UUID, "john@example.com");
         RefreshToken newToken = buildRefreshToken(user);
-        when(refreshTokenService.verifyAndRotate(anyString())).thenReturn(newToken);
+        when(refreshTokenService.verifyAndRotate(incomingRefreshToken)).thenReturn(newToken);
         when(jwtService.generateToken(any(UserDetails.class))).thenReturn("new-access-token");
 
-        RefreshResponse result = authService.refresh(new RefreshTokenRequest("old-token"));
+        RefreshResponse result = authService.refresh(new RefreshTokenRequest(), incomingRefreshToken);
 
         assertThat(result.accessToken()).isEqualTo("new-access-token");
-        assertThat(result.refreshToken()).isNotNull();
+        // New refresh token should be stored in ThreadLocal for controller to set as cookie
+        String newRefreshToken = authService.getLastRefreshToken();
+        assertThat(newRefreshToken).isNotNull();
+        verify(refreshTokenService).verifyAndRotate(incomingRefreshToken);
+    }
+
+    @Test
+    void refresh_shouldThrow_whenRefreshTokenIsNull() {
+        assertThatThrownBy(() -> authService.refresh(new RefreshTokenRequest(), null))
+                .isInstanceOf(com.jobtracker.exception.UnauthorizedException.class)
+                .hasMessageContaining("Refresh token is required");
     }
 
     @Test
     void logout_shouldRevokeRefreshToken() {
-        MessageResponse result = authService.logout(new LogoutRequest("some-token"));
-        verify(refreshTokenService).revokeToken("some-token");
+        String refreshToken = "some-refresh-token";
+        MessageResponse result = authService.logout(new LogoutRequest(), refreshToken);
+        verify(refreshTokenService).revokeToken(refreshToken);
         assertThat(result.message()).contains("Logged out");
+    }
+
+    @Test
+    void logout_shouldSucceed_whenRefreshTokenIsNull() {
+        MessageResponse result = authService.logout(new LogoutRequest(), null);
+        assertThat(result.message()).contains("Logged out");
+        // Should not throw, just log the logout
     }
 
     @Test
     void forgotPassword_shouldAlwaysReturnSuccess() {
         ForgotPasswordRequest request = new ForgotPasswordRequest("anyone@example.com");
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         MessageResponse result = authService.forgotPassword(request);
         assertThat(result.message()).isNotNull();
+        verify(passwordResetService).requestPasswordReset("anyone@example.com");
     }
 
     @Test
@@ -157,18 +178,11 @@ class AuthServiceTest {
 
     @Test
     void resetPassword_shouldSucceed_whenValidRequest() {
-        User user = buildUser(USER_UUID, "john@example.com");
-        PasswordResetToken resetToken = buildPasswordResetToken(user);
-        when(passwordResetService.verifyToken("valid-token")).thenReturn(resetToken);
-        when(passwordEncoder.encode(anyString())).thenReturn("newhash");
-        when(userRepository.save(any(User.class))).thenReturn(user);
-
         ResetPasswordRequest request = new ResetPasswordRequest("valid-token", "newpass1", "newpass1");
         MessageResponse result = authService.resetPassword(request);
 
         assertThat(result.message()).contains("reset successfully");
-        verify(passwordResetService).markTokenAsUsed(resetToken);
-        verify(refreshTokenService).revokeAllByUserId(USER_UUID);
+        verify(passwordResetService).resetPassword("valid-token", "newpass1");
     }
 
     private User buildUser(UUID id, String email) {
@@ -190,13 +204,4 @@ class AuthServiceTest {
         return token;
     }
 
-    private PasswordResetToken buildPasswordResetToken(User user) {
-        PasswordResetToken prt = new PasswordResetToken();
-        prt.setId(UUID.randomUUID());
-        prt.setToken("valid-token");
-        prt.setUser(user);
-        prt.setUsed(false);
-        prt.setExpiryDate(LocalDateTime.now().plusHours(1));
-        return prt;
-    }
 }

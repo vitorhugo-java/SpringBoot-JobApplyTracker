@@ -2,12 +2,11 @@ package com.jobtracker.service;
 
 import com.jobtracker.config.JwtService;
 import com.jobtracker.dto.auth.*;
-import com.jobtracker.entity.PasswordResetToken;
 import com.jobtracker.entity.RefreshToken;
 import com.jobtracker.entity.User;
 import com.jobtracker.exception.BadRequestException;
 import com.jobtracker.exception.ConflictException;
-import com.jobtracker.exception.ResourceNotFoundException;
+import com.jobtracker.exception.UnauthorizedException;
 import com.jobtracker.mapper.AuthMapper;
 import com.jobtracker.repository.UserRepository;
 import com.jobtracker.util.SecurityUtils;
@@ -29,6 +28,7 @@ import java.util.Collections;
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+    private static final ThreadLocal<String> lastRefreshToken = new ThreadLocal<>();
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -55,6 +55,18 @@ public class AuthService {
         this.authMapper = authMapper;
         this.tracer = tracer;
         this.securityUtils = securityUtils;
+    }
+
+    /**
+     * Retrieve the last generated refresh token. Used by the controller to set the cookie.
+     * This value is stored in ThreadLocal and should be cleared after use.
+     */
+    public String getLastRefreshToken() {
+        try {
+            return lastRefreshToken.get();
+        } finally {
+            lastRefreshToken.remove();
+        }
     }
 
     @Transactional
@@ -104,17 +116,24 @@ public class AuthService {
     }
 
     @Transactional
-    public RefreshResponse refresh(RefreshTokenRequest request) {
+    public RefreshResponse refresh(RefreshTokenRequest request, String refreshToken) {
         Span span = tracer.nextSpan().name("token-refresh").start();
         try (Tracer.SpanInScope ignored = tracer.withSpan(span)) {
-            RefreshToken newRefreshToken = refreshTokenService.verifyAndRotate(request.refreshToken());
+            if (refreshToken == null || refreshToken.isBlank()) {
+                throw new UnauthorizedException("Refresh token is required");
+            }
+            
+            RefreshToken newRefreshToken = refreshTokenService.verifyAndRotate(refreshToken);
             User user = newRefreshToken.getUser();
 
             UserDetails userDetails = new org.springframework.security.core.userdetails.User(
                     user.getEmail(), user.getPasswordHash(), Collections.emptyList());
             String accessToken = jwtService.generateToken(userDetails);
 
-            return new RefreshResponse(accessToken, newRefreshToken.getToken());
+            // Store the new refresh token for the controller to set in the cookie
+            lastRefreshToken.set(newRefreshToken.getToken());
+
+            return new RefreshResponse(accessToken);
         } catch (Exception e) {
             span.error(e);
             throw e;
@@ -125,11 +144,7 @@ public class AuthService {
 
     @Transactional
     public MessageResponse forgotPassword(ForgotPasswordRequest request) {
-        userRepository.findByEmail(request.email()).ifPresent(user -> {
-            PasswordResetToken token = passwordResetService.createResetToken(user);
-            // In a real application, you would send an email with the reset token
-            // For now, we log it (do not expose token in response for security)
-        });
+        passwordResetService.requestPasswordReset(request.email());
         // Always return success to prevent email enumeration
         return new MessageResponse("If an account with that email exists, a password reset link has been sent");
     }
@@ -140,21 +155,16 @@ public class AuthService {
             throw new BadRequestException("Passwords do not match");
         }
 
-        PasswordResetToken resetToken = passwordResetService.verifyToken(request.token());
-        User user = resetToken.getUser();
-        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-        userRepository.save(user);
-
-        passwordResetService.markTokenAsUsed(resetToken);
-        // Revoke all existing refresh tokens for security
-        refreshTokenService.revokeAllByUserId(user.getId());
+        passwordResetService.resetPassword(request.token(), request.newPassword());
 
         return new MessageResponse("Password has been reset successfully");
     }
 
     @Transactional
-    public MessageResponse logout(LogoutRequest request) {
-        refreshTokenService.revokeToken(request.refreshToken());
+    public MessageResponse logout(LogoutRequest request, String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.revokeToken(refreshToken);
+        }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = (auth != null && auth.isAuthenticated()) ? auth.getName() : "unknown";
         log.info("event=LOGOUT_SUCCESS userEmail={}", userEmail);
@@ -198,6 +208,9 @@ public class AuthService {
         String accessToken = jwtService.generateToken(userDetails);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
-        return new AuthResponse(accessToken, refreshToken.getToken(), authMapper.toUserResponse(user));
+        // Store the refresh token for the controller to set in the cookie
+        lastRefreshToken.set(refreshToken.getToken());
+
+        return new AuthResponse(accessToken, authMapper.toUserResponse(user));
     }
 }

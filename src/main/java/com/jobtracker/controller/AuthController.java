@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,11 @@ public class AuthController {
         this.securityUtils = securityUtils;
     }
 
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        String cookieValue = String.format("%s; Path=/auth/refresh; HttpOnly; Secure; SameSite=Lax", refreshToken);
+        response.addHeader("Set-Cookie", cookieValue);
+    }
+
     @Operation(
         summary = "Register a new user",
         description = "Creates a new user account and returns access and refresh tokens",
@@ -43,13 +49,15 @@ public class AuthController {
     )
     @PostMapping("/register")
     @RateLimiter(name = "authRegister")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
+        AuthResponse authResponse = authService.register(request);
+        setRefreshTokenCookie(response, authService.getLastRefreshToken());
+        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
     }
 
     @Operation(
         summary = "Login",
-        description = "Authenticates a user and returns access and refresh tokens",
+        description = "Authenticates a user and returns access token. Refresh token is sent via HttpOnly cookie.",
         responses = {
             @ApiResponse(responseCode = "200", description = "Login successful",
                 content = @Content(schema = @Schema(implementation = AuthResponse.class))),
@@ -59,13 +67,15 @@ public class AuthController {
     )
     @PostMapping("/login")
     @RateLimiter(name = "authLogin")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        AuthResponse authResponse = authService.login(request);
+        setRefreshTokenCookie(response, authService.getLastRefreshToken());
+        return ResponseEntity.ok(authResponse);
     }
 
     @Operation(
         summary = "Refresh access token",
-        description = "Issues a new access token using a valid refresh token",
+        description = "Issues a new access token using the refresh token from HttpOnly cookie",
         responses = {
             @ApiResponse(responseCode = "200", description = "Token refreshed",
                 content = @Content(schema = @Schema(implementation = RefreshResponse.class))),
@@ -75,8 +85,12 @@ public class AuthController {
     )
     @PostMapping("/refresh")
     @RateLimiter(name = "authRefresh")
-    public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(authService.refresh(request));
+    public ResponseEntity<RefreshResponse> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken, 
+                                                   HttpServletResponse response) {
+        RefreshTokenRequest request = new RefreshTokenRequest();
+        RefreshResponse refreshResponse = authService.refresh(request, refreshToken);
+        setRefreshTokenCookie(response, authService.getLastRefreshToken());
+        return ResponseEntity.ok(refreshResponse);
     }
 
     @Operation(
@@ -112,7 +126,7 @@ public class AuthController {
 
     @Operation(
         summary = "Logout",
-        description = "Invalidates the provided refresh token",
+        description = "Invalidates the refresh token from HttpOnly cookie",
         responses = {
             @ApiResponse(responseCode = "200", description = "Logged out successfully",
                 content = @Content(schema = @Schema(implementation = MessageResponse.class))),
@@ -121,8 +135,14 @@ public class AuthController {
     )
     @PostMapping("/logout")
     @RateLimiter(name = "authLogout")
-    public ResponseEntity<MessageResponse> logout(@Valid @RequestBody LogoutRequest request) {
-        return ResponseEntity.ok(authService.logout(request));
+    public ResponseEntity<MessageResponse> logout(@CookieValue(name = "refreshToken", required = false) String refreshToken, 
+                                                  HttpServletResponse response) {
+        LogoutRequest request = new LogoutRequest();
+        MessageResponse result = authService.logout(request, refreshToken);
+        // Clear the refresh token cookie
+        String clearCookie = "refreshToken=; Path=/auth/refresh; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
+        response.addHeader("Set-Cookie", clearCookie);
+        return ResponseEntity.ok(result);
     }
 
     @Operation(
