@@ -15,6 +15,11 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
       PROMETHEUS_URL: ${PROMETHEUS_URL:-http://prometheus:9090}
       TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY:-1.0}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:false}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:00}
+      MAIL_USERNAME: ${MAIL_USERNAME:00}
+      MAIL_PORT: ${MAIL_PORT:1025}
+      MAIL_HOST: ${MAIL_HOST:localhost}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 30s
