@@ -28,7 +28,7 @@ public class EmailService {
 
     public EmailService(JavaMailSender mailSender,
                         TemplateEngine templateEngine,
-                        @Value("${app.mail.from:no-reply@jobtracker.com}") String fromAddress,
+                        @Value("${app.mail.from:no-reply@hugojava.dev}") String fromAddress,
                         @Value("${app.mail.enabled:true}") boolean mailEnabled) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
