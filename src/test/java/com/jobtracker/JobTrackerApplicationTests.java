@@ -6,7 +6,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class JobTrackerApplicationTests extends AbstractContainerBase {
+class JobTrackerApplicationTests {
 
     @Test
     void contextLoads() {

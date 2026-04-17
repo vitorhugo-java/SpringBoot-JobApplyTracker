@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.LoginRequest;
 import com.jobtracker.dto.auth.RegisterRequest;
+import com.jobtracker.repository.ApplicationRepository;
+import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
 import com.jobtracker.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,9 +30,13 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
+        @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+        @Autowired private ApplicationRepository applicationRepository;
 
     @BeforeEach
     void cleanDb() {
+                applicationRepository.deleteAll();
+                passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }

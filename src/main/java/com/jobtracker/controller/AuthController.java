@@ -32,7 +32,7 @@ public class AuthController {
     }
 
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        String cookieValue = String.format("%s; Path=/auth/refresh; HttpOnly; Secure; SameSite=Lax", refreshToken);
+        String cookieValue = String.format("refreshToken=%s; Path=/auth/refresh; HttpOnly; Secure; SameSite=Lax", refreshToken);
         response.addHeader("Set-Cookie", cookieValue);
     }
 
