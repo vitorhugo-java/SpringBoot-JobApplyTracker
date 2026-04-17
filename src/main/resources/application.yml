@@ -35,6 +35,7 @@ spring:
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
+      mail.from: ${MAIL_FROM:no-reply@example.com}
       mail:
         smtp:
           auth: ${MAIL_SMTP_AUTH:false}

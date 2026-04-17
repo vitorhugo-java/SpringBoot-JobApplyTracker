@@ -21,6 +21,7 @@ services:
       MAIL_PORT: ${MAIL_PORT:-1025}
       MAIL_HOST: ${MAIL_HOST:-localhost}
       MAIL_SMTP_SSL: ${MAIL_SMTP_SSL:-true}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@example.com}
       JAVA_OPTS: >-
         -XX:+UseContainerSupport
         -XX:MaxRAMPercentage=75.0
