@@ -30,6 +30,8 @@ import java.util.UUID;
 @Service
 public class ApplicationService {
 
+    private static final String TO_SEND_LATER_STATUS = "TO_SEND_LATER";
+
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "createdAt", "updatedAt", "applicationDate", "status",
             "vacancyName", "recruiterName", "nextStepDateTime"
@@ -166,6 +168,10 @@ public class ApplicationService {
     }
 
     private ApplicationStatus resolveStatus(String statusName) {
+        if (statusName == null || statusName.isBlank()) {
+            return null;
+        }
+
         try {
             return ApplicationStatus.fromDisplayName(statusName);
         } catch (IllegalArgumentException e) {
@@ -203,11 +209,15 @@ public class ApplicationService {
             predicates.add(cb.equal(root.get("user").get("id"), userId));
 
             if (status != null && !status.isBlank()) {
-                try {
-                    ApplicationStatus appStatus = ApplicationStatus.fromDisplayName(status);
-                    predicates.add(cb.equal(root.get("status"), appStatus));
-                } catch (IllegalArgumentException e) {
-                    throw new BadRequestException("Invalid status filter: " + status);
+                if (TO_SEND_LATER_STATUS.equalsIgnoreCase(status)) {
+                    predicates.add(cb.isNull(root.get("status")));
+                } else {
+                    try {
+                        ApplicationStatus appStatus = ApplicationStatus.fromDisplayName(status);
+                        predicates.add(cb.equal(root.get("status"), appStatus));
+                    } catch (IllegalArgumentException e) {
+                        throw new BadRequestException("Invalid status filter: " + status);
+                    }
                 }
             }
 

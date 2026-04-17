@@ -41,12 +41,15 @@ public class DashboardService {
 
         long dmRemindersEnabled = applicationRepository.countByUserIdAndRecruiterDmReminderEnabledTrue(userId);
 
+        long toSendLater = applicationRepository.countByUserIdAndStatusIsNull(userId);
+
         return new DashboardSummaryResponse(
                 totalApplications,
                 waitingResponses,
                 interviewsScheduled,
                 overdueFollowUps,
-                dmRemindersEnabled
+            dmRemindersEnabled,
+            toSendLater
         );
     }
 }

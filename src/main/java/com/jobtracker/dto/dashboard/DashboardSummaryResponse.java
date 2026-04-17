@@ -13,5 +13,7 @@ public record DashboardSummaryResponse(
         @Schema(description = "Applications with overdue follow-up dates", example = "2")
         long overdueFollowUps,
         @Schema(description = "Applications with recruiter DM reminder enabled", example = "5")
-        long dmRemindersEnabled
+        long dmRemindersEnabled,
+        @Schema(description = "Applications marked to send later (status is null)", example = "4")
+        long toSendLater
 ) {}

@@ -2,7 +2,6 @@ package com.jobtracker.dto.application;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
@@ -45,7 +44,6 @@ public record ApplicationRequest(
 
         @Schema(description = "Application status", example = "APPLIED",
                 allowableValues = {"APPLIED", "IN_REVIEW", "INTERVIEW", "OFFER", "REJECTED", "WITHDRAWN"})
-        @NotBlank(message = "Status is required")
         String status,
 
         @Schema(description = "Whether a DM reminder to the recruiter is enabled", example = "true")
