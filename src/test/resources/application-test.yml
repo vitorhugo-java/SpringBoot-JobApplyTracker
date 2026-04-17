@@ -19,6 +19,14 @@ jwt:
   access-token-expiration-ms: 900000
   refresh-token-expiration-ms: 604800000
 
+app:
+  frontend:
+    reset-password-url: http://localhost:5173/reset-password
+  security:
+    password-reset-token-expiration-hours: 24
+  mail:
+    enabled: false
+
 cors:
   allowed-origins: http://localhost:3000
 
