@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import org.springframework.scheduling.annotation.Async;
+
 @Service
 public class EmailService {
 
@@ -26,14 +28,15 @@ public class EmailService {
 
     public EmailService(JavaMailSender mailSender,
                         TemplateEngine templateEngine,
-                        @Value("${app.mail.from:no-reply@jobtracker.com}") String fromAddress,
+                        @Value("${spring.mail.properties.mail.from}") String fromAddress,
                         @Value("${app.mail.enabled:true}") boolean mailEnabled) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
-        this.fromAddress = fromAddress;
         this.mailEnabled = mailEnabled;
+        this.fromAddress = fromAddress;
     }
 
+    @Async
     public void sendPasswordResetEmail(User user, String resetLink, LocalDateTime expiresAt) {
         if (!mailEnabled) {
             log.info("event=MAIL_DISABLED_SKIP to={} type=PASSWORD_RESET", user.getEmail());

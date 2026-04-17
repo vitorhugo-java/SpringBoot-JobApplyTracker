@@ -35,9 +35,15 @@ spring:
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
+      mail.from: ${MAIL_FROM:no-reply@example.com}
       mail:
         smtp:
           auth: ${MAIL_SMTP_AUTH:false}
+          ssl:
+            enable: ${MAIL_SMTP_SSL:true}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
           starttls:
             enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
 
