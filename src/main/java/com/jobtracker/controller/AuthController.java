@@ -25,6 +25,8 @@ public class AuthController {
     private final AuthMapper authMapper;
     private final SecurityUtils securityUtils;
 
+    private static final String REFRESH_COOKIE_PATH = "/api/v1/auth/refresh";
+
     public AuthController(AuthService authService, AuthMapper authMapper, SecurityUtils securityUtils) {
         this.authService = authService;
         this.authMapper = authMapper;
@@ -32,7 +34,7 @@ public class AuthController {
     }
 
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        String cookieValue = String.format("refreshToken=%s; Path=/auth/refresh; HttpOnly; Secure; SameSite=Lax", refreshToken);
+        String cookieValue = String.format("refreshToken=%s; Path=%s; HttpOnly; Secure; SameSite=Lax", refreshToken, REFRESH_COOKIE_PATH);
         response.addHeader("Set-Cookie", cookieValue);
     }
 
@@ -140,7 +142,7 @@ public class AuthController {
         LogoutRequest request = new LogoutRequest();
         MessageResponse result = authService.logout(request, refreshToken);
         // Clear the refresh token cookie
-        String clearCookie = "refreshToken=; Path=/auth/refresh; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
+        String clearCookie = "refreshToken=; Path=" + REFRESH_COOKIE_PATH + "; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
         response.addHeader("Set-Cookie", clearCookie);
         return ResponseEntity.ok(result);
     }
