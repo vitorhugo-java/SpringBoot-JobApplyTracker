@@ -104,7 +104,7 @@ class ApplicationRepositoryIT extends AbstractIntegrationTest {
     private JobApplication buildApp(String vacancyName, User user) {
         JobApplication app = new JobApplication();
         app.setVacancyName(vacancyName);
-        app.setVacancyOpenedBy("HR");
+        app.setOrganization("HR");
         app.setStatus(ApplicationStatus.RH);
         app.setApplicationDate(LocalDate.now().minusDays(1));
         app.setUser(user);

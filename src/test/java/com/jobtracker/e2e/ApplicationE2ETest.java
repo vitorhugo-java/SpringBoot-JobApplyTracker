@@ -56,7 +56,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                         {
                           "vacancyName": "Software Engineer",
                           "recruiterName": "Jane Recruiter",
-                          "vacancyOpenedBy": "HR",
+                          "organization": "HR",
                           "vacancyLink": "https://jobs.example.com/se",
                           "applicationDate": "%s",
                           "rhAcceptedConnection": false,
@@ -93,7 +93,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                         {
                           "vacancyName": "Senior Software Engineer",
                           "recruiterName": "Jane Recruiter",
-                          "vacancyOpenedBy": "HR",
+                          "organization": "HR",
                           "vacancyLink": "https://jobs.example.com/sse",
                           "applicationDate": "%s",
                           "rhAcceptedConnection": true,
@@ -163,7 +163,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body("""
-                        {"vacancyName": "App RH", "recruiterName": "Recruiter A", "vacancyOpenedBy": "HR",
+                        {"vacancyName": "App RH", "recruiterName": "Recruiter A", "organization": "HR",
                          "vacancyLink": "https://example.com/a", "applicationDate": "%s",
                          "rhAcceptedConnection": false, "interviewScheduled": false,
                          "status": "RH", "recruiterDmReminderEnabled": false}
@@ -174,7 +174,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body("""
-                        {"vacancyName": "App Tecnico", "recruiterName": "Recruiter B", "vacancyOpenedBy": "Tech",
+                        {"vacancyName": "App Tecnico", "recruiterName": "Recruiter B", "organization": "Tech",
                          "vacancyLink": "https://example.com/b", "applicationDate": "%s",
                          "rhAcceptedConnection": false, "interviewScheduled": true,
                          "status": "Teste Técnico", "recruiterDmReminderEnabled": false}
@@ -207,7 +207,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
         given()
                 .contentType("application/json")
                 .body("""
-                        {"vacancyName": "No Auth", "vacancyOpenedBy": "HR",
+                        {"vacancyName": "No Auth", "organization": "HR",
                          "applicationDate": "2024-01-01", "rhAcceptedConnection": false,
                          "interviewScheduled": false, "status": "RH",
                          "recruiterDmReminderEnabled": false}
@@ -225,7 +225,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body("""
-                        {"vacancyName": "Private App", "vacancyOpenedBy": "HR",
+                        {"vacancyName": "Private App", "organization": "HR",
                          "vacancyLink": "https://example.com/p",
                          "applicationDate": "%s", "rhAcceptedConnection": false,
                          "interviewScheduled": false, "status": "RH",

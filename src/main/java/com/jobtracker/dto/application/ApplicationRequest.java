@@ -18,9 +18,8 @@ public record ApplicationRequest(
         @Schema(description = "Name of the recruiter (optional)", example = "Jane Smith")
         String recruiterName,
 
-        @Schema(description = "Who posted or opened the vacancy", example = "TechCorp HR")
-        @NotBlank(message = "Vacancy opened by is required")
-        String vacancyOpenedBy,
+                @Schema(description = "Organization or company that posted the vacancy", example = "TechCorp")
+                String organization,
 
         @Schema(description = "URL link to the vacancy posting", example = "https://example.com/jobs/123")
         @Pattern(regexp = "^(https?|ftp)://.*", message = "Vacancy link must be a valid URL")

@@ -74,7 +74,7 @@ public class FakeDataSeeder implements CommandLineRunner {
         application.setUser(user);
         application.setVacancyName(faker.job().position());
         application.setRecruiterName(faker.name().fullName());
-        application.setVacancyOpenedBy(faker.company().name());
+        application.setOrganization(faker.company().name());
         application.setVacancyLink("https://www.linkedin.com/jobs/view/" + faker.number().digits(10));
         application.setApplicationDate(LocalDate.now().minusDays(random.nextInt(1, 365)));
         application.setRhAcceptedConnection(random.nextBoolean());

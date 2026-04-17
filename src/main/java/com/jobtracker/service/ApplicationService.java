@@ -155,7 +155,7 @@ public class ApplicationService {
     private void mapRequestToEntity(ApplicationRequest request, JobApplication app) {
         app.setVacancyName(normalizeOptionalText(request.vacancyName()));
         app.setRecruiterName(request.recruiterName());
-        app.setVacancyOpenedBy(request.vacancyOpenedBy());
+        app.setOrganization(request.organization());
         app.setVacancyLink(request.vacancyLink());
         app.setApplicationDate(request.applicationDate());
         app.setRhAcceptedConnection(Boolean.TRUE.equals(request.rhAcceptedConnection()));

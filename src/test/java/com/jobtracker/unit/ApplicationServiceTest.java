@@ -229,7 +229,7 @@ class ApplicationServiceTest {
         JobApplication a = new JobApplication();
         a.setId(id);
         a.setVacancyName("Software Engineer");
-        a.setVacancyOpenedBy("HR");
+        a.setOrganization("HR");
         a.setStatus(ApplicationStatus.RH);
         a.setApplicationDate(LocalDate.now());
         a.setUser(user);
@@ -238,9 +238,9 @@ class ApplicationServiceTest {
 
     private ApplicationRequest buildRequest() {
         return new ApplicationRequest(
-                "Software Engineer", "Recruiter", "HR",
-                "https://example.com/job", LocalDate.now(),
-                false, false, null, "RH", false
+            "Software Engineer", "Recruiter", "HR",
+            "https://example.com/job", LocalDate.now(),
+            false, false, null, "RH", false
         );
     }
 

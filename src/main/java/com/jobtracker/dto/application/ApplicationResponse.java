@@ -15,8 +15,8 @@ public record ApplicationResponse(
         String vacancyName,
         @Schema(description = "Recruiter name", example = "Jane Smith")
         String recruiterName,
-        @Schema(description = "Who opened the vacancy", example = "TechCorp HR")
-        String vacancyOpenedBy,
+        @Schema(description = "Organization or company that posted the vacancy", example = "TechCorp HR")
+        String organization,
         @Schema(description = "URL to the vacancy posting", example = "https://example.com/jobs/123")
         String vacancyLink,
         @Schema(description = "Application date (yyyy-MM-dd)", example = "2024-06-01")

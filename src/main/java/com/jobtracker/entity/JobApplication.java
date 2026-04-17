@@ -28,8 +28,8 @@ public class JobApplication {
     @Column(name = "recruiter_name", length = 255)
     private String recruiterName;
 
-    @Column(name = "vacancy_opened_by", nullable = false, length = 255)
-    private String vacancyOpenedBy;
+    @Column(name = "organization", nullable = true, length = 255)
+    private String organization;
 
     @Column(name = "vacancy_link", length = 2048)
     private String vacancyLink;
@@ -83,8 +83,8 @@ public class JobApplication {
     public String getRecruiterName() { return recruiterName; }
     public void setRecruiterName(String recruiterName) { this.recruiterName = recruiterName; }
 
-    public String getVacancyOpenedBy() { return vacancyOpenedBy; }
-    public void setVacancyOpenedBy(String vacancyOpenedBy) { this.vacancyOpenedBy = vacancyOpenedBy; }
+    public String getOrganization() { return organization; }
+    public void setOrganization(String organization) { this.organization = organization; }
 
     public String getVacancyLink() { return vacancyLink; }
     public void setVacancyLink(String vacancyLink) { this.vacancyLink = vacancyLink; }
