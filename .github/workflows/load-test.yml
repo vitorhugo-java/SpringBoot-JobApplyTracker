@@ -73,18 +73,20 @@ jobs:
             job-tracker:loadtest
 
       - name: Wait for API health
+        shell: bash
         run: |
-          for i in {1..60}; do
-            if curl -fsS http://127.0.0.1:8081/actuator/health > /dev/null; then
-              echo "API is ready"
-              exit 0
+          for attempt in {1..30}; do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/actuator/health | grep -q -E "200"; then
+              break
+            elif curl -s -X POST -H "Content-Type: application/json" -d '{"email":"ci@teste.com", "password":"senha"}' -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/auth/login | grep -q -E "200|400|401|403"; then
+              break
             fi
-            echo "Waiting for API... ($i/60)"
-            sleep 3
+            sleep 5
           done
-          echo "API did not become ready in time"
-          docker logs loadtest-api || true
-          exit 1
+          if [ $attempt -eq 30 ]; then
+            docker compose -f docker-compose.test.yml logs
+            exit 1
+          fi
 
       - name: Run incremental k6 load test
         run: |
