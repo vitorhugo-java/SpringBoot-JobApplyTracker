@@ -167,7 +167,7 @@ class AuthE2ETest extends AbstractE2ETest {
 
         // Verify Set-Cookie header has security attributes
         String setCookieHeader = response.getHeader("Set-Cookie");
-        assertThat(setCookieHeader).contains("Path=/auth/refresh");
+        assertThat(setCookieHeader).contains("Path=/api/v1/auth/refresh");
         assertThat(setCookieHeader).contains("HttpOnly");
         assertThat(setCookieHeader).contains("Secure");
         assertThat(setCookieHeader).contains("SameSite=Lax");
@@ -293,22 +293,22 @@ class AuthE2ETest extends AbstractE2ETest {
     }
 
     @Test
-    void protectedEndpoint_shouldReturn403_whenNoToken() {
+    void protectedEndpoint_shouldReturn401_whenNoToken() {
         given()
                 .when()
                 .get("/api/v1/auth/me")
                 .then()
-                .statusCode(403);
+                .statusCode(401);
     }
 
     @Test
-    void me_shouldReturn401_whenAccessTokenExpired() {
+    void me_shouldReturn401_whenAccessTokenInvalidOrExpired() {
         given()
                 .header("Authorization", "Bearer invalid.token.here")
                 .when()
                 .get("/api/v1/auth/me")
                 .then()
-                .statusCode(403);
+                .statusCode(401);
     }
 
     /**
