@@ -11,11 +11,11 @@ import com.jobtracker.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import jakarta.servlet.http.Cookie;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,7 +59,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
         List<String> cookies = result.getResponse().getHeaders("Set-Cookie");
         assertThat(cookies).isNotEmpty();
         String refreshCookie = cookies.stream()
-                .filter(c -> c.contains("Path=/auth/refresh"))
+                .filter(c -> c.contains("Path=/api/v1/auth/refresh"))
                 .findFirst()
                 .orElseThrow();
         assertThat(refreshCookie).contains("HttpOnly");
@@ -118,7 +118,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
         List<String> cookies = result.getResponse().getHeaders("Set-Cookie");
         assertThat(cookies).isNotEmpty();
         String refreshCookie = cookies.stream()
-                .filter(c -> c.contains("Path=/auth/refresh"))
+                .filter(c -> c.contains("Path=/api/v1/auth/refresh"))
                 .findFirst()
                 .orElseThrow();
         assertThat(refreshCookie).contains("HttpOnly");
@@ -145,17 +145,17 @@ class AuthControllerIT extends AbstractIntegrationTest {
         // Extract the refresh token from Set-Cookie header
         List<String> cookies = regResult.getResponse().getHeaders("Set-Cookie");
         String refreshCookie = cookies.stream()
-                .filter(c -> c.contains("Path=/auth/refresh"))
+                .filter(c -> c.contains("Path=/api/v1/auth/refresh"))
                 .findFirst()
                 .orElseThrow();
         
         // Extract token value from cookie
-        String refreshTokenValue = refreshCookie.split(";")[0].split("=")[1];
+        String refreshTokenValue = refreshCookie.split(";")[0].split("=", 2)[1];
 
         // Call refresh endpoint with empty body and refresh token in cookie
         MvcResult refreshResult = mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.COOKIE, "refreshToken=" + refreshTokenValue)
+                        .cookie(new Cookie("refreshToken", refreshTokenValue))
                         .content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
@@ -166,7 +166,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
         List<String> newCookies = refreshResult.getResponse().getHeaders("Set-Cookie");
         assertThat(newCookies).isNotEmpty();
         String newRefreshCookie = newCookies.stream()
-                .filter(c -> c.contains("Path=/auth/refresh"))
+                .filter(c -> c.contains("Path=/api/v1/auth/refresh"))
                 .findFirst()
                 .orElseThrow();
         assertThat(newRefreshCookie).contains("HttpOnly");
@@ -176,7 +176,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Test
     void refresh_shouldReturn401_whenRefreshTokenIsInvalid() throws Exception {
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .header(HttpHeaders.COOKIE, "refreshToken=invalid-token")
+                        .cookie(new Cookie("refreshToken", "invalid-token"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isUnauthorized());
@@ -194,14 +194,14 @@ class AuthControllerIT extends AbstractIntegrationTest {
         // Extract refresh token from cookie
         List<String> cookies = regResult.getResponse().getHeaders("Set-Cookie");
         String refreshCookie = cookies.stream()
-                .filter(c -> c.contains("Path=/auth/refresh"))
+                .filter(c -> c.contains("Path=/api/v1/auth/refresh"))
                 .findFirst()
                 .orElseThrow();
-        String refreshTokenValue = refreshCookie.split(";")[0].split("=")[1];
+        String refreshTokenValue = refreshCookie.split(";")[0].split("=", 2)[1];
 
         // Logout
         MvcResult logoutResult = mockMvc.perform(post("/api/v1/auth/logout")
-                        .header(HttpHeaders.COOKIE, "refreshToken=" + refreshTokenValue)
+                        .cookie(new Cookie("refreshToken", refreshTokenValue))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
@@ -211,7 +211,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
         // Verify Set-Cookie header clears the refresh token (Max-Age=0)
         List<String> logoutCookies = logoutResult.getResponse().getHeaders("Set-Cookie");
         String clearedCookie = logoutCookies.stream()
-                .filter(c -> c.contains("Path=/auth/refresh"))
+                .filter(c -> c.contains("Path=/api/v1/auth/refresh"))
                 .findFirst()
                 .orElseThrow();
         assertThat(clearedCookie).contains("Max-Age=0");
@@ -234,9 +234,9 @@ class AuthControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void me_shouldReturn403_whenNotAuthenticated() throws Exception {
+    void me_shouldReturn401_whenNotAuthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/auth/me"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
