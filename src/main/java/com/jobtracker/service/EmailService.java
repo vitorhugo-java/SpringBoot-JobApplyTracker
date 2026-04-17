@@ -23,16 +23,17 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
-    @Value("${spring.mail.properties.mail.from}")
     private final String fromAddress;
     private final boolean mailEnabled;
 
     public EmailService(JavaMailSender mailSender,
                         TemplateEngine templateEngine,
+                        @Value("${spring.mail.properties.mail.from}") fromAddress
                         @Value("${app.mail.enabled:true}") boolean mailEnabled) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.mailEnabled = mailEnabled;
+        this.fromAddress = fromAddress;
     }
 
     @Async
