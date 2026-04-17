@@ -113,4 +113,4 @@ jobs:
             cd /docker/jobpplytracker-api
             docker compose pull
             docker compose down
-            docker compose up -d
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
