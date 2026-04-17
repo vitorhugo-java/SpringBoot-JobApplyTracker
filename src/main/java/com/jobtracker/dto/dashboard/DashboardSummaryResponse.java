@@ -15,5 +15,9 @@ public record DashboardSummaryResponse(
         @Schema(description = "Applications with recruiter DM reminder enabled", example = "5")
         long dmRemindersEnabled,
         @Schema(description = "Applications marked to send later (status is null)", example = "4")
-        long toSendLater
+        long toSendLater,
+        @Schema(description = "Applications marked as Rejeitado", example = "2")
+        long rejectedCount,
+        @Schema(description = "Applications marked as Ghosting", example = "3")
+        long ghostingCount
 ) {}

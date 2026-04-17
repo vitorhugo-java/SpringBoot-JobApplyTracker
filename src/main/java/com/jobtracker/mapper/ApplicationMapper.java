@@ -19,6 +19,7 @@ public class ApplicationMapper {
             app.isInterviewScheduled(),
             app.getNextStepDateTime(),
             app.getStatus() != null ? app.getStatus().getDisplayName() : null,
+            app.getPreviousStatus() != null ? app.getPreviousStatus().getDisplayName() : null,
             app.isRecruiterDmReminderEnabled(),
             app.getCreatedAt(),
             app.getUpdatedAt()

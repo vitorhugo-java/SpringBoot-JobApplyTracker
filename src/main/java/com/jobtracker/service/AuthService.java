@@ -175,6 +175,9 @@ public class AuthService {
     public UserResponse updateProfile(UpdateProfileRequest request) {
         User user = securityUtils.getCurrentUser();
         user.setName(request.name().trim());
+        if (request.reminderTime() != null) {
+            user.setReminderTime(request.reminderTime());
+        }
         user = userRepository.save(user);
         return authMapper.toUserResponse(user);
     }

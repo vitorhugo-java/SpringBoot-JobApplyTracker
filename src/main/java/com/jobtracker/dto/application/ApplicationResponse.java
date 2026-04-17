@@ -31,6 +31,8 @@ public record ApplicationResponse(
         LocalDateTime nextStepDateTime,
         @Schema(description = "Application status", example = "APPLIED")
         String status,
+        @Schema(description = "Previous application status before Rejeitado or Ghosting", example = "Teste Técnico")
+        String previousStatus,
         @Schema(description = "Whether a recruiter DM reminder is enabled", example = "true")
         boolean recruiterDmReminderEnabled,
         @Schema(description = "Record creation timestamp", example = "2024-06-01T10:00:00")

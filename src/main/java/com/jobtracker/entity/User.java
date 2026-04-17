@@ -1,6 +1,7 @@
 package com.jobtracker.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -26,6 +27,9 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "reminder_time", nullable = false)
+    private LocalTime reminderTime;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -34,6 +38,9 @@ public class User {
 
     @PrePersist
     protected void onCreate() {
+        if (reminderTime == null) {
+            reminderTime = LocalTime.of(19, 0);
+        }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
@@ -54,6 +61,9 @@ public class User {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public LocalTime getReminderTime() { return reminderTime; }
+    public void setReminderTime(LocalTime reminderTime) { this.reminderTime = reminderTime; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

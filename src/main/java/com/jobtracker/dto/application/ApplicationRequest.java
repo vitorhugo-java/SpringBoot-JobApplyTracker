@@ -25,7 +25,6 @@ public record ApplicationRequest(
         String vacancyLink,
 
         @Schema(description = "Date the application was submitted (yyyy-MM-dd)", example = "2024-06-01")
-        @NotNull(message = "Application date is required")
         @PastOrPresent(message = "Application date cannot be in the future")
         @JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate applicationDate,
@@ -43,7 +42,7 @@ public record ApplicationRequest(
         LocalDateTime nextStepDateTime,
 
         @Schema(description = "Application status", example = "APPLIED",
-                allowableValues = {"APPLIED", "IN_REVIEW", "INTERVIEW", "OFFER", "REJECTED", "WITHDRAWN"})
+                allowableValues = {"RH", "Fiz a RH - Aguardando Atualização", "Fiz a Hiring Manager - Aguardando Atualização", "Teste Técnico", "Fiz teste Técnico - aguardando atualização", "RH (Negociação)", "Rejeitado", "Tarde demais", "Ghosting"})
         String status,
 
         @Schema(description = "Whether a DM reminder to the recruiter is enabled", example = "true")

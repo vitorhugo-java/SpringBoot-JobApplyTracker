@@ -43,13 +43,19 @@ public class DashboardService {
 
         long toSendLater = applicationRepository.countByUserIdAndStatusIsNull(userId);
 
+        long rejectedCount = applicationRepository.countByUserIdAndStatus(userId, ApplicationStatus.REJEITADO);
+
+        long ghostingCount = applicationRepository.countByUserIdAndStatus(userId, ApplicationStatus.GHOSTING);
+
         return new DashboardSummaryResponse(
                 totalApplications,
                 waitingResponses,
                 interviewsScheduled,
                 overdueFollowUps,
-            dmRemindersEnabled,
-            toSendLater
+                dmRemindersEnabled,
+                toSendLater,
+                rejectedCount,
+                ghostingCount
         );
     }
 }

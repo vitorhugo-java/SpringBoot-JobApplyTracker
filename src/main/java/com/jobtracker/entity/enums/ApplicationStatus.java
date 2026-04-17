@@ -6,7 +6,10 @@ public enum ApplicationStatus {
     FIZ_A_HIRING_MANAGER_AGUARDANDO_ATUALIZACAO("Fiz a Hiring Manager - Aguardando Atualização"),
     TESTE_TECNICO("Teste Técnico"),
     FIZ_TESTE_TECNICO_AGUARDANDO_ATUALIZACAO("Fiz teste Técnico - aguardando atualização"),
-    RH_NEGOCIACAO("RH (Negociação)");
+    RH_NEGOCIACAO("RH (Negociação)"),
+    REJEITADO("Rejeitado"),
+    TARDE_DEMAIS("Tarde demais"),
+    GHOSTING("Ghosting");
 
     private final String displayName;
 

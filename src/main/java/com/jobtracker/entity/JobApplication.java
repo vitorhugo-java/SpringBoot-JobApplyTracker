@@ -50,6 +50,10 @@ public class JobApplication {
     @Column(nullable = true, length = 100, columnDefinition = "varchar(100)")
     private ApplicationStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "previous_status", nullable = true, length = 100, columnDefinition = "varchar(100)")
+    private ApplicationStatus previousStatus;
+
     @Column(name = "recruiter_dm_reminder_enabled", nullable = false)
     private boolean recruiterDmReminderEnabled;
 
@@ -103,6 +107,9 @@ public class JobApplication {
 
     public ApplicationStatus getStatus() { return status; }
     public void setStatus(ApplicationStatus status) { this.status = status; }
+
+    public ApplicationStatus getPreviousStatus() { return previousStatus; }
+    public void setPreviousStatus(ApplicationStatus previousStatus) { this.previousStatus = previousStatus; }
 
     public boolean isRecruiterDmReminderEnabled() { return recruiterDmReminderEnabled; }
     public void setRecruiterDmReminderEnabled(boolean recruiterDmReminderEnabled) { this.recruiterDmReminderEnabled = recruiterDmReminderEnabled; }

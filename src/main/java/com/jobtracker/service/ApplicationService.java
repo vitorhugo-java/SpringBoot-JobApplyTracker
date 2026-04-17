@@ -90,7 +90,7 @@ public class ApplicationService {
         UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
-        app.setStatus(resolveStatus(request.status()));
+        applyStatusChange(app, resolveStatus(request.status()));
         return applicationMapper.toResponse(applicationRepository.save(app));
     }
 
@@ -163,8 +163,20 @@ public class ApplicationService {
         app.setRhAcceptedConnection(Boolean.TRUE.equals(request.rhAcceptedConnection()));
         app.setInterviewScheduled(Boolean.TRUE.equals(request.interviewScheduled()));
         app.setNextStepDateTime(request.nextStepDateTime());
-        app.setStatus(resolveStatus(request.status()));
+        applyStatusChange(app, resolveStatus(request.status()));
         app.setRecruiterDmReminderEnabled(Boolean.TRUE.equals(request.recruiterDmReminderEnabled()));
+    }
+
+    private void applyStatusChange(JobApplication app, ApplicationStatus newStatus) {
+        ApplicationStatus currentStatus = app.getStatus();
+        if ((newStatus == ApplicationStatus.REJEITADO || newStatus == ApplicationStatus.GHOSTING)
+                && currentStatus != newStatus) {
+            app.setPreviousStatus(currentStatus);
+        }
+        if (newStatus != ApplicationStatus.REJEITADO && newStatus != ApplicationStatus.GHOSTING) {
+            app.setPreviousStatus(null);
+        }
+        app.setStatus(newStatus);
     }
 
     private ApplicationStatus resolveStatus(String statusName) {

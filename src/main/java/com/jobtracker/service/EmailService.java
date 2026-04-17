@@ -60,4 +60,30 @@ public class EmailService {
             throw new IllegalStateException("Failed to send password reset email", ex);
         }
     }
+
+    public void sendPendingApplicationsReminderEmail(User user, long pendingCount) {
+        if (!mailEnabled) {
+            log.info("event=MAIL_DISABLED_SKIP to={} type=PENDING_APPLICATIONS_REMINDER", user.getEmail());
+            return;
+        }
+
+        String body = String.format(
+                "Hello %s,\n\nYou still have %d pending application(s) marked as 'to send later'.\nOpen JobTracker and review them today.\n",
+                user.getName(),
+                pendingCount
+        );
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(user.getEmail());
+            helper.setFrom(fromAddress);
+            helper.setSubject("JobTracker reminder: pending applications to send");
+            helper.setText(body, false);
+            mailSender.send(message);
+            log.info("event=MAIL_SENT to={} type=PENDING_APPLICATIONS_REMINDER pendingCount={}", user.getEmail(), pendingCount);
+        } catch (MessagingException | MailException ex) {
+            throw new IllegalStateException("Failed to send pending applications reminder email", ex);
+        }
+    }
 }
