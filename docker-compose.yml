@@ -20,6 +20,7 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME:-00}
       MAIL_PORT: ${MAIL_PORT:-1025}
       MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_SMTP_SSL: ${MAIL_SMTP_SSL:-true}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 30s
