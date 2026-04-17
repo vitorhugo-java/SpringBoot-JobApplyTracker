@@ -21,6 +21,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,7 +59,7 @@ class AuthServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(jwtService.generateToken(any(UserDetails.class))).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken(any(User.class))).thenReturn(buildRefreshToken(savedUser));
-        when(authMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(USER_UUID, "John", "john@example.com"));
+        when(authMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(USER_UUID, "John", "john@example.com", LocalTime.of(9, 0)));
 
         AuthResponse result = authService.register(request);
 
@@ -96,7 +97,7 @@ class AuthServiceTest {
         when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(true);
         when(jwtService.generateToken(any(UserDetails.class))).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken(user)).thenReturn(buildRefreshToken(user));
-        when(authMapper.toUserResponse(user)).thenReturn(new UserResponse(USER_UUID, "John", "john@example.com"));
+        when(authMapper.toUserResponse(user)).thenReturn(new UserResponse(USER_UUID, "John", "john@example.com", LocalTime.of(9, 0)));
 
         AuthResponse result = authService.login(request);
 
