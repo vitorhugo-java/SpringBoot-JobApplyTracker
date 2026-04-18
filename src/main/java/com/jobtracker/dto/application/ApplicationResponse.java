@@ -35,6 +35,9 @@ public record ApplicationResponse(
         String previousStatus,
         @Schema(description = "Whether a recruiter DM reminder is enabled", example = "true")
         boolean recruiterDmReminderEnabled,
+        @Schema(description = "Timestamp when DM was sent to the recruiter", example = "2024-06-05T14:30:00")
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        LocalDateTime recruiterDmSentAt,
         @Schema(description = "Record creation timestamp", example = "2024-06-01T10:00:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime createdAt,

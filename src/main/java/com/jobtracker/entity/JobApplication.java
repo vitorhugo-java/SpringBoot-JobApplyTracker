@@ -57,6 +57,9 @@ public class JobApplication {
     @Column(name = "recruiter_dm_reminder_enabled", nullable = false)
     private boolean recruiterDmReminderEnabled;
 
+    @Column(name = "recruiter_dm_sent_at")
+    private LocalDateTime recruiterDmSentAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -113,6 +116,9 @@ public class JobApplication {
 
     public boolean isRecruiterDmReminderEnabled() { return recruiterDmReminderEnabled; }
     public void setRecruiterDmReminderEnabled(boolean recruiterDmReminderEnabled) { this.recruiterDmReminderEnabled = recruiterDmReminderEnabled; }
+
+    public LocalDateTime getRecruiterDmSentAt() { return recruiterDmSentAt; }
+    public void setRecruiterDmSentAt(LocalDateTime recruiterDmSentAt) { this.recruiterDmSentAt = recruiterDmSentAt; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

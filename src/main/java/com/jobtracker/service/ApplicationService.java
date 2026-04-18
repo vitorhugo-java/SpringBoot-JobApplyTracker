@@ -104,6 +104,15 @@ public class ApplicationService {
     }
 
     @Transactional
+    public ApplicationResponse markDmSent(UUID id, MarkDmSentRequest request) {
+        UUID userId = securityUtils.getCurrentUserId();
+        JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
+        app.setRecruiterDmSentAt(LocalDateTime.now());
+        return applicationMapper.toResponse(applicationRepository.save(app));
+    }
+
+    @Transactional
     public void delete(UUID id) {
         UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)

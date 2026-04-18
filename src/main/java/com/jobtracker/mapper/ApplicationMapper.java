@@ -21,6 +21,7 @@ public class ApplicationMapper {
             app.getStatus() != null ? app.getStatus().getDisplayName() : null,
             app.getPreviousStatus() != null ? app.getPreviousStatus().getDisplayName() : null,
             app.isRecruiterDmReminderEnabled(),
+            app.getRecruiterDmSentAt(),
             app.getCreatedAt(),
             app.getUpdatedAt()
         );

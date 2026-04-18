@@ -33,10 +33,10 @@ public interface ApplicationRepository extends JpaRepository<JobApplication, UUI
     @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.status IN :statuses")
     long countByUserIdAndStatusIn(@Param("userId") UUID userId, @Param("statuses") List<ApplicationStatus> statuses);
 
-    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.createdAt > :reminderThreshold ORDER BY a.createdAt ASC")
+    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt > :reminderThreshold ORDER BY a.createdAt ASC")
     List<JobApplication> findUpcomingByUserId(@Param("userId") UUID userId, @Param("reminderThreshold") LocalDateTime reminderThreshold);
 
-    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.createdAt <= :reminderThreshold ORDER BY a.createdAt ASC")
+    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt <= :reminderThreshold ORDER BY a.createdAt ASC")
     List<JobApplication> findOverdueByUserId(@Param("userId") UUID userId, @Param("reminderThreshold") LocalDateTime reminderThreshold);
 
     List<JobApplication> findByStatusIsNullAndUpdatedAtBefore(LocalDateTime updatedAt);

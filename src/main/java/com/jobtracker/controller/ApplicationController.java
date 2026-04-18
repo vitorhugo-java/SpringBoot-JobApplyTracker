@@ -109,6 +109,22 @@ public class ApplicationController {
     }
 
     @Operation(
+        summary = "Mark DM as sent to recruiter",
+        description = "Marks that a DM was sent to the recruiter and hides from reminder panels",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "DM marked as sent",
+                content = @Content(schema = @Schema(implementation = ApplicationResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Application not found")
+        }
+    )
+    @PatchMapping("/{id}/mark-dm-sent")
+    public ResponseEntity<ApplicationResponse> markDmSent(
+            @Parameter(description = "Application ID", required = true) @PathVariable UUID id,
+            @Valid @RequestBody MarkDmSentRequest request) {
+        return ResponseEntity.ok(applicationService.markDmSent(id, request));
+    }
+
+    @Operation(
         summary = "Delete a job application",
         responses = {
             @ApiResponse(responseCode = "200", description = "Application deleted"),
