@@ -2,6 +2,7 @@ package com.jobtracker.controller;
 
 import com.jobtracker.dto.application.*;
 import com.jobtracker.service.ApplicationService;
+import com.jobtracker.service.LinkMetadataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -25,9 +26,11 @@ import java.util.UUID;
 public class ApplicationController {
 
     private final ApplicationService applicationService;
+    private final LinkMetadataService linkMetadataService;
 
-    public ApplicationController(ApplicationService applicationService) {
+    public ApplicationController(ApplicationService applicationService, LinkMetadataService linkMetadataService) {
         this.applicationService = applicationService;
+        this.linkMetadataService = linkMetadataService;
     }
 
     @Operation(
@@ -183,5 +186,24 @@ public class ApplicationController {
     @GetMapping("/overdue")
     public ResponseEntity<List<ApplicationResponse>> getOverdue() {
         return ResponseEntity.ok(applicationService.getOverdue());
+    }
+
+    @Operation(
+        summary = "Extract link metadata",
+        description = "Extracts rich preview metadata (title, description, image, domain) from a URL",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Link metadata extracted",
+                content = @Content(schema = @Schema(implementation = LinkMetadataResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid URL")
+        }
+    )
+    @GetMapping("/link-metadata")
+    public ResponseEntity<LinkMetadataResponse> getLinkMetadata(
+            @Parameter(description = "URL to extract metadata from", required = true) @RequestParam String url) {
+        if (url == null || url.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        LinkMetadataResponse metadata = linkMetadataService.extractMetadata(url);
+        return ResponseEntity.ok(metadata);
     }
 }
