@@ -45,7 +45,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
     }
 
     @Test
-    void fullApplicationCrud_createFetchUpdateDelete() {
+        void fullApplicationCrud_createFetchUpdateArchiveAndHardDelete() {
         String applicationDate = LocalDate.now().minusDays(1).toString();
 
         // 1. Create application
@@ -62,7 +62,8 @@ class ApplicationE2ETest extends AbstractE2ETest {
                           "rhAcceptedConnection": false,
                           "interviewScheduled": false,
                           "status": "RH",
-                          "recruiterDmReminderEnabled": false
+                                                                                                        "recruiterDmReminderEnabled": false,
+                                                                                                        "note": "First note"
                         }
                         """.formatted(applicationDate))
                 .post("/api/v1/applications")
@@ -71,6 +72,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .body("id", notNullValue())
                 .body("vacancyName", equalTo("Software Engineer"))
                 .body("status", equalTo("RH"))
+                .body("note", equalTo("First note"))
                 .extract().response();
 
         String appId = createResponse.jsonPath().getString("id");
@@ -99,7 +101,8 @@ class ApplicationE2ETest extends AbstractE2ETest {
                           "rhAcceptedConnection": true,
                           "interviewScheduled": false,
                           "status": "Fiz a RH - Aguardando Atualização",
-                          "recruiterDmReminderEnabled": false
+                                                                                                        "recruiterDmReminderEnabled": false,
+                                                                                                        "note": "Updated note"
                         }
                         """.formatted(applicationDate))
                 .put("/api/v1/applications/{id}", appId)
@@ -107,7 +110,8 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .statusCode(200)
                 .body("vacancyName", equalTo("Senior Software Engineer"))
                 .body("status", equalTo("Fiz a RH - Aguardando Atualização"))
-                .body("rhAcceptedConnection", equalTo(true));
+                .body("rhAcceptedConnection", equalTo(true))
+                .body("note", equalTo("Updated note"));
 
         // 4. Update status
         given()
@@ -138,7 +142,31 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .body("content", hasSize(1))
                 .body("totalElements", equalTo(1));
 
-        // 7. Delete
+        // 7. Archive
+        given()
+                .header("Authorization", "Bearer " + accessToken)
+                .patch("/api/v1/applications/{id}/archive", appId)
+                .then()
+                .statusCode(200)
+                .body("archived", equalTo(true));
+
+        // 8. Verify hidden from active list
+        given()
+                .header("Authorization", "Bearer " + accessToken)
+                .get("/api/v1/applications")
+                .then()
+                .statusCode(200)
+                .body("totalElements", equalTo(0));
+
+        // 9. Verify archived list and hard-delete from archive tab flow
+        given()
+                .header("Authorization", "Bearer " + accessToken)
+                .queryParam("archived", true)
+                .get("/api/v1/applications")
+                .then()
+                .statusCode(200)
+                .body("totalElements", equalTo(1));
+
         given()
                 .header("Authorization", "Bearer " + accessToken)
                 .delete("/api/v1/applications/{id}", appId)
@@ -146,7 +174,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .statusCode(200)
                 .body("message", equalTo("Application deleted successfully"));
 
-        // 8. Verify deleted
+        // 10. Verify deleted permanently
         given()
                 .header("Authorization", "Bearer " + accessToken)
                 .get("/api/v1/applications/{id}", appId)

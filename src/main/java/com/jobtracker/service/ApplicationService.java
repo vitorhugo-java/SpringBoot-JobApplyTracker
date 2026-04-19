@@ -120,10 +120,21 @@ public class ApplicationService {
         applicationRepository.delete(app);
     }
 
+    @Transactional
+    public ApplicationResponse archive(UUID id) {
+        UUID userId = securityUtils.getCurrentUserId();
+        JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
+        app.setArchived(true);
+        app.setArchivedAt(LocalDateTime.now());
+        return applicationMapper.toResponse(applicationRepository.save(app));
+    }
+
     @Transactional(readOnly = true)
     public ApplicationPageResponse getAll(String status, String recruiterName,
                                            LocalDate applicationDateFrom, LocalDate applicationDateTo,
                                            Boolean interviewScheduled, Boolean recruiterDmReminderEnabled,
+                                           Boolean archived,
                                            int page, int size, String sort) {
         UUID userId = securityUtils.getCurrentUserId();
 
@@ -131,7 +142,7 @@ public class ApplicationService {
         Pageable pageable = PageRequest.of(page, size, sortObj);
 
         Specification<JobApplication> spec = buildSpecification(userId, status, recruiterName,
-                applicationDateFrom, applicationDateTo, interviewScheduled, recruiterDmReminderEnabled);
+            applicationDateFrom, applicationDateTo, interviewScheduled, recruiterDmReminderEnabled, archived);
 
         Page<JobApplication> resultPage = applicationRepository.findAll(spec, pageable);
 
@@ -174,6 +185,7 @@ public class ApplicationService {
         app.setNextStepDateTime(request.nextStepDateTime());
         applyStatusChange(app, resolveStatus(request.status()));
         app.setRecruiterDmReminderEnabled(Boolean.TRUE.equals(request.recruiterDmReminderEnabled()));
+        app.setNote(normalizeOptionalText(request.note()));
     }
 
     private void applyStatusChange(JobApplication app, ApplicationStatus newStatus) {
@@ -224,10 +236,12 @@ public class ApplicationService {
                                                                LocalDate applicationDateFrom,
                                                                LocalDate applicationDateTo,
                                                                Boolean interviewScheduled,
-                                                               Boolean recruiterDmReminderEnabled) {
+                                                               Boolean recruiterDmReminderEnabled,
+                                                               Boolean archived) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("user").get("id"), userId));
+            predicates.add(cb.equal(root.get("archived"), archived != null ? archived : Boolean.FALSE));
 
             if (status != null && !status.isBlank()) {
                 if (TO_SEND_LATER_STATUS.equalsIgnoreCase(status)) {

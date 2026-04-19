@@ -60,10 +60,10 @@ class ApplicationRepositoryIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void countByUserId_shouldReturnCorrectCount() {
+    void countByUserIdAndArchivedFalse_shouldReturnCorrectCount() {
         applicationRepository.save(buildApp("App 1", user));
         applicationRepository.save(buildApp("App 2", user));
-        long count = applicationRepository.countByUserId(user.getId());
+        long count = applicationRepository.countByUserIdAndArchivedFalse(user.getId());
         assertThat(count).isEqualTo(2);
     }
 

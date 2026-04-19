@@ -30,7 +30,7 @@ public class PendingApplicationsReminderScheduler {
         LocalTime currentMinute = LocalTime.now().withSecond(0).withNano(0);
         List<User> usersToRemind = userRepository.findByReminderTime(currentMinute);
         for (User user : usersToRemind) {
-            long pendingCount = applicationRepository.countByUserIdAndStatusIsNull(user.getId());
+            long pendingCount = applicationRepository.countByUserIdAndStatusIsNullAndArchivedFalse(user.getId());
             if (pendingCount > 0) {
                 emailService.sendPendingApplicationsReminderEmail(user, pendingCount);
             }

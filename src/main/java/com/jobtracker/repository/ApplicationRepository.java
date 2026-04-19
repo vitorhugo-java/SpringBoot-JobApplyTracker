@@ -20,26 +20,31 @@ public interface ApplicationRepository extends JpaRepository<JobApplication, UUI
 
     Optional<JobApplication> findByIdAndUserId(UUID id, UUID userId);
 
-    long countByUserId(UUID userId);
+    long countByUserIdAndArchivedFalse(UUID userId);
 
-    long countByUserIdAndInterviewScheduledTrue(UUID userId);
+    long countByUserIdAndInterviewScheduledTrueAndArchivedFalse(UUID userId);
 
-    long countByUserIdAndRecruiterDmReminderEnabledTrue(UUID userId);
+    @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.status = :status AND a.archived = false")
+    long countByUserIdAndStatusAndArchivedFalse(@Param("userId") UUID userId, @Param("status") ApplicationStatus status);
 
-    @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL")
+    @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.archived = false")
     long countPendingDmRemindersByUserId(@Param("userId") UUID userId);
 
-    long countByUserIdAndStatusIsNull(UUID userId);
+    long countByUserIdAndStatusIsNullAndArchivedFalse(UUID userId);
 
-    long countByUserIdAndStatus(UUID userId, ApplicationStatus status);
+    @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.applicationDate >= :fromDate AND a.archived = false")
+    long countByUserIdAndApplicationDateSince(@Param("userId") UUID userId, @Param("fromDate") java.time.LocalDate fromDate);
 
-    @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.status IN :statuses")
-    long countByUserIdAndStatusIn(@Param("userId") UUID userId, @Param("statuses") List<ApplicationStatus> statuses);
+    @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.applicationDate = :date AND a.archived = false")
+    long countByUserIdAndApplicationDateAndArchivedFalse(@Param("userId") UUID userId, @Param("date") java.time.LocalDate date);
 
-    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt > :reminderThreshold ORDER BY a.createdAt ASC")
+    @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.status IN :statuses AND a.archived = false")
+    long countByUserIdAndStatusInAndArchivedFalse(@Param("userId") UUID userId, @Param("statuses") List<ApplicationStatus> statuses);
+
+    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt > :reminderThreshold AND a.archived = false ORDER BY a.createdAt ASC")
     List<JobApplication> findUpcomingByUserId(@Param("userId") UUID userId, @Param("reminderThreshold") LocalDateTime reminderThreshold);
 
-    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt <= :reminderThreshold ORDER BY a.createdAt ASC")
+    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt <= :reminderThreshold AND a.archived = false ORDER BY a.createdAt ASC")
     List<JobApplication> findOverdueByUserId(@Param("userId") UUID userId, @Param("reminderThreshold") LocalDateTime reminderThreshold);
 
     List<JobApplication> findByStatusIsNullAndUpdatedAtBefore(LocalDateTime updatedAt);

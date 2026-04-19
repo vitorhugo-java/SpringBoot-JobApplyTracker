@@ -60,6 +60,15 @@ public class JobApplication {
     @Column(name = "recruiter_dm_sent_at")
     private LocalDateTime recruiterDmSentAt;
 
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
+
+    @Column(name = "archived", nullable = false)
+    private boolean archived;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -119,6 +128,15 @@ public class JobApplication {
 
     public LocalDateTime getRecruiterDmSentAt() { return recruiterDmSentAt; }
     public void setRecruiterDmSentAt(LocalDateTime recruiterDmSentAt) { this.recruiterDmSentAt = recruiterDmSentAt; }
+
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
+
+    public boolean isArchived() { return archived; }
+    public void setArchived(boolean archived) { this.archived = archived; }
+
+    public LocalDateTime getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

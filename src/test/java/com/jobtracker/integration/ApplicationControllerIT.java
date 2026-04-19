@@ -57,7 +57,8 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.vacancyName").value("Software Engineer"))
-                .andExpect(jsonPath("$.status").value("RH"));
+                .andExpect(jsonPath("$.status").value("RH"))
+                .andExpect(jsonPath("$.note").value("Remember to follow up"));
     }
 
         @Test
@@ -147,8 +148,8 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void deleteApplication_shouldReturn200() throws Exception {
-        ApplicationRequest create = buildRequest("Delete Me");
+        void archiveApplication_shouldHideFromActiveList() throws Exception {
+                ApplicationRequest create = buildRequest("Archive Me");
         MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -157,14 +158,21 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
 
         String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(delete("/api/v1/applications/{id}", id)
+        mockMvc.perform(patch("/api/v1/applications/{id}/archive", id)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Application deleted successfully"));
+                .andExpect(jsonPath("$.archived").value(true));
 
-        mockMvc.perform(get("/api/v1/applications/{id}", id)
+        mockMvc.perform(get("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+
+        mockMvc.perform(get("/api/v1/applications")
+                        .param("archived", "true")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
@@ -208,7 +216,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         return new ApplicationRequest(
                 vacancyName, "Some Recruiter", "HR Department",
                 "https://example.com/job", LocalDate.now().minusDays(1),
-                false, false, null, "RH", false
+                false, false, null, "RH", false, "Remember to follow up"
         );
     }
 }

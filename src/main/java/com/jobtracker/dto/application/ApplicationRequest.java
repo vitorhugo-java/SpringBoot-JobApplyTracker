@@ -47,5 +47,8 @@ public record ApplicationRequest(
 
         @Schema(description = "Whether a DM reminder to the recruiter is enabled", example = "true")
         @NotNull(message = "recruiterDmReminderEnabled is required")
-        Boolean recruiterDmReminderEnabled
+        Boolean recruiterDmReminderEnabled,
+
+        @Schema(description = "Personal notes about this application", example = "Follow up next Monday")
+        String note
 ) {}

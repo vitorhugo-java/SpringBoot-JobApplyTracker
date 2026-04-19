@@ -140,19 +140,23 @@ class ApplicationServiceTest {
     }
 
     @Test
-    void delete_shouldDeleteApplication() {
+    void archive_shouldArchiveApplication() {
         when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
         when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
+        when(applicationRepository.save(app)).thenReturn(app);
+        when(applicationMapper.toResponse(app)).thenReturn(response);
 
-        applicationService.delete(APP_UUID);
-        verify(applicationRepository).delete(app);
+        applicationService.archive(APP_UUID);
+        verify(applicationRepository).save(app);
+        assertThat(app.isArchived()).isTrue();
+        assertThat(app.getArchivedAt()).isNotNull();
     }
 
     @Test
-    void delete_shouldThrow_whenNotFound() {
+    void archive_shouldThrow_whenNotFound() {
         when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
         when(applicationRepository.findByIdAndUserId(OTHER_UUID, USER_UUID)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> applicationService.delete(OTHER_UUID))
+        assertThatThrownBy(() -> applicationService.archive(OTHER_UUID))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -164,7 +168,7 @@ class ApplicationServiceTest {
         when(applicationRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
         when(applicationMapper.toResponse(app)).thenReturn(response);
 
-        ApplicationPageResponse result = applicationService.getAll(null, null, null, null, null, null, 0, 10, null);
+        ApplicationPageResponse result = applicationService.getAll(null, null, null, null, null, null, false, 0, 10, null);
         assertThat(result.content()).hasSize(1);
         assertThat(result.totalElements()).isEqualTo(1);
     }
@@ -172,7 +176,7 @@ class ApplicationServiceTest {
     @Test
     void getAll_shouldThrow_whenInvalidSortField() {
         when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
-        assertThatThrownBy(() -> applicationService.getAll(null, null, null, null, null, null, 0, 10, "invalidField,asc"))
+        assertThatThrownBy(() -> applicationService.getAll(null, null, null, null, null, null, false, 0, 10, "invalidField,asc"))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Invalid sort field");
     }
@@ -232,6 +236,7 @@ class ApplicationServiceTest {
         a.setOrganization("HR");
         a.setStatus(ApplicationStatus.RH);
         a.setApplicationDate(LocalDate.now());
+        a.setNote("Follow up this week");
         a.setUser(user);
         return a;
     }
@@ -240,13 +245,13 @@ class ApplicationServiceTest {
         return new ApplicationRequest(
             "Software Engineer", "Recruiter", "HR",
             "https://example.com/job", LocalDate.now(),
-            false, false, null, "RH", false
+            false, false, null, "RH", false, "Follow up this week"
         );
     }
 
     private ApplicationResponse buildApplicationResponse(UUID id) {
         return new ApplicationResponse(id, "Software Engineer", "Recruiter", "HR",
                 "https://example.com/job", LocalDate.now(), false, false, null, "RH", null,
-                false, LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
+                false, LocalDateTime.now(), "Follow up this week", false, null, LocalDateTime.now(), LocalDateTime.now());
     }
 }

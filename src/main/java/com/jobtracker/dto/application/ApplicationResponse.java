@@ -38,6 +38,13 @@ public record ApplicationResponse(
         @Schema(description = "Timestamp when DM was sent to the recruiter", example = "2024-06-05T14:30:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime recruiterDmSentAt,
+        @Schema(description = "Personal notes about this application", example = "Follow up next Monday")
+        String note,
+        @Schema(description = "Whether the application is archived", example = "false")
+        boolean archived,
+        @Schema(description = "Timestamp when application was archived", example = "2024-06-10T09:15:00")
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        LocalDateTime archivedAt,
         @Schema(description = "Record creation timestamp", example = "2024-06-01T10:00:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime createdAt,

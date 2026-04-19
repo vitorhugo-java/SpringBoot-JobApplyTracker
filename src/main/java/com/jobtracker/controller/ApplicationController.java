@@ -128,7 +128,7 @@ public class ApplicationController {
     }
 
     @Operation(
-        summary = "Delete a job application",
+        summary = "Delete a job application permanently",
         responses = {
             @ApiResponse(responseCode = "200", description = "Application deleted"),
             @ApiResponse(responseCode = "404", description = "Application not found")
@@ -139,6 +139,20 @@ public class ApplicationController {
             @Parameter(description = "Application ID", required = true) @PathVariable UUID id) {
         applicationService.delete(id);
         return ResponseEntity.ok(Map.of("message", "Application deleted successfully"));
+    }
+
+    @Operation(
+        summary = "Archive a job application",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Application archived",
+                    content = @Content(schema = @Schema(implementation = ApplicationResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Application not found")
+        }
+    )
+    @PatchMapping("/{id}/archive")
+    public ResponseEntity<ApplicationResponse> archive(
+            @Parameter(description = "Application ID", required = true) @PathVariable UUID id) {
+        return ResponseEntity.ok(applicationService.archive(id));
     }
 
     @Operation(
@@ -157,11 +171,12 @@ public class ApplicationController {
             @Parameter(description = "Filter to date (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate applicationDateTo,
             @Parameter(description = "Filter by interview scheduled flag") @RequestParam(required = false) Boolean interviewScheduled,
             @Parameter(description = "Filter by recruiter DM reminder flag") @RequestParam(required = false) Boolean recruiterDmReminderEnabled,
+            @Parameter(description = "Filter by archived flag (defaults to false)") @RequestParam(required = false) Boolean archived,
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Sort field") @RequestParam(required = false) String sort) {
         return ResponseEntity.ok(applicationService.getAll(status, recruiterName, applicationDateFrom,
-                applicationDateTo, interviewScheduled, recruiterDmReminderEnabled, page, size, sort));
+                applicationDateTo, interviewScheduled, recruiterDmReminderEnabled, archived, page, size, sort));
     }
 
     @Operation(
