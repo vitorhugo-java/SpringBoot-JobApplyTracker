@@ -89,4 +89,30 @@ public class EmailService {
             throw new IllegalStateException("Failed to send pending applications reminder email", ex);
         }
     }
+
+    public void sendRecruiterDmReminderEmail(User user, long pendingDmCount) {
+        if (!mailEnabled) {
+            log.info("event=MAIL_DISABLED_SKIP to={} type=RECRUITER_DM_REMINDER", user.getEmail());
+            return;
+        }
+
+        String body = String.format(
+                "Hello %s,\n\nYou still have %d application(s) with recruiter DM reminder enabled and no DM sent yet.\nOpen JobTracker and send your recruiter message today.\n",
+                user.getName(),
+                pendingDmCount
+        );
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(user.getEmail());
+            helper.setFrom(fromAddress);
+            helper.setSubject("JobTracker reminder: send recruiter DM");
+            helper.setText(body, false);
+            mailSender.send(message);
+            log.info("event=MAIL_SENT to={} type=RECRUITER_DM_REMINDER pendingDmCount={}", user.getEmail(), pendingDmCount);
+        } catch (MessagingException | MailException ex) {
+            throw new IllegalStateException("Failed to send recruiter DM reminder email", ex);
+        }
+    }
 }

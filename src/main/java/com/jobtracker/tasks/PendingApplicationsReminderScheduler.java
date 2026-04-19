@@ -34,6 +34,11 @@ public class PendingApplicationsReminderScheduler {
             if (pendingCount > 0) {
                 emailService.sendPendingApplicationsReminderEmail(user, pendingCount);
             }
+
+            long pendingDmCount = applicationRepository.countPendingDmRemindersByUserId(user.getId());
+            if (pendingDmCount > 0) {
+                emailService.sendRecruiterDmReminderEmail(user, pendingDmCount);
+            }
         }
     }
 }
