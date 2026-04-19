@@ -26,6 +26,9 @@ public interface ApplicationRepository extends JpaRepository<JobApplication, UUI
 
     long countByUserIdAndRecruiterDmReminderEnabledTrue(UUID userId);
 
+    @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL")
+    long countPendingDmRemindersByUserId(@Param("userId") UUID userId);
+
     long countByUserIdAndStatusIsNull(UUID userId);
 
     long countByUserIdAndStatus(UUID userId, ApplicationStatus status);

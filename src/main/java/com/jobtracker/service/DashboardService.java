@@ -39,7 +39,7 @@ public class DashboardService {
 
         long overdueFollowUps = applicationRepository.findOverdueByUserId(userId, LocalDateTime.now().minusHours(6)).size();
 
-        long dmRemindersEnabled = applicationRepository.countByUserIdAndRecruiterDmReminderEnabledTrue(userId);
+        long dmRemindersEnabled = applicationRepository.countPendingDmRemindersByUserId(userId);
 
         long toSendLater = applicationRepository.countByUserIdAndStatusIsNull(userId);
 
