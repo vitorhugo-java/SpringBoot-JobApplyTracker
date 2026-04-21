@@ -35,3 +35,28 @@ replay_pid*
 .idea/
 
 .vscode/
+
+# Environment & Secrets (AIOX)
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Dependencies (AIOX)
+node_modules/
+node_modules
+
+# Build & Logs (AIOX)
+dist/
+build/
+logs/
+
+# IDE & OS (AIOX)
+.DS_Store
+Thumbs.db
+*.swp
+
+# AIOX Local (AIOX)
+.aiox-core/local/
+.claude/settings.local.json
+.aiox/install-log.txt
