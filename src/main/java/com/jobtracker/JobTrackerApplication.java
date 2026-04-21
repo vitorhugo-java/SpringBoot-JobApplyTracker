@@ -7,9 +7,11 @@ import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAuto
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 import org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration;
 import org.springframework.boot.autoconfigure.websocket.servlet.WebSocketServletAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.endpoint.jmx.JmxEndpointAutoConfiguration;
 
 @SpringBootApplication(exclude = {
         JmxAutoConfiguration.class,
+        JmxEndpointAutoConfiguration.class,
         FreeMarkerAutoConfiguration.class,
         GroovyTemplateAutoConfiguration.class,
         MustacheAutoConfiguration.class,
