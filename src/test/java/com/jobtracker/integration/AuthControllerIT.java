@@ -239,6 +239,28 @@ class AuthControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+        @Test
+        void sendTestEmail_shouldReturn200_whenAuthenticated() throws Exception {
+                RegisterRequest reg = new RegisterRequest("Mail User", "mail-user@example.com", "pass1234", "pass1234");
+                MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(reg)))
+                                .andReturn();
+
+                AuthResponse auth = objectMapper.readValue(regResult.getResponse().getContentAsString(), AuthResponse.class);
+
+                mockMvc.perform(post("/api/v1/account/test-email")
+                                                .header("Authorization", "Bearer " + auth.accessToken()))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").isNotEmpty());
+        }
+
+        @Test
+        void sendTestEmail_shouldReturn401_whenNotAuthenticated() throws Exception {
+                mockMvc.perform(post("/api/v1/account/test-email"))
+                                .andExpect(status().isForbidden());
+        }
+
     @Test
     void forgotPassword_shouldReturn200_regardlessOfEmailExistence() throws Exception {
         mockMvc.perform(post("/api/v1/auth/forgot-password")

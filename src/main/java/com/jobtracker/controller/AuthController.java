@@ -190,4 +190,5 @@ public class AuthController {
     public ResponseEntity<MessageResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         return ResponseEntity.ok(authService.changePassword(request));
     }
+
 }

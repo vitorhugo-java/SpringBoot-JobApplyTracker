@@ -4,6 +4,7 @@ import com.jobtracker.entity.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ import org.springframework.scheduling.annotation.Async;
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+    private static final DateTimeFormatter TEST_EMAIL_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
@@ -34,6 +36,10 @@ public class EmailService {
         this.templateEngine = templateEngine;
         this.mailEnabled = mailEnabled;
         this.fromAddress = fromAddress;
+    }
+
+    public boolean isMailEnabled() {
+        return mailEnabled;
     }
 
     @Async
@@ -113,6 +119,32 @@ public class EmailService {
             log.info("event=MAIL_SENT to={} type=RECRUITER_DM_REMINDER pendingDmCount={}", user.getEmail(), pendingDmCount);
         } catch (MessagingException | MailException ex) {
             throw new IllegalStateException("Failed to send recruiter DM reminder email", ex);
+        }
+    }
+
+    public void sendTestEmail(User user) {
+        if (!mailEnabled) {
+            log.info("event=MAIL_DISABLED_SKIP to={} type=TEST_EMAIL", user.getEmail());
+            return;
+        }
+
+        String body = String.format(
+                "Hello %s,\n\nThis is a test email from JobTracker.\nSent at: %s\n\nIf you received this message, your email configuration is working.",
+                user.getName(),
+                LocalDateTime.now().format(TEST_EMAIL_TIMESTAMP_FORMAT)
+        );
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(user.getEmail());
+            helper.setFrom(fromAddress);
+            helper.setSubject("JobTracker test email");
+            helper.setText(body, false);
+            mailSender.send(message);
+            log.info("event=MAIL_SENT to={} type=TEST_EMAIL", user.getEmail());
+        } catch (MessagingException | MailException ex) {
+            throw new IllegalStateException("Failed to send test email", ex);
         }
     }
 }
