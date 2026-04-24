@@ -1,8 +1,11 @@
 name: Auto-Labeler
 
 on:
+  issues:
+    types: [opened, reopened]
   pull_request_target:
     types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -10,7 +13,7 @@ permissions:
 
 jobs:
   label:
-    name: Label PR by changed files
+    name: Label
     runs-on: ubuntu-latest
     steps:
       - uses: actions/labeler@v5
