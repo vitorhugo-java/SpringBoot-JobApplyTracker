@@ -1,6 +1,6 @@
 # SpringBoot Job Apply Tracker API
 
-[Frontend (este diretório)](./) | [Backend Spring Boot](../SpringBoot-JobApplyTracker/) | [README Backend](../SpringBoot-JobApplyTracker/README.md)
+[Frontend - React-JobApplyTracker](https://github.com/vitorhugo-java/React-JobApplyTracker) 
 
 A production-ready Spring Boot REST API for tracking job applications, built with Java 21, Spring Security JWT authentication, MariaDB, and comprehensive test coverage.
 
