@@ -205,18 +205,23 @@ class ApplicationServiceTest {
     void getOverdue_shouldReturnList() {
         LocalDateTime before = LocalDateTime.now();
         when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
-        when(applicationRepository.findOverdueByUserId(eq(USER_UUID), any(LocalDateTime.class)))
+        when(applicationRepository.findOverdueByUserId(eq(USER_UUID), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(Collections.emptyList());
 
         List<ApplicationResponse> result = applicationService.getOverdue();
         LocalDateTime after = LocalDateTime.now();
 
         ArgumentCaptor<LocalDateTime> thresholdCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-        verify(applicationRepository).findOverdueByUserId(eq(USER_UUID), thresholdCaptor.capture());
+        ArgumentCaptor<LocalDateTime> expireCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(applicationRepository).findOverdueByUserId(eq(USER_UUID), thresholdCaptor.capture(), expireCaptor.capture());
 
         LocalDateTime expectedMin = before.minusHours(6).minusSeconds(1);
         LocalDateTime expectedMax = after.minusHours(6).plusSeconds(1);
         assertThat(thresholdCaptor.getValue()).isBetween(expectedMin, expectedMax);
+
+        LocalDateTime expireMin = before.minusDays(2).minusSeconds(1);
+        LocalDateTime expireMax = after.minusDays(2).plusSeconds(1);
+        assertThat(expireCaptor.getValue()).isBetween(expireMin, expireMax);
         assertThat(result).isEmpty();
     }
 

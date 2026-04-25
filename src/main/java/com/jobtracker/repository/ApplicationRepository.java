@@ -44,8 +44,8 @@ public interface ApplicationRepository extends JpaRepository<JobApplication, UUI
     @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt > :reminderThreshold AND a.archived = false ORDER BY a.createdAt ASC")
     List<JobApplication> findUpcomingByUserId(@Param("userId") UUID userId, @Param("reminderThreshold") LocalDateTime reminderThreshold);
 
-    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt <= :reminderThreshold AND a.archived = false ORDER BY a.createdAt ASC")
-    List<JobApplication> findOverdueByUserId(@Param("userId") UUID userId, @Param("reminderThreshold") LocalDateTime reminderThreshold);
+    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt <= :reminderThreshold AND a.createdAt > :expireThreshold AND a.archived = false ORDER BY a.createdAt ASC")
+    List<JobApplication> findOverdueByUserId(@Param("userId") UUID userId, @Param("reminderThreshold") LocalDateTime reminderThreshold, @Param("expireThreshold") LocalDateTime expireThreshold);
 
     List<JobApplication> findByStatusIsNullAndUpdatedAtBefore(LocalDateTime updatedAt);
 
