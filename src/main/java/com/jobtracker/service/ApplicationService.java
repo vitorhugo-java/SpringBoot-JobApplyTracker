@@ -170,11 +170,17 @@ public class ApplicationService {
     public List<ApplicationResponse> getOverdue() {
         UUID userId = securityUtils.getCurrentUserId();
         LocalDateTime reminderThreshold = LocalDateTime.now().minusHours(6);
-        return applicationRepository.findOverdueByUserId(userId, reminderThreshold)
+        LocalDateTime expireThreshold = LocalDateTime.now().minusDays(2);
+        return applicationRepository.findOverdueByUserId(userId, reminderThreshold, expireThreshold)
                 .stream().map(applicationMapper::toResponse).toList();
     }
 
     private void mapRequestToEntity(ApplicationRequest request, JobApplication app) {
+        boolean isSendLater = request.status() == null || request.status().isBlank();
+        if (!isSendLater && request.applicationDate() == null) {
+            throw new BadRequestException("Application date is required when 'Send Later' is not marked");
+        }
+
         app.setVacancyName(normalizeOptionalText(request.vacancyName()));
         app.setRecruiterName(request.recruiterName());
         app.setOrganization(request.organization());
