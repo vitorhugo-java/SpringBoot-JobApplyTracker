@@ -86,7 +86,8 @@ class ApplicationRepositoryIT extends AbstractIntegrationTest {
         applicationRepository.save(app);
 
         var threshold = LocalDateTime.now().plusHours(1);
-        var results = applicationRepository.findOverdueByUserId(user.getId(), threshold);
+        var expireThreshold = LocalDateTime.now().minusDays(7);
+        var results = applicationRepository.findOverdueByUserId(user.getId(), threshold, expireThreshold);
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getVacancyName()).isEqualTo("Overdue");
     }
