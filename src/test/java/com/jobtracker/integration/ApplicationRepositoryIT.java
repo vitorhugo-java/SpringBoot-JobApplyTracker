@@ -93,6 +93,22 @@ class ApplicationRepositoryIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void reminderQueries_shouldIgnoreApplicationsMarkedToSendLater() {
+        JobApplication sendLater = buildApp("Send Later", user);
+        sendLater.setStatus(null);
+        sendLater.setApplicationDate(null);
+        sendLater.setRecruiterDmReminderEnabled(true);
+        applicationRepository.save(sendLater);
+
+        var threshold = LocalDateTime.now().minusHours(6);
+        var expireThreshold = LocalDateTime.now().minusDays(7);
+
+        assertThat(applicationRepository.findUpcomingByUserId(user.getId(), threshold)).isEmpty();
+        assertThat(applicationRepository.findOverdueByUserId(user.getId(), threshold, expireThreshold)).isEmpty();
+        assertThat(applicationRepository.countPendingDmRemindersByUserId(user.getId())).isZero();
+    }
+
+    @Test
     void findAll_pageable_shouldReturnPaged() {
         for (int i = 0; i < 5; i++) {
             applicationRepository.save(buildApp("App " + i, user));
