@@ -72,20 +72,23 @@ public class GoogleDriveOAuthService {
         validateServerConfigured();
         oauthStateRepository.deleteByExpiresAtBefore(LocalDateTime.now());
 
-        if (error != null && !error.isBlank()) {
-            return buildFrontendRedirect("error", "Google returned an OAuth error: " + error);
-        }
-        if (state == null || state.isBlank()) {
-            return buildFrontendRedirect("error", "Missing OAuth state");
-        }
-        if (code == null || code.isBlank()) {
-            return buildFrontendRedirect("error", "Missing authorization code");
-        }
-
         GoogleDriveOAuthState oauthState = null;
         try {
-            oauthState = oauthStateRepository.findByStateToken(state)
-                    .orElseThrow(() -> new BadRequestException("Invalid or expired Google OAuth state"));
+            if (state != null && !state.isBlank()) {
+                oauthState = oauthStateRepository.findByStateToken(state).orElse(null);
+            }
+            if (error != null && !error.isBlank()) {
+                return buildFrontendRedirect("error", "Google returned an OAuth error: " + error);
+            }
+            if (state == null || state.isBlank()) {
+                return buildFrontendRedirect("error", "Missing OAuth state");
+            }
+            if (code == null || code.isBlank()) {
+                return buildFrontendRedirect("error", "Missing authorization code");
+            }
+            if (oauthState == null) {
+                throw new BadRequestException("Invalid or expired Google OAuth state");
+            }
             if (oauthState.getExpiresAt().isBefore(LocalDateTime.now())) {
                 throw new BadRequestException("Google OAuth state expired");
             }
