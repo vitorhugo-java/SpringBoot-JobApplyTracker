@@ -1,9 +1,9 @@
 # docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 services:
   app:
-    build:
-      args:
-        GRAALVM_VERSION: ${GRAALVM_VERSION:-21}
+    # Pull pre-built image from GitHub Container Registry instead of building locally
+    image: ghcr.io/vitorhugo-java/springboot-jobapplytracker:latest
+    container_name: job-tracker-app
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
@@ -27,6 +27,12 @@ services:
         -XX:MaxRAMPercentage=75.0
         -XX:+ExitOnOutOfMemoryError
         -Djava.security.egd=file:/dev/./urandom
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
     deploy:
       resources:

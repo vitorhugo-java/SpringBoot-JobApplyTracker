@@ -151,9 +151,37 @@ The backend does not currently have literal `INTERVIEW` or `HIRED` statuses.
 
 ### With Docker Compose
 
+Development (build locally):
+
 ```bash
 docker-compose up -d
 ```
+
+Production (use pre-built image from GitHub Container Registry):
+
+1. Log in to GHCR (requires a Personal Access Token with `read:packages`):
+
+```bash
+# POSIX / macOS / WSL
+echo $CR_PAT | docker login ghcr.io -u vitorhugo-java --password-stdin
+
+# Windows PowerShell
+# $env:CR_PAT | docker login ghcr.io -u vitorhugo-java --password-stdin
+```
+
+2. Pull the production compose file image(s):
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+```
+
+3. Start the services from the production compose file:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+By default this compose file pulls image: `ghcr.io/vitorhugo-java/springboot-jobapplytracker:latest`. Change the image name in `docker-compose.prod.yml` if you publish with a different tag or repository.
 
 The API will be available at `http://localhost:8080`.
 
