@@ -98,6 +98,11 @@ public class GoogleDriveClientConfig {
      * {@link OAuth2ErrorResponseErrorHandler} translates Google error responses into typed
      * {@link org.springframework.security.oauth2.core.OAuth2AuthorizationException}s rather than
      * raw {@link org.springframework.web.client.HttpClientErrorException}s.
+     * <p>
+     * This {@link RestTemplate} is <em>only</em> used for OAuth2 token-endpoint exchanges.
+     * It intentionally registers only the two converters required for that operation, which is
+     * why the default message converters ({@code StringHttpMessageConverter}, etc.) are not
+     * present.
      */
     private RestTemplate buildRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();

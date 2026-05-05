@@ -193,13 +193,13 @@ public class GoogleDriveService {
                 .orElseGet(() -> googleDriveApiClient.createFolder(connection.getAccessToken(), rootFolderId, vacancyFolderName));
 
         // Attempt to atomically record the resolved folder ID; if a concurrent request beat us,
-        // fetch the winning ID from the DB and validate/use that folder instead.
+        // fetch the winning ID from the DB and use that folder instead.
         int updated = applicationRepository.setDriveVacancyFolderIdIfAbsent(application.getId(), folder.id());
         if (updated == 0) {
             String winningFolderId = applicationRepository.findByIdAndUserId(application.getId(), userId)
                     .map(JobApplication::getDriveVacancyFolderId)
                     .filter(StringUtils::hasText)
-                    .orElse(folder.id()); // fallback: use our own newly created folder
+                    .orElse(folder.id()); // concurrent tx hasn't committed yet; use our own folder this time
             if (!winningFolderId.equals(folder.id())) {
                 folder = googleDriveApiClient.getFileMetadata(connection.getAccessToken(), winningFolderId);
             }
