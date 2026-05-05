@@ -74,6 +74,14 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 | GET | `/api/applications/upcoming` | Upcoming next steps |
 | GET | `/api/applications/overdue` | Overdue next steps |
 
+### Gamification
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/gamification/profile` | Get current XP, level, rank title and streak snapshot |
+| GET | `/api/v1/gamification/achievements` | List achievement catalog with unlocked state |
+| POST | `/api/v1/gamification/events` | Apply a tracked XP event and return updated profile |
+
 ## Application Status Values
 
 - `RH`
@@ -82,6 +90,62 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 - `Teste Técnico`
 - `Fiz teste Técnico - aguardando atualização`
 - `RH (Negociação)`
+
+## Gamification System
+
+The backend tracks gamification in `user_gamification`, `achievements`, and `user_achievements`. XP is awarded from application lifecycle events and stored per user, while each application keeps one-time award flags so the same action is not counted twice. The service also derives the current streak and unlocks achievements from the user's non-archived applications.
+
+### XP rules
+
+| Action | Backend event | XP |
+|--------|---------------|----|
+| New application | `APPLICATION_CREATED` | +10 |
+| Recruiter DM sent | `RECRUITER_DM_SENT` | +15 |
+| Interview progress | `INTERVIEW_PROGRESS` | +50 |
+| Note added | `NOTE_ADDED` | +5 |
+| Offer / win | `OFFER_WON` | +500 |
+
+### Level formula
+
+- `level = floor(sqrt(totalXp / 100)) + 1`
+- `XP required for level N = 100 * (N - 1)^2`
+
+Examples:
+
+| Level | Total XP required |
+|-------|-------------------|
+| 1 | 0 |
+| 2 | 100 |
+| 3 | 400 |
+| 4 | 900 |
+| 5 | 1600 |
+
+### Rank milestones
+
+| Milestone level | XP threshold | Rank title |
+|-----------------|--------------|------------|
+| 1 | 0 | Desempregado de Aluguel |
+| 6 | 2500 | Job Hunter Iniciante |
+| 16 | 22500 | Sobrevivente do LinkedIn |
+| 31 | 90000 | Mestre das Soft Skills |
+| 51 | 250000 | Lenda das Contratacoes |
+
+### Achievements
+
+| Code | Name | Unlock condition in the backend today |
+|------|------|----------------------------------------|
+| `EARLY_BIRD` | Early Bird | Have 5 non-archived applications with `applicationDate` set and `createdAt` before `09:00` |
+| `NETWORKING_PRO` | Networking Pro | Have 10 recruiter DMs sent inside any rolling 7-day window |
+| `PERSISTENT` | Persistent | Reach a 5-day longest streak based on distinct `applicationDate` values |
+| `GHOSTBUSTER` | Ghostbuster | Have any non-archived application currently in `GHOSTING` status |
+
+### Current backend status mapping
+
+The backend does not currently have literal `INTERVIEW` or `HIRED` statuses.
+
+- `INTERVIEW_PROGRESS` is awarded when `interviewScheduled = true` or when the application enters one of these statuses: `Fiz a RH - Aguardando Atualização`, `Fiz a Hiring Manager - Aguardando Atualização`, `Teste Técnico`, `Fiz teste Técnico - aguardando atualização`, or `RH (Negociação)`.
+- `OFFER_WON` is currently mapped to `RH (Negociação)` (`RH_NEGOCIACAO` in code), which is the backend's current closing-stage proxy until dedicated offer/hired statuses exist.
+- `GHOSTBUSTER` currently unlocks from `GHOSTING` status itself; although the seeded achievement description mentions "30 days", the implemented unlock rule is status-based today.
 
 ## Running Locally
 

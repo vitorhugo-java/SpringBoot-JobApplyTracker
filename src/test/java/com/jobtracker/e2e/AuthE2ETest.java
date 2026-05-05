@@ -3,6 +3,8 @@ package com.jobtracker.e2e;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
+import com.jobtracker.repository.UserAchievementRepository;
+import com.jobtracker.repository.UserGamificationRepository;
 import com.jobtracker.repository.UserRepository;
 import io.restassured.http.Cookie;
 import io.restassured.response.Response;
@@ -20,13 +22,17 @@ class AuthE2ETest extends AbstractE2ETest {
 
     @Autowired private UserRepository userRepository;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
-        @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
-        @Autowired private ApplicationRepository applicationRepository;
+    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired private ApplicationRepository applicationRepository;
+    @Autowired private UserGamificationRepository userGamificationRepository;
+    @Autowired private UserAchievementRepository userAchievementRepository;
 
     @BeforeEach
     void cleanDb() {
-                applicationRepository.deleteAll();
-                passwordResetTokenRepository.deleteAll();
+        userAchievementRepository.deleteAll();
+        userGamificationRepository.deleteAll();
+        applicationRepository.deleteAll();
+        passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }

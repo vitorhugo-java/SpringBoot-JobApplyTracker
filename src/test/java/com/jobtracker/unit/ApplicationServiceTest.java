@@ -9,6 +9,7 @@ import com.jobtracker.exception.ResourceNotFoundException;
 import com.jobtracker.mapper.ApplicationMapper;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.service.ApplicationService;
+import com.jobtracker.service.GamificationService;
 import com.jobtracker.util.SecurityUtils;
 import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,7 @@ class ApplicationServiceTest {
 
     @Mock private ApplicationRepository applicationRepository;
     @Mock private ApplicationMapper applicationMapper;
+    @Mock private GamificationService gamificationService;
     @Mock private SecurityUtils securityUtils;
     @Mock(answer = RETURNS_DEEP_STUBS) private Tracer tracer;
 
@@ -71,6 +73,7 @@ class ApplicationServiceTest {
         ApplicationResponse result = applicationService.create(request);
         assertThat(result.id()).isEqualTo(APP_UUID);
         verify(applicationRepository).save(any(JobApplication.class));
+        verify(gamificationService).onApplicationCreated(app);
     }
 
     @Test
@@ -101,6 +104,7 @@ class ApplicationServiceTest {
 
         ApplicationResponse result = applicationService.update(APP_UUID, request);
         assertThat(result).isNotNull();
+        verify(gamificationService).onApplicationUpdated(eq(app), eq(ApplicationStatus.RH), eq(false), eq("Follow up this week"));
     }
 
     @Test
@@ -114,6 +118,7 @@ class ApplicationServiceTest {
         ApplicationResponse result = applicationService.updateStatus(APP_UUID, statusRequest);
         assertThat(result).isNotNull();
         assertThat(app.getStatus()).isEqualTo(ApplicationStatus.RH);
+        verify(gamificationService).onApplicationStatusUpdated(app, ApplicationStatus.RH);
     }
 
     @Test
@@ -150,6 +155,32 @@ class ApplicationServiceTest {
         verify(applicationRepository).save(app);
         assertThat(app.isArchived()).isTrue();
         assertThat(app.getArchivedAt()).isNotNull();
+    }
+
+    @Test
+    void markDmSent_shouldAwardOnlyOnFirstSend() {
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
+        when(applicationRepository.save(app)).thenReturn(app);
+        when(applicationMapper.toResponse(app)).thenReturn(response);
+
+        applicationService.markDmSent(APP_UUID, new MarkDmSentRequest());
+
+        assertThat(app.getRecruiterDmSentAt()).isNotNull();
+        verify(gamificationService).onRecruiterDmSent(app, true);
+    }
+
+    @Test
+    void markDmSent_shouldNotAwardAgainWhenAlreadySent() {
+        app.setRecruiterDmSentAt(LocalDateTime.now().minusDays(1));
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
+        when(applicationRepository.save(app)).thenReturn(app);
+        when(applicationMapper.toResponse(app)).thenReturn(response);
+
+        applicationService.markDmSent(APP_UUID, new MarkDmSentRequest());
+
+        verify(gamificationService).onRecruiterDmSent(app, false);
     }
 
     @Test

@@ -41,6 +41,8 @@ public interface ApplicationRepository extends JpaRepository<JobApplication, UUI
     @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.status IN :statuses AND a.archived = false")
     long countByUserIdAndStatusInAndArchivedFalse(@Param("userId") UUID userId, @Param("statuses") List<ApplicationStatus> statuses);
 
+    List<JobApplication> findAllByUser_IdAndArchivedFalse(UUID userId);
+
     @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.status IS NOT NULL AND a.recruiterDmReminderEnabled = true AND a.recruiterDmSentAt IS NULL AND a.createdAt > :reminderThreshold AND a.archived = false ORDER BY a.createdAt ASC")
     List<JobApplication> findUpcomingByUserId(@Param("userId") UUID userId, @Param("reminderThreshold") LocalDateTime reminderThreshold);
 

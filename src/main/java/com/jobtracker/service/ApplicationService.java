@@ -39,15 +39,18 @@ public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
     private final ApplicationMapper applicationMapper;
+    private final GamificationService gamificationService;
     private final SecurityUtils securityUtils;
     private final Tracer tracer;
 
     public ApplicationService(ApplicationRepository applicationRepository,
-                               ApplicationMapper applicationMapper,
-                               SecurityUtils securityUtils,
-                               Tracer tracer) {
+                              ApplicationMapper applicationMapper,
+                              GamificationService gamificationService,
+                              SecurityUtils securityUtils,
+                              Tracer tracer) {
         this.applicationRepository = applicationRepository;
         this.applicationMapper = applicationMapper;
+        this.gamificationService = gamificationService;
         this.securityUtils = securityUtils;
         this.tracer = tracer;
     }
@@ -59,7 +62,9 @@ public class ApplicationService {
             JobApplication app = new JobApplication();
             mapRequestToEntity(request, app);
             app.setUser(securityUtils.getCurrentUser());
-            return applicationMapper.toResponse(applicationRepository.save(app));
+            JobApplication saved = applicationRepository.save(app);
+            gamificationService.onApplicationCreated(saved);
+            return applicationMapper.toResponse(saved);
         } catch (Exception e) {
             span.error(e);
             throw e;
@@ -81,8 +86,13 @@ public class ApplicationService {
         UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
+        ApplicationStatus previousStatus = app.getStatus();
+        boolean previousInterviewScheduled = app.isInterviewScheduled();
+        String previousNote = app.getNote();
         mapRequestToEntity(request, app);
-        return applicationMapper.toResponse(applicationRepository.save(app));
+        JobApplication saved = applicationRepository.save(app);
+        gamificationService.onApplicationUpdated(saved, previousStatus, previousInterviewScheduled, previousNote);
+        return applicationMapper.toResponse(saved);
     }
 
     @Transactional
@@ -90,8 +100,11 @@ public class ApplicationService {
         UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
+        ApplicationStatus previousStatus = app.getStatus();
         applyStatusChange(app, resolveStatus(request.status()));
-        return applicationMapper.toResponse(applicationRepository.save(app));
+        JobApplication saved = applicationRepository.save(app);
+        gamificationService.onApplicationStatusUpdated(saved, previousStatus);
+        return applicationMapper.toResponse(saved);
     }
 
     @Transactional
@@ -108,8 +121,13 @@ public class ApplicationService {
         UUID userId = securityUtils.getCurrentUserId();
         JobApplication app = applicationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
-        app.setRecruiterDmSentAt(LocalDateTime.now());
-        return applicationMapper.toResponse(applicationRepository.save(app));
+        boolean dmAlreadySent = app.getRecruiterDmSentAt() != null;
+        if (!dmAlreadySent) {
+            app.setRecruiterDmSentAt(LocalDateTime.now());
+        }
+        JobApplication saved = applicationRepository.save(app);
+        gamificationService.onRecruiterDmSent(saved, !dmAlreadySent);
+        return applicationMapper.toResponse(saved);
     }
 
     @Transactional

@@ -139,3 +139,6 @@ springdoc:
     - group: dashboard
       display-name: Dashboard API
       paths-to-match: /api/v1/dashboard/**
+    - group: gamification
+      display-name: Gamification API
+      paths-to-match: /api/v1/gamification/**

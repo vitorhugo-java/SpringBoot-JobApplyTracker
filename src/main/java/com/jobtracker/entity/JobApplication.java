@@ -63,6 +63,21 @@ public class JobApplication {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "application_created_xp_awarded", nullable = false)
+    private boolean applicationCreatedXpAwarded;
+
+    @Column(name = "recruiter_dm_xp_awarded", nullable = false)
+    private boolean recruiterDmXpAwarded;
+
+    @Column(name = "interview_progress_xp_awarded", nullable = false)
+    private boolean interviewProgressXpAwarded;
+
+    @Column(name = "note_added_xp_awarded", nullable = false)
+    private boolean noteAddedXpAwarded;
+
+    @Column(name = "offer_won_xp_awarded", nullable = false)
+    private boolean offerWonXpAwarded;
+
     @Column(name = "archived", nullable = false)
     private boolean archived;
 
@@ -131,6 +146,21 @@ public class JobApplication {
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
+
+    public boolean isApplicationCreatedXpAwarded() { return applicationCreatedXpAwarded; }
+    public void setApplicationCreatedXpAwarded(boolean applicationCreatedXpAwarded) { this.applicationCreatedXpAwarded = applicationCreatedXpAwarded; }
+
+    public boolean isRecruiterDmXpAwarded() { return recruiterDmXpAwarded; }
+    public void setRecruiterDmXpAwarded(boolean recruiterDmXpAwarded) { this.recruiterDmXpAwarded = recruiterDmXpAwarded; }
+
+    public boolean isInterviewProgressXpAwarded() { return interviewProgressXpAwarded; }
+    public void setInterviewProgressXpAwarded(boolean interviewProgressXpAwarded) { this.interviewProgressXpAwarded = interviewProgressXpAwarded; }
+
+    public boolean isNoteAddedXpAwarded() { return noteAddedXpAwarded; }
+    public void setNoteAddedXpAwarded(boolean noteAddedXpAwarded) { this.noteAddedXpAwarded = noteAddedXpAwarded; }
+
+    public boolean isOfferWonXpAwarded() { return offerWonXpAwarded; }
+    public void setOfferWonXpAwarded(boolean offerWonXpAwarded) { this.offerWonXpAwarded = offerWonXpAwarded; }
 
     public boolean isArchived() { return archived; }
     public void setArchived(boolean archived) { this.archived = archived; }

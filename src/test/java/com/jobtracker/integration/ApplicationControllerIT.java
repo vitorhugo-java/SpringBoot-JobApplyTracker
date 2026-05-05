@@ -5,7 +5,10 @@ import com.jobtracker.dto.application.ApplicationRequest;
 import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.RegisterRequest;
 import com.jobtracker.repository.ApplicationRepository;
+import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
+import com.jobtracker.repository.UserAchievementRepository;
+import com.jobtracker.repository.UserGamificationRepository;
 import com.jobtracker.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +29,19 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
+    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
     @Autowired private ApplicationRepository applicationRepository;
+    @Autowired private UserGamificationRepository userGamificationRepository;
+    @Autowired private UserAchievementRepository userAchievementRepository;
 
     private String accessToken;
 
     @BeforeEach
     void setUp() throws Exception {
+        userAchievementRepository.deleteAll();
+        userGamificationRepository.deleteAll();
         applicationRepository.deleteAll();
+        passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -210,6 +219,95 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                         .content("{\"recruiterDmReminderEnabled\": true}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.recruiterDmReminderEnabled").value(true));
+    }
+
+    @Test
+    void applicationLifecycle_shouldAutoAwardXpAndAvoidDuplicates() throws Exception {
+        ApplicationRequest createRequest = new ApplicationRequest(
+                "Gamified App", "Recruiter", "Org",
+                "https://example.com/job", LocalDate.now(),
+                false, false, null, "RH", false, null
+        );
+
+        MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
+
+        assertProfileXp(10, 1);
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/mark-dm-sent", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
+        assertProfileXp(25, 1);
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/mark-dm-sent", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
+        assertProfileXp(25, 1);
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"Teste Técnico\"}"))
+                .andExpect(status().isOk());
+        assertProfileXp(75, 1);
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"Teste Técnico\"}"))
+                .andExpect(status().isOk());
+        assertProfileXp(75, 1);
+
+        ApplicationRequest addNoteRequest = new ApplicationRequest(
+                "Gamified App", "Recruiter", "Org",
+                "https://example.com/job", LocalDate.now(),
+                false, false, null, "Teste Técnico", false, "First note"
+        );
+
+        mockMvc.perform(put("/api/v1/applications/{id}", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addNoteRequest)))
+                .andExpect(status().isOk());
+        assertProfileXp(80, 1);
+
+        ApplicationRequest updateNoteRequest = new ApplicationRequest(
+                "Gamified App", "Recruiter", "Org",
+                "https://example.com/job", LocalDate.now(),
+                false, false, null, "Teste Técnico", false, "Edited note"
+        );
+
+        mockMvc.perform(put("/api/v1/applications/{id}", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateNoteRequest)))
+                .andExpect(status().isOk());
+        assertProfileXp(80, 1);
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"RH (Negociação)\"}"))
+                .andExpect(status().isOk());
+        assertProfileXp(580, 3);
+    }
+
+    private void assertProfileXp(int expectedXp, int expectedLevel) throws Exception {
+        mockMvc.perform(get("/api/v1/gamification/profile")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentXp").value(expectedXp))
+                .andExpect(jsonPath("$.level").value(expectedLevel));
     }
 
     private ApplicationRequest buildRequest(String vacancyName) {

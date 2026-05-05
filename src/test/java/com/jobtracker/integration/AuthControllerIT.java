@@ -7,6 +7,8 @@ import com.jobtracker.dto.auth.RegisterRequest;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
+import com.jobtracker.repository.UserAchievementRepository;
+import com.jobtracker.repository.UserGamificationRepository;
 import com.jobtracker.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,13 +32,17 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
-        @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
-        @Autowired private ApplicationRepository applicationRepository;
+    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired private ApplicationRepository applicationRepository;
+    @Autowired private UserGamificationRepository userGamificationRepository;
+    @Autowired private UserAchievementRepository userAchievementRepository;
 
     @BeforeEach
     void cleanDb() {
-                applicationRepository.deleteAll();
-                passwordResetTokenRepository.deleteAll();
+        userAchievementRepository.deleteAll();
+        userGamificationRepository.deleteAll();
+        applicationRepository.deleteAll();
+        passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
