@@ -419,7 +419,7 @@ If `APP_SEED_ENABLED=true` and `APP_SEED_USER_EMAIL` is not provided (or the use
 | `GOOGLE_DRIVE_CLIENT_ID` | *(empty)* | Google OAuth client ID for Drive integration |
 | `GOOGLE_DRIVE_CLIENT_SECRET` | *(empty)* | Google OAuth client secret for Drive integration |
 | `GOOGLE_DRIVE_REDIRECT_URI` | `http://localhost:8080/api/v1/google-drive/oauth/callback` | OAuth callback URL registered in Google Cloud |
-| `GOOGLE_DRIVE_OAUTH_COMPLETE_URL` | `http://localhost:5173/settings/google-drive/callback` | Frontend URL that receives OAuth completion redirects |
+| `GOOGLE_DRIVE_OAUTH_COMPLETE_URL` | *(empty)* | Frontend URL that receives OAuth completion redirects |
 | `RATE_LIMIT_AUTH_LOGIN_LIMIT_FOR_PERIOD` | `10` | Max login requests allowed per refresh period |
 | `RATE_LIMIT_AUTH_LOGIN_REFRESH_PERIOD` | `1m` | Window used by the login rate limiter |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint (Jaeger/OpenTelemetry collector) |
