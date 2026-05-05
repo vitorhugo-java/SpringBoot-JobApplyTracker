@@ -11,6 +11,7 @@ import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.GoogleDriveBaseResumeRepository;
 import com.jobtracker.repository.GoogleDriveConnectionRepository;
 import com.jobtracker.util.SecurityUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -90,18 +91,23 @@ public class GoogleDriveService {
             throw new BadRequestException("Only Google Docs base resumes are supported");
         }
 
-        GoogleDriveBaseResume resume = baseResumeRepository.findAllByConnectionIdOrderByCreatedAtAsc(connection.getId())
-                .stream()
-                .filter(existing -> existing.getGoogleFileId().equals(file.id()))
-                .findFirst()
+        GoogleDriveBaseResume resume = baseResumeRepository
+                .findByConnectionIdAndGoogleFileId(connection.getId(), file.id())
                 .orElseGet(GoogleDriveBaseResume::new);
 
         resume.setConnection(connection);
         resume.setGoogleFileId(file.id());
         resume.setDocumentName(file.name());
         resume.setWebViewLink(resolveDocumentLink(file));
-        GoogleDriveBaseResume saved = baseResumeRepository.save(resume);
-        return toBaseResumeResponse(saved);
+        try {
+            GoogleDriveBaseResume saved = baseResumeRepository.save(resume);
+            return toBaseResumeResponse(saved);
+        } catch (DataIntegrityViolationException ex) {
+            // Concurrent insert on the same (connection_id, google_file_id) – return existing
+            return baseResumeRepository.findByConnectionIdAndGoogleFileId(connection.getId(), file.id())
+                    .map(this::toBaseResumeResponse)
+                    .orElseThrow(() -> new BadRequestException("Failed to save base resume"));
+        }
     }
 
     @Transactional
@@ -116,7 +122,7 @@ public class GoogleDriveService {
     public GoogleDriveResumeCopyResponse copyBaseResumeToApplication(UUID applicationId, GoogleDriveResumeCopyRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         GoogleDriveConnection connection = getConnectionWithFreshAccessToken();
-        JobApplication application = applicationRepository.findByIdAndUserIdForUpdate(applicationId, userId)
+        JobApplication application = applicationRepository.findByIdAndUserId(applicationId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         if (!StringUtils.hasText(connection.getRootFolderId())) {

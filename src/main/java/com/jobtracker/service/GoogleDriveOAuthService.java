@@ -11,6 +11,8 @@ import com.jobtracker.repository.GoogleDriveConnectionRepository;
 import com.jobtracker.repository.GoogleDriveOAuthStateRepository;
 import com.jobtracker.util.SecurityUtils;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -22,6 +24,7 @@ import java.util.UUID;
 @Service
 public class GoogleDriveOAuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(GoogleDriveOAuthService.class);
     private static final int OAUTH_STATE_TTL_MINUTES = 10;
 
     private final GoogleDriveApiClient googleDriveApiClient;
@@ -116,6 +119,9 @@ public class GoogleDriveOAuthService {
             return buildFrontendRedirect("success", "Google Drive connected successfully");
         } catch (BadRequestException ex) {
             return buildFrontendRedirect("error", ex.getMessage());
+        } catch (Exception ex) {
+            log.error("event=GOOGLE_OAUTH_CALLBACK_ERROR state={}", state, ex);
+            return buildFrontendRedirect("error", "An unexpected error occurred. Please try again.");
         } finally {
             if (oauthState != null) {
                 oauthStateRepository.delete(oauthState);
@@ -123,9 +129,16 @@ public class GoogleDriveOAuthService {
         }
     }
 
+    /**
+     * Disconnects Google Drive and invalidates any pending OAuth authorization states for the user.
+     * Revoking pending states prevents a stale consent tab from re-connecting Drive after
+     * intentional disconnection.
+     */
     @Transactional
     public MessageResponse disconnect() {
-        connectionRepository.findByUserId(securityUtils.getCurrentUserId())
+        UUID userId = securityUtils.getCurrentUserId();
+        oauthStateRepository.deleteByUserId(userId);
+        connectionRepository.findByUserId(userId)
                 .ifPresent(connectionRepository::delete);
         return new MessageResponse("Google Drive connection removed");
     }

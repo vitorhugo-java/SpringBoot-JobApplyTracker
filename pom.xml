@@ -153,6 +153,26 @@
             <artifactId>commons-codec</artifactId>
         </dependency>
 
+        <!-- Spring OAuth2 Client (token exchange infrastructure) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
+        <!-- Google Drive SDK -->
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-drive</artifactId>
+            <version>v3-rev20240521-2.0.0</version>
+        </dependency>
+
+        <!-- Google Auth Library (Credentials adapter for the Drive SDK) -->
+        <dependency>
+            <groupId>com.google.auth</groupId>
+            <artifactId>google-auth-library-oauth2-http</artifactId>
+            <version>1.25.0</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

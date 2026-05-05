@@ -12,4 +12,6 @@ public interface GoogleDriveOAuthStateRepository extends JpaRepository<GoogleDri
     Optional<GoogleDriveOAuthState> findByStateToken(String stateToken);
 
     void deleteByExpiresAtBefore(LocalDateTime expiresAt);
+
+    void deleteByUserId(UUID userId);
 }

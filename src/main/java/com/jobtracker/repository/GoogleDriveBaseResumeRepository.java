@@ -12,4 +12,6 @@ public interface GoogleDriveBaseResumeRepository extends JpaRepository<GoogleDri
     List<GoogleDriveBaseResume> findAllByConnectionIdOrderByCreatedAtAsc(UUID connectionId);
 
     Optional<GoogleDriveBaseResume> findByIdAndConnectionUserId(UUID id, UUID userId);
+
+    Optional<GoogleDriveBaseResume> findByConnectionIdAndGoogleFileId(UUID connectionId, String googleFileId);
 }

@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.RegisterRequest;
+import com.jobtracker.entity.GoogleDriveBaseResume;
 import com.jobtracker.entity.GoogleDriveConnection;
+import com.jobtracker.entity.JobApplication;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.GoogleDriveBaseResumeRepository;
 import com.jobtracker.repository.GoogleDriveConnectionRepository;
@@ -25,12 +27,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -137,6 +142,157 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.connected").value(true))
                 .andExpect(jsonPath("$.rootFolderId").value("folder-123"))
                 .andExpect(jsonPath("$.rootFolderName").value("Root Folder"));
+    }
+
+    @Test
+    void disconnect_shouldRemoveConnectionAndReturnMessage() throws Exception {
+        googleDriveConnectionRepository.save(buildConnection());
+        assertThat(googleDriveConnectionRepository.findAll()).hasSize(1);
+
+        mockMvc.perform(delete("/api/v1/google-drive/connection")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Google Drive connection removed"));
+
+        assertThat(googleDriveConnectionRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void disconnect_shouldSucceedEvenWithNoExistingConnection() throws Exception {
+        mockMvc.perform(delete("/api/v1/google-drive/connection")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Google Drive connection removed"));
+    }
+
+    @Test
+    void addBaseResume_shouldPersistResumeAndReturn201() throws Exception {
+        GoogleDriveConnection connection = googleDriveConnectionRepository.save(buildConnection());
+        googleDriveApiClient.fileMetadataById.put("doc-abc",
+                new GoogleDriveApiClient.DriveFileMetadata(
+                        "doc-abc",
+                        "My Resume",
+                        GoogleDriveApiClient.GOOGLE_DOC_MIME_TYPE,
+                        "https://docs.google.com/document/d/doc-abc/edit"
+                ));
+
+        mockMvc.perform(post("/api/v1/google-drive/base-resumes")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"documentIdOrUrl\":\"doc-abc\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.googleFileId").value("doc-abc"))
+                .andExpect(jsonPath("$.documentName").value("My Resume"));
+
+        assertThat(googleDriveBaseResumeRepository.findAllByConnectionIdOrderByCreatedAtAsc(connection.getId()))
+                .hasSize(1);
+    }
+
+    @Test
+    void addBaseResume_shouldRejectNonGoogleDocsFile() throws Exception {
+        googleDriveConnectionRepository.save(buildConnection());
+        googleDriveApiClient.fileMetadataById.put("pdf-file",
+                new GoogleDriveApiClient.DriveFileMetadata(
+                        "pdf-file",
+                        "Resume.pdf",
+                        "application/pdf",
+                        null
+                ));
+
+        mockMvc.perform(post("/api/v1/google-drive/base-resumes")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"documentIdOrUrl\":\"pdf-file\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteBaseResume_shouldRemoveResumeAndReturn200() throws Exception {
+        GoogleDriveConnection connection = googleDriveConnectionRepository.save(buildConnection());
+        GoogleDriveBaseResume resume = buildBaseResume(connection);
+        googleDriveBaseResumeRepository.save(resume);
+
+        mockMvc.perform(delete("/api/v1/google-drive/base-resumes/" + resume.getId())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Base resume deleted successfully"));
+
+        assertThat(googleDriveBaseResumeRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void deleteBaseResume_shouldReturn404ForUnknownId() throws Exception {
+        mockMvc.perform(delete("/api/v1/google-drive/base-resumes/" + UUID.randomUUID())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void copyResume_shouldCreateFolderAndCopyDocument() throws Exception {
+        GoogleDriveConnection connection = googleDriveConnectionRepository.save(buildConnectionWithRootFolder());
+        GoogleDriveBaseResume resume = buildBaseResume(connection);
+        googleDriveBaseResumeRepository.save(resume);
+
+        JobApplication application = new JobApplication();
+        application.setUser(userRepository.findByEmail("driveuser@example.com").orElseThrow());
+        application.setVacancyName("Backend Engineer");
+        application.setOrganization("Acme");
+        application.setApplicationDate(LocalDate.now());
+        application = applicationRepository.save(application);
+
+        googleDriveApiClient.fileMetadataById.put("root-folder-id",
+                new GoogleDriveApiClient.DriveFileMetadata(
+                        "root-folder-id",
+                        "Job Tracker Root",
+                        GoogleDriveApiClient.GOOGLE_FOLDER_MIME_TYPE,
+                        "https://drive.google.com/drive/folders/root-folder-id"
+                ));
+
+        mockMvc.perform(post("/api/v1/google-drive/applications/" + application.getId() + "/resume-copies")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"baseResumeId\":\"" + resume.getId() + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.applicationId").value(application.getId().toString()))
+                .andExpect(jsonPath("$.baseResumeId").value(resume.getId().toString()))
+                .andExpect(jsonPath("$.copiedFileId").value("copied-file"))
+                .andExpect(jsonPath("$.vacancyFolderId").value("created-folder"));
+    }
+
+    @Test
+    void copyResume_shouldReturn400WhenNoRootFolderConfigured() throws Exception {
+        GoogleDriveConnection connection = googleDriveConnectionRepository.save(buildConnection());
+        GoogleDriveBaseResume resume = buildBaseResume(connection);
+        googleDriveBaseResumeRepository.save(resume);
+
+        JobApplication application = new JobApplication();
+        application.setUser(userRepository.findByEmail("driveuser@example.com").orElseThrow());
+        application.setVacancyName("SWE");
+        application.setOrganization("Corp");
+        application.setApplicationDate(LocalDate.now());
+        application = applicationRepository.save(application);
+
+        mockMvc.perform(post("/api/v1/google-drive/applications/" + application.getId() + "/resume-copies")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"baseResumeId\":\"" + resume.getId() + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    private GoogleDriveConnection buildConnectionWithRootFolder() {
+        GoogleDriveConnection connection = buildConnection();
+        connection.setRootFolderId("root-folder-id");
+        connection.setRootFolderName("Job Tracker Root");
+        return connection;
+    }
+
+    private GoogleDriveBaseResume buildBaseResume(GoogleDriveConnection connection) {
+        GoogleDriveBaseResume resume = new GoogleDriveBaseResume();
+        resume.setConnection(connection);
+        resume.setGoogleFileId("resume-file-id");
+        resume.setDocumentName("Base Resume");
+        resume.setWebViewLink("https://docs.google.com/document/d/resume-file-id/edit");
+        return resume;
     }
 
     private GoogleDriveConnection buildConnection() {
