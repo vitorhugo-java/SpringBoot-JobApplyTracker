@@ -259,7 +259,7 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
         Instant expiresAt = accessToken.getExpiresAt();
         LocalDateTime expiresAtLdt = expiresAt != null
                 ? LocalDateTime.ofInstant(expiresAt, ZoneOffset.UTC)
-                : LocalDateTime.now().plusHours(1);
+                : LocalDateTime.now(ZoneOffset.UTC).plusHours(1);
         Set<String> scopes = accessToken.getScopes();
         String scopeStr = (scopes == null || scopes.isEmpty()) ? null : String.join(" ", scopes);
         return new OAuthTokens(accessToken.getTokenValue(), refreshTokenValue, expiresAtLdt, scopeStr);
