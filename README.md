@@ -52,27 +52,27 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register a new user |
-| POST | `/api/auth/login` | Login and receive tokens |
-| POST | `/api/auth/refresh` | Refresh access token |
-| POST | `/api/auth/logout` | Logout and revoke refresh token |
-| POST | `/api/auth/forgot-password` | Request password reset |
-| POST | `/api/auth/reset-password` | Reset password with token |
-| GET | `/api/auth/me` | Get current user info |
+| POST | `/api/v1/auth/register` | Register a new user |
+| POST | `/api/v1/auth/login` | Login and receive tokens |
+| POST | `/api/v1/auth/refresh` | Refresh access token |
+| POST | `/api/v1/auth/logout` | Logout and revoke refresh token |
+| POST | `/api/v1/auth/forgot-password` | Request password reset |
+| POST | `/api/v1/auth/reset-password` | Reset password with token |
+| GET | `/api/v1/auth/me` | Get current user info |
 
 ### Applications
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/applications` | Create application |
-| GET | `/api/applications` | List all (paginated + filterable) |
-| GET | `/api/applications/{id}` | Get by ID |
-| PUT | `/api/applications/{id}` | Full update |
-| PATCH | `/api/applications/{id}/status` | Update status |
-| PATCH | `/api/applications/{id}/reminder` | Toggle reminder |
-| DELETE | `/api/applications/{id}` | Delete |
-| GET | `/api/applications/upcoming` | Upcoming next steps |
-| GET | `/api/applications/overdue` | Overdue next steps |
+| POST | `/api/v1/applications` | Create application |
+| GET | `/api/v1/applications` | List all (paginated + filterable) |
+| GET | `/api/v1/applications/{id}` | Get by ID |
+| PUT | `/api/v1/applications/{id}` | Full update |
+| PATCH | `/api/v1/applications/{id}/status` | Update status |
+| PATCH | `/api/v1/applications/{id}/reminder` | Toggle reminder |
+| DELETE | `/api/v1/applications/{id}` | Delete |
+| GET | `/api/v1/applications/upcoming` | Upcoming next steps |
+| GET | `/api/v1/applications/overdue` | Overdue next steps |
 
 ### Gamification
 
@@ -81,6 +81,19 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 | GET | `/api/v1/gamification/profile` | Get current XP, level, rank title and streak snapshot |
 | GET | `/api/v1/gamification/achievements` | List achievement catalog with unlocked state |
 | POST | `/api/v1/gamification/events` | Apply a tracked XP event and return updated profile |
+
+### Google Drive
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/google-drive/oauth/start` | Generate the Google OAuth authorization URL for the authenticated user |
+| GET | `/api/v1/google-drive/oauth/callback` | Google OAuth callback endpoint used by Google Cloud |
+| GET | `/api/v1/google-drive/status` | Return current Google Drive connection status, configured root folder, and base resumes |
+| DELETE | `/api/v1/google-drive/connection` | Disconnect the current user's Google account and remove stored Drive preferences |
+| PUT | `/api/v1/google-drive/root-folder` | Validate and save the user's base Drive folder |
+| POST | `/api/v1/google-drive/base-resumes` | Register a Google Docs base resume by Google Docs URL or file ID |
+| DELETE | `/api/v1/google-drive/base-resumes/{baseResumeId}` | Remove a configured base resume |
+| POST | `/api/v1/google-drive/applications/{applicationId}/resume-copies` | Copy a configured base resume into the application's Drive subfolder |
 
 ## Application Status Values
 
@@ -192,7 +205,154 @@ export DB_URL=jdbc:mariadb://localhost:3306/jobtracker?createDatabaseIfNotExist=
 export DB_USERNAME=jobtracker
 export DB_PASSWORD=jobtracker
 export JWT_SECRET=your-secret-key-at-least-256-bits-long
+export GOOGLE_DRIVE_CLIENT_ID=your-google-client-id
+export GOOGLE_DRIVE_CLIENT_SECRET=your-google-client-secret
+export GOOGLE_DRIVE_REDIRECT_URI=http://localhost:8080/api/v1/google-drive/oauth/callback
+export GOOGLE_DRIVE_OAUTH_COMPLETE_URL=http://localhost:5173/settings/google-drive/callback
 mvn spring-boot:run
+```
+
+## Google Drive integration
+
+This backend supports per-user Google Drive OAuth2 for resume-copy automation. It does **not** replace the app's JWT auth flow; users stay authenticated with the existing bearer token, and Google is connected separately with `POST /api/v1/google-drive/oauth/start`.
+
+### Required Google Cloud setup
+
+1. Create a Google Cloud OAuth client for a web application.
+2. Enable the **Google Drive API**.
+3. Add the backend callback URL as an authorized redirect URI. Example local value:
+   - `http://localhost:8080/api/v1/google-drive/oauth/callback`
+4. Configure these environment variables:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GOOGLE_DRIVE_CLIENT_ID` | Yes | Google OAuth client ID |
+| `GOOGLE_DRIVE_CLIENT_SECRET` | Yes | Google OAuth client secret |
+| `GOOGLE_DRIVE_REDIRECT_URI` | Yes | Backend callback URL registered in Google Cloud |
+| `GOOGLE_DRIVE_OAUTH_COMPLETE_URL` | Yes | Frontend page that receives the final `status` and `message` query params after OAuth finishes |
+| `GOOGLE_DRIVE_AUTHORIZATION_URI` | No | Override Google authorization endpoint |
+| `GOOGLE_DRIVE_TOKEN_URI` | No | Override Google token endpoint |
+
+### OAuth flow expectations
+
+1. Frontend calls `POST /api/v1/google-drive/oauth/start` with the user's JWT bearer token.
+2. Backend creates a short-lived OAuth state tied to that authenticated user and returns:
+   - `authorizationUrl`
+   - `state`
+   - `redirectUri`
+   - `scopes`
+3. Frontend opens `authorizationUrl` in a new tab or popup.
+4. Google redirects back to `GET /api/v1/google-drive/oauth/callback`.
+5. Backend exchanges the authorization code for user-scoped Drive credentials, stores them, and redirects the browser to `GOOGLE_DRIVE_OAUTH_COMPLETE_URL` with:
+   - `status=success|error`
+   - `message=<url-encoded message>`
+
+### Scope used
+
+- `https://www.googleapis.com/auth/drive`
+
+This scope is used so the backend can validate user-selected Drive folders, read chosen Google Docs metadata, create vacancy subfolders, and copy Google Docs files on behalf of the authenticated user.
+
+### Supported files
+
+- Base resumes must be **Google Docs** (`application/vnd.google-apps.document`).
+- The root folder must be a **Google Drive folder**.
+- The frontend Gemini button that opens `https://gemini.google.com/gem/f8ed7c14b062` is frontend-only and does not require a backend endpoint.
+
+### Resume copy behavior
+
+When the frontend later calls `POST /api/v1/google-drive/applications/{applicationId}/resume-copies`:
+
+1. Backend verifies the current user owns the application.
+2. Backend refreshes the user's Google access token if needed.
+3. Backend verifies the configured root folder still exists and is a folder.
+4. Backend finds or creates a vacancy subfolder under that root folder using the application identity.
+5. Backend copies the selected base Google Doc into that subfolder.
+6. Backend renames the copy with an `APP-<application-uuid>` prefix plus vacancy context.
+7. Backend returns a Google Docs web URL for the copied file.
+
+### Google Drive request/response shapes
+
+`POST /api/v1/google-drive/oauth/start`
+
+```json
+{}
+```
+
+Response:
+
+```json
+{
+  "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth?...",
+  "state": "generated-state",
+  "redirectUri": "http://localhost:8080/api/v1/google-drive/oauth/callback",
+  "scopes": [
+    "https://www.googleapis.com/auth/drive"
+  ]
+}
+```
+
+`GET /api/v1/google-drive/status`
+
+```json
+{
+  "configured": true,
+  "connected": true,
+  "googleEmail": "user@gmail.com",
+  "googleDisplayName": "User Name",
+  "googleAccountId": "permission-id",
+  "rootFolderId": "drive-folder-id",
+  "rootFolderName": "Job Tracker Root",
+  "connectedAt": "2026-05-05T12:00:00",
+  "baseResumes": [
+    {
+      "id": "uuid",
+      "googleFileId": "google-doc-id",
+      "documentName": "Resume Base",
+      "webViewLink": "https://docs.google.com/document/d/google-doc-id/edit",
+      "createdAt": "2026-05-05T12:05:00"
+    }
+  ]
+}
+```
+
+`PUT /api/v1/google-drive/root-folder`
+
+```json
+{
+  "folderIdOrUrl": "https://drive.google.com/drive/folders/drive-folder-id"
+}
+```
+
+`POST /api/v1/google-drive/base-resumes`
+
+```json
+{
+  "documentIdOrUrl": "https://docs.google.com/document/d/google-doc-id/edit"
+}
+```
+
+`POST /api/v1/google-drive/applications/{applicationId}/resume-copies`
+
+```json
+{
+  "baseResumeId": "base-resume-uuid"
+}
+```
+
+Response:
+
+```json
+{
+  "applicationId": "application-uuid",
+  "baseResumeId": "base-resume-uuid",
+  "copiedFileId": "copied-google-doc-id",
+  "copiedFileName": "APP-application-uuid - Backend Engineer - Resume Base",
+  "documentWebViewLink": "https://docs.google.com/document/d/copied-google-doc-id/edit",
+  "vacancyFolderId": "vacancy-folder-id",
+  "vacancyFolderName": "Backend Engineer - APP-application-uuid",
+  "vacancyFolderWebViewLink": "https://drive.google.com/drive/folders/vacancy-folder-id"
+}
 ```
 
 ## Running Tests
@@ -256,6 +416,10 @@ If `APP_SEED_ENABLED=true` and `APP_SEED_USER_EMAIL` is not provided (or the use
 | `JWT_ACCESS_TOKEN_EXPIRATION_MS` | `900000` | Access token TTL (15 min) |
 | `JWT_REFRESH_TOKEN_EXPIRATION_MS` | `604800000` | Refresh token TTL (7 days) |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins |
+| `GOOGLE_DRIVE_CLIENT_ID` | *(empty)* | Google OAuth client ID for Drive integration |
+| `GOOGLE_DRIVE_CLIENT_SECRET` | *(empty)* | Google OAuth client secret for Drive integration |
+| `GOOGLE_DRIVE_REDIRECT_URI` | `http://localhost:8080/api/v1/google-drive/oauth/callback` | OAuth callback URL registered in Google Cloud |
+| `GOOGLE_DRIVE_OAUTH_COMPLETE_URL` | `http://localhost:5173/settings/google-drive/callback` | Frontend URL that receives OAuth completion redirects |
 | `RATE_LIMIT_AUTH_LOGIN_LIMIT_FOR_PERIOD` | `10` | Max login requests allowed per refresh period |
 | `RATE_LIMIT_AUTH_LOGIN_REFRESH_PERIOD` | `1m` | Window used by the login rate limiter |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint (Jaeger/OpenTelemetry collector) |
