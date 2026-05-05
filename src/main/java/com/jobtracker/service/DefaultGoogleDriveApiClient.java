@@ -223,12 +223,9 @@ public class DefaultGoogleDriveApiClient implements GoogleDriveApiClient {
     }
 
     private BadRequestException googleApiException(String action, RestClientResponseException ex) {
-        String responseBody = ex.getResponseBodyAsString();
-        String message = responseBody;
-        if (message == null || message.isBlank()) {
-            message = ex.getStatusText();
-        }
-        throw new BadRequestException("Failed to " + action + ": " + message);
+        String message = "Failed to " + action
+                + " due to an upstream Google API error (status " + ex.getStatusCode().value() + ")";
+        return new BadRequestException(message);
     }
 
     private record FolderCreateRequest(String name, String mimeType, List<String> parents) {}
