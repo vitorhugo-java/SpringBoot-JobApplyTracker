@@ -116,7 +116,7 @@ public class GoogleDriveService {
     public GoogleDriveResumeCopyResponse copyBaseResumeToApplication(UUID applicationId, GoogleDriveResumeCopyRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         GoogleDriveConnection connection = getConnectionWithFreshAccessToken();
-        JobApplication application = applicationRepository.findByIdAndUserId(applicationId, userId)
+        JobApplication application = applicationRepository.findByIdAndUserIdForUpdate(applicationId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         if (!StringUtils.hasText(connection.getRootFolderId())) {
@@ -239,9 +239,10 @@ public class GoogleDriveService {
     }
 
     private String buildVacancyFolderName(JobApplication application) {
-        String baseName = firstNonBlank(application.getVacancyName(), application.getOrganization(), "Application");
-        String suffix = "APP-" + application.getId().toString();
-        return truncateFileName(sanitizeFileName(baseName + " - " + suffix), 180);
+        String suffix = " - APP-" + application.getId().toString();
+        String rawBase = firstNonBlank(application.getVacancyName(), application.getOrganization(), "Application");
+        String truncatedBase = truncateFileName(sanitizeFileName(rawBase), 180 - suffix.length());
+        return truncatedBase + suffix;
     }
 
     private String buildCopiedDocumentName(JobApplication application, String baseResumeName) {

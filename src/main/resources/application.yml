@@ -73,7 +73,7 @@ app:
     client-id: ${GOOGLE_DRIVE_CLIENT_ID:}
     client-secret: ${GOOGLE_DRIVE_CLIENT_SECRET:}
     redirect-uri: ${GOOGLE_DRIVE_REDIRECT_URI:http://localhost:8080/api/v1/google-drive/oauth/callback}
-    oauth-complete-url: ${GOOGLE_DRIVE_OAUTH_COMPLETE_URL:http://localhost:5173/settings/google-drive/callback}
+    oauth-complete-url: ${GOOGLE_DRIVE_OAUTH_COMPLETE_URL:}
     authorization-uri: ${GOOGLE_DRIVE_AUTHORIZATION_URI:https://accounts.google.com/o/oauth2/v2/auth}
     token-uri: ${GOOGLE_DRIVE_TOKEN_URI:https://oauth2.googleapis.com/token}
 

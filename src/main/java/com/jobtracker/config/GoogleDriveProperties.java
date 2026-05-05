@@ -22,7 +22,7 @@ public class GoogleDriveProperties {
             @Value("${app.google-drive.client-id:}") String clientId,
             @Value("${app.google-drive.client-secret:}") String clientSecret,
             @Value("${app.google-drive.redirect-uri:}") String redirectUri,
-            @Value("${app.google-drive.oauth-complete-url:http://localhost:5173/settings/google-drive/callback}") String oauthCompleteUrl,
+            @Value("${app.google-drive.oauth-complete-url:}") String oauthCompleteUrl,
             @Value("${app.google-drive.authorization-uri:https://accounts.google.com/o/oauth2/v2/auth}") String authorizationUri,
             @Value("${app.google-drive.token-uri:https://oauth2.googleapis.com/token}") String tokenUri
     ) {
@@ -68,7 +68,7 @@ public class GoogleDriveProperties {
     }
 
     public boolean isConfigured() {
-        return hasText(clientId) && hasText(clientSecret) && hasText(redirectUri);
+        return hasText(clientId) && hasText(clientSecret) && hasText(redirectUri) && hasText(oauthCompleteUrl);
     }
 
     public void validateConfigured() {

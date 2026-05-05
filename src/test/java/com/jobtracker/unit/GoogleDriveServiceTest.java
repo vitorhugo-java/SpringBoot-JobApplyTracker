@@ -162,7 +162,7 @@ class GoogleDriveServiceTest {
         connection.setRootFolderId("root-folder-id");
         when(securityUtils.getCurrentUserId()).thenReturn(USER_ID);
         when(connectionRepository.findByUserId(USER_ID)).thenReturn(Optional.of(connection));
-        when(applicationRepository.findByIdAndUserId(APPLICATION_ID, USER_ID)).thenReturn(Optional.of(application));
+        when(applicationRepository.findByIdAndUserIdForUpdate(APPLICATION_ID, USER_ID)).thenReturn(Optional.of(application));
         when(baseResumeRepository.findByIdAndConnectionUserId(RESUME_ID, USER_ID)).thenReturn(Optional.of(baseResume));
         when(googleDriveApiClient.getFileMetadata("access-token", "root-folder-id"))
                 .thenReturn(new GoogleDriveApiClient.DriveFileMetadata(

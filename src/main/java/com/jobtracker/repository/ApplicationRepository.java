@@ -2,10 +2,12 @@ package com.jobtracker.repository;
 
 import com.jobtracker.entity.JobApplication;
 import com.jobtracker.entity.enums.ApplicationStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -19,6 +21,10 @@ import java.util.UUID;
 public interface ApplicationRepository extends JpaRepository<JobApplication, UUID>, JpaSpecificationExecutor<JobApplication> {
 
     Optional<JobApplication> findByIdAndUserId(UUID id, UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM JobApplication a WHERE a.id = :id AND a.user.id = :userId")
+    Optional<JobApplication> findByIdAndUserIdForUpdate(@Param("id") UUID id, @Param("userId") UUID userId);
 
     long countByUserIdAndArchivedFalse(UUID userId);
 

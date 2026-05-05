@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.jobtracker.config.GoogleDriveProperties;
 import com.jobtracker.exception.BadRequestException;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -26,7 +27,10 @@ public class DefaultGoogleDriveApiClient implements GoogleDriveApiClient {
 
     public DefaultGoogleDriveApiClient(GoogleDriveProperties properties, RestClient.Builder restClientBuilder) {
         this.properties = properties;
-        this.restClient = restClientBuilder.build();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+        requestFactory.setReadTimeout(Duration.ofSeconds(30));
+        this.restClient = restClientBuilder.requestFactory(requestFactory).build();
     }
 
     @Override
