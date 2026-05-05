@@ -121,12 +121,15 @@ class GoogleDriveOAuthServiceTest {
 
     @Test
     void handleCallback_shouldRedirectWithError_whenMissingCode() {
+        when(oauthStateRepository.findByStateToken(VALID_STATE)).thenReturn(Optional.of(validOAuthState));
+
         String result = oauthService.handleCallback(VALID_STATE, null, null);
 
         assertThat(result).contains("status=error");
         assertThat(result).contains("Missing");
         verifyNoInteractions(googleDriveApiClient);
         verifyNoInteractions(connectionRepository);
+        verify(oauthStateRepository).delete(validOAuthState);
     }
 
     @Test

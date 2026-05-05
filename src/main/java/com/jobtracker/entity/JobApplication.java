@@ -84,6 +84,9 @@ public class JobApplication {
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
 
+    @Column(name = "drive_vacancy_folder_id", length = 255)
+    private String driveVacancyFolderId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -167,6 +170,9 @@ public class JobApplication {
 
     public LocalDateTime getArchivedAt() { return archivedAt; }
     public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
+
+    public String getDriveVacancyFolderId() { return driveVacancyFolderId; }
+    public void setDriveVacancyFolderId(String driveVacancyFolderId) { this.driveVacancyFolderId = driveVacancyFolderId; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

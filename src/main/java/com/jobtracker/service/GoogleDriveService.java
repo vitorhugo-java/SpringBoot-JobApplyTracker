@@ -139,10 +139,10 @@ public class GoogleDriveService {
         }
         connection.setRootFolderName(rootFolder.name());
 
-        String vacancyFolderName = buildVacancyFolderName(application);
-        GoogleDriveApiClient.DriveFileMetadata vacancyFolder = googleDriveApiClient
-                .findFolderByName(connection.getAccessToken(), rootFolder.id(), vacancyFolderName)
-                .orElseGet(() -> googleDriveApiClient.createFolder(connection.getAccessToken(), rootFolder.id(), vacancyFolderName));
+        // Use the stored Drive folder ID for this application when available, so that renaming
+        // the vacancy/organization after the first copy still resolves to the correct folder.
+        GoogleDriveApiClient.DriveFileMetadata vacancyFolder =
+                resolveOrCreateVacancyFolder(connection, application, rootFolder.id(), userId);
 
         String copiedFileName = buildCopiedDocumentName(application, baseResume.getDocumentName());
         GoogleDriveApiClient.DriveFileMetadata copiedFile = googleDriveApiClient.copyGoogleDoc(
@@ -163,6 +163,49 @@ public class GoogleDriveService {
                 vacancyFolder.name(),
                 resolveFolderLink(vacancyFolder.id(), vacancyFolder.webViewLink())
         );
+    }
+
+    /**
+     * Resolves the Drive vacancy folder for an application, creating it if needed.
+     *
+     * <p>The folder ID is stored on the {@link JobApplication} row after the first copy so that
+     * subsequent copies continue to use the same folder even if the vacancy name or organisation
+     * is later edited. The ID is stored with a conditional UPDATE ({@code WHERE
+     * drive_vacancy_folder_id IS NULL}) so that concurrent copy requests for the same application
+     * race to store their folder ID; the loser discards the orphan folder it created and uses the
+     * winner's ID instead.
+     */
+    private GoogleDriveApiClient.DriveFileMetadata resolveOrCreateVacancyFolder(
+            GoogleDriveConnection connection,
+            JobApplication application,
+            String rootFolderId,
+            UUID userId) {
+
+        // Fast path: use the stored folder ID (handles renames and removes the need for a name search)
+        if (StringUtils.hasText(application.getDriveVacancyFolderId())) {
+            return googleDriveApiClient.getFileMetadata(connection.getAccessToken(), application.getDriveVacancyFolderId());
+        }
+
+        // Slow path: search by name then create if not found
+        String vacancyFolderName = buildVacancyFolderName(application);
+        GoogleDriveApiClient.DriveFileMetadata folder = googleDriveApiClient
+                .findFolderByName(connection.getAccessToken(), rootFolderId, vacancyFolderName)
+                .orElseGet(() -> googleDriveApiClient.createFolder(connection.getAccessToken(), rootFolderId, vacancyFolderName));
+
+        // Attempt to atomically record the resolved folder ID; if a concurrent request beat us,
+        // fetch the winning ID from the DB and validate/use that folder instead.
+        int updated = applicationRepository.setDriveVacancyFolderIdIfAbsent(application.getId(), folder.id());
+        if (updated == 0) {
+            String winningFolderId = applicationRepository.findByIdAndUserId(application.getId(), userId)
+                    .map(JobApplication::getDriveVacancyFolderId)
+                    .filter(StringUtils::hasText)
+                    .orElse(folder.id()); // fallback: use our own newly created folder
+            if (!winningFolderId.equals(folder.id())) {
+                folder = googleDriveApiClient.getFileMetadata(connection.getAccessToken(), winningFolderId);
+            }
+        }
+
+        return folder;
     }
 
     private GoogleDriveConnection getConnectionWithFreshAccessToken() {

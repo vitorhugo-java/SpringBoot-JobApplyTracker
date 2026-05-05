@@ -83,14 +83,14 @@ public class GoogleDriveOAuthService {
             if (state == null || state.isBlank()) {
                 return buildFrontendRedirect("error", "Missing OAuth state");
             }
-            if (code == null || code.isBlank()) {
-                return buildFrontendRedirect("error", "Missing authorization code");
-            }
             if (oauthState == null) {
                 throw new BadRequestException("Invalid or expired Google OAuth state");
             }
             if (oauthState.getExpiresAt().isBefore(LocalDateTime.now())) {
                 throw new BadRequestException("Google OAuth state expired");
+            }
+            if (code == null || code.isBlank()) {
+                return buildFrontendRedirect("error", "Missing authorization code");
             }
 
             GoogleDriveApiClient.OAuthTokens tokens = googleDriveApiClient.exchangeAuthorizationCode(code);

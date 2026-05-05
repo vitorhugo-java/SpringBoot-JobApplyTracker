@@ -3,17 +3,21 @@ package com.jobtracker.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.DefaultRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
+import java.util.List;
 
 /**
  * Configures the Spring OAuth2 client infrastructure used by the Google Drive integration.
@@ -83,10 +87,28 @@ public class GoogleDriveClientConfig {
         return client;
     }
 
+    /**
+     * Builds a {@link RestTemplate} configured with the message converters and error handler
+     * required by Spring Security's OAuth2 token endpoint clients.
+     * <p>
+     * {@link FormHttpMessageConverter} encodes the token-exchange form body; without it the
+     * request body is empty and Google returns {@code invalid_grant}.
+     * {@link OAuth2AccessTokenResponseHttpMessageConverter} parses Google's JSON token response;
+     * without it the response body cannot be deserialized and the exchange fails.
+     * {@link OAuth2ErrorResponseErrorHandler} translates Google error responses into typed
+     * {@link org.springframework.security.oauth2.core.OAuth2AuthorizationException}s rather than
+     * raw {@link org.springframework.web.client.HttpClientErrorException}s.
+     */
     private RestTemplate buildRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout((int) Duration.ofMillis(CONNECT_TIMEOUT_MS).toMillis());
         factory.setReadTimeout((int) Duration.ofMillis(READ_TIMEOUT_MS).toMillis());
-        return new RestTemplate(factory);
+        RestTemplate restTemplate = new RestTemplate(factory);
+        restTemplate.setMessageConverters(List.of(
+                new FormHttpMessageConverter(),
+                new OAuth2AccessTokenResponseHttpMessageConverter()
+        ));
+        restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
+        return restTemplate;
     }
 }
