@@ -6,8 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -52,4 +54,15 @@ public interface ApplicationRepository extends JpaRepository<JobApplication, UUI
     List<JobApplication> findByStatusIsNullAndUpdatedAtBefore(LocalDateTime updatedAt);
 
     List<JobApplication> findByStatusIsNotNullAndStatusNotAndUpdatedAtBefore(ApplicationStatus status, LocalDateTime updatedAt);
+
+    /**
+     * Atomically sets {@code driveVacancyFolderId} on an application only when the column is
+     * currently {@code NULL}.  Returns the number of rows updated (1 on success, 0 if another
+     * concurrent request already stored a folder ID).  Callers should re-read the entity to
+     * obtain the winning folder ID when this method returns 0.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE JobApplication a SET a.driveVacancyFolderId = :folderId WHERE a.id = :id AND a.driveVacancyFolderId IS NULL")
+    int setDriveVacancyFolderIdIfAbsent(@Param("id") UUID id, @Param("folderId") String folderId);
 }

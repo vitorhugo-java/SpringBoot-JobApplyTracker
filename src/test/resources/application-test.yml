@@ -31,6 +31,11 @@ app:
     password-reset-token-expiration-hours: 24
   mail:
     enabled: false
+  google-drive:
+    client-id: test-google-client-id
+    client-secret: test-google-client-secret
+    redirect-uri: http://localhost:8080/api/v1/google-drive/oauth/callback
+    oauth-complete-url: http://localhost:5173/settings/google-drive/callback
 
 cors:
   allowed-origins: http://localhost:3000
