@@ -203,7 +203,7 @@ public class ApplicationService {
         app.setRecruiterName(request.recruiterName());
         app.setOrganization(request.organization());
         app.setVacancyLink(request.vacancyLink());
-        app.setApplicationDate(request.applicationDate());
+        app.setApplicationDate(isSendLater ? null : request.applicationDate());
         app.setRhAcceptedConnection(Boolean.TRUE.equals(request.rhAcceptedConnection()));
         app.setInterviewScheduled(Boolean.TRUE.equals(request.interviewScheduled()));
         app.setNextStepDateTime(request.nextStepDateTime());
@@ -222,6 +222,9 @@ public class ApplicationService {
             app.setPreviousStatus(null);
         }
         app.setStatus(newStatus);
+        if (newStatus == null) {
+            app.setApplicationDate(null);
+        }
     }
 
     private ApplicationStatus resolveStatus(String statusName) {

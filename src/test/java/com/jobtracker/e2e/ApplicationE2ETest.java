@@ -123,11 +123,12 @@ class ApplicationE2ETest extends AbstractE2ETest {
         given()
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
-                .body("{\"status\": \"Teste Técnico\"}")
+                .body("{\"status\": null}")
                 .patch("/api/v1/applications/{id}/status", appId)
                 .then()
                 .statusCode(200)
-                .body("status", equalTo("Teste Técnico"));
+                .body("status", nullValue())
+                .body("applicationDate", nullValue());
 
         // 5. Update reminder
         given()

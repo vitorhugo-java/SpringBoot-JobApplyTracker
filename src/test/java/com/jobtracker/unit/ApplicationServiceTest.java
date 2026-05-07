@@ -122,6 +122,20 @@ class ApplicationServiceTest {
     }
 
     @Test
+    void updateStatus_shouldClearApplicationDate_whenMarkedToSendLater() {
+        UpdateStatusRequest statusRequest = new UpdateStatusRequest(null);
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
+        when(applicationRepository.save(app)).thenReturn(app);
+        when(applicationMapper.toResponse(app)).thenReturn(response);
+
+        applicationService.updateStatus(APP_UUID, statusRequest);
+
+        assertThat(app.getStatus()).isNull();
+        assertThat(app.getApplicationDate()).isNull();
+    }
+
+    @Test
     void updateStatus_shouldThrow_whenInvalidStatus() {
         UpdateStatusRequest statusRequest = new UpdateStatusRequest("INVALID_STATUS");
         when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
@@ -142,6 +156,32 @@ class ApplicationServiceTest {
 
         applicationService.updateReminder(APP_UUID, reminderRequest);
         assertThat(app.isRecruiterDmReminderEnabled()).isTrue();
+    }
+
+    @Test
+    void update_shouldClearApplicationDate_whenMarkedToSendLater() {
+        ApplicationRequest request = new ApplicationRequest(
+                "Software Engineer",
+                "Recruiter",
+                "HR",
+                "https://example.com/job",
+                LocalDate.now(),
+                false,
+                false,
+                null,
+                null,
+                false,
+                "Follow up this week"
+        );
+        when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
+        when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
+        when(applicationRepository.save(app)).thenReturn(app);
+        when(applicationMapper.toResponse(app)).thenReturn(response);
+
+        applicationService.update(APP_UUID, request);
+
+        assertThat(app.getStatus()).isNull();
+        assertThat(app.getApplicationDate()).isNull();
     }
 
     @Test
