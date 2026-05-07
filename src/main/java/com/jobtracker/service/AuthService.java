@@ -3,11 +3,14 @@ package com.jobtracker.service;
 import com.jobtracker.config.JwtService;
 import com.jobtracker.dto.auth.*;
 import com.jobtracker.entity.RefreshToken;
+import com.jobtracker.entity.Role;
 import com.jobtracker.entity.User;
+import com.jobtracker.entity.enums.RoleName;
 import com.jobtracker.exception.BadRequestException;
 import com.jobtracker.exception.ConflictException;
 import com.jobtracker.exception.UnauthorizedException;
 import com.jobtracker.mapper.AuthMapper;
+import com.jobtracker.repository.RoleRepository;
 import com.jobtracker.repository.UserRepository;
 import com.jobtracker.util.SecurityUtils;
 import io.micrometer.tracing.Span;
@@ -15,6 +18,8 @@ import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,7 +27,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
@@ -38,6 +44,7 @@ public class AuthService {
     private final AuthMapper authMapper;
     private final Tracer tracer;
     private final SecurityUtils securityUtils;
+    private final RoleRepository roleRepository;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -46,7 +53,8 @@ public class AuthService {
                        PasswordResetService passwordResetService,
                        AuthMapper authMapper,
                        Tracer tracer,
-                       SecurityUtils securityUtils) {
+                       SecurityUtils securityUtils,
+                       RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -55,6 +63,7 @@ public class AuthService {
         this.authMapper = authMapper;
         this.tracer = tracer;
         this.securityUtils = securityUtils;
+        this.roleRepository = roleRepository;
     }
 
     /**
@@ -82,6 +91,7 @@ public class AuthService {
         user.setName(request.name());
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setRoles(Set.of(resolveDefaultUserRole()));
         user = userRepository.save(user);
         log.info("event=REGISTRATION_SUCCESS email={} userId={}", user.getEmail(), user.getId());
         return buildAuthResponse(user);
@@ -127,7 +137,7 @@ public class AuthService {
             User user = newRefreshToken.getUser();
 
             UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                    user.getEmail(), user.getPasswordHash(), Collections.emptyList());
+                    user.getEmail(), user.getPasswordHash(), mapAuthorities(user));
             String accessToken = jwtService.generateToken(userDetails);
 
             // Store the new refresh token for the controller to set in the cookie
@@ -207,7 +217,7 @@ public class AuthService {
 
     private AuthResponse buildAuthResponse(User user) {
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                user.getEmail(), user.getPasswordHash(), Collections.emptyList());
+                user.getEmail(), user.getPasswordHash(), mapAuthorities(user));
         String accessToken = jwtService.generateToken(userDetails);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
@@ -215,5 +225,20 @@ public class AuthService {
         lastRefreshToken.set(refreshToken.getToken());
 
         return new AuthResponse(accessToken, authMapper.toUserResponse(user));
+    }
+
+    private Set<GrantedAuthority> mapAuthorities(User user) {
+        return user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
+                .collect(Collectors.toSet());
+    }
+
+    private Role resolveDefaultUserRole() {
+        return roleRepository.findByName(RoleName.USER)
+                .orElseGet(() -> {
+                    Role role = new Role();
+                    role.setName(RoleName.USER);
+                    return roleRepository.save(role);
+                });
     }
 }

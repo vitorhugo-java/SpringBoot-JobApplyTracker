@@ -3,10 +3,13 @@ package com.jobtracker.unit;
 import com.jobtracker.config.JwtService;
 import com.jobtracker.dto.auth.*;
 import com.jobtracker.entity.RefreshToken;
+import com.jobtracker.entity.Role;
 import com.jobtracker.entity.User;
+import com.jobtracker.entity.enums.RoleName;
 import com.jobtracker.exception.BadRequestException;
 import com.jobtracker.exception.ConflictException;
 import com.jobtracker.mapper.AuthMapper;
+import com.jobtracker.repository.RoleRepository;
 import com.jobtracker.repository.UserRepository;
 import com.jobtracker.service.AuthService;
 import com.jobtracker.service.PasswordResetService;
@@ -24,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +49,7 @@ class AuthServiceTest {
     @Mock private PasswordResetService passwordResetService;
     @Mock private AuthMapper authMapper;
     @Mock(answer = RETURNS_DEEP_STUBS) private Tracer tracer;
+    @Mock private RoleRepository roleRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -55,6 +60,7 @@ class AuthServiceTest {
         User savedUser = buildUser(USER_UUID, "john@example.com");
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(roleRepository.findByName(RoleName.USER)).thenReturn(Optional.of(buildRole(RoleName.USER)));
         when(passwordEncoder.encode(anyString())).thenReturn("hashed");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(jwtService.generateToken(any(UserDetails.class))).thenReturn("access-token");
@@ -192,7 +198,14 @@ class AuthServiceTest {
         user.setName("John");
         user.setEmail(email);
         user.setPasswordHash("hashed");
+        user.setRoles(Set.of(buildRole(RoleName.USER)));
         return user;
+    }
+
+    private Role buildRole(RoleName roleName) {
+        Role role = new Role();
+        role.setName(roleName);
+        return role;
     }
 
     private RefreshToken buildRefreshToken(User user) {

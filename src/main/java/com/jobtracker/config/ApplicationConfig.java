@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Configuration
 public class ApplicationConfig {
@@ -27,7 +27,9 @@ public class ApplicationConfig {
                 .map(user -> new org.springframework.security.core.userdetails.User(
                         user.getEmail(),
                         user.getPasswordHash(),
-                        Collections.emptyList()))
+                        user.getRoles().stream()
+                                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
+                                .collect(Collectors.toSet())))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 

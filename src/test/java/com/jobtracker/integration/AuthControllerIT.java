@@ -1,6 +1,7 @@
 package com.jobtracker.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jobtracker.config.JwtService;
 import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.LoginRequest;
 import com.jobtracker.dto.auth.RegisterRequest;
@@ -14,11 +15,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import jakarta.servlet.http.Cookie;
 import java.util.List;
+import org.springframework.security.core.userdetails.User;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,6 +33,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private JwtService jwtService;
     @Autowired private UserRepository userRepository;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
     @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
@@ -240,9 +244,28 @@ class AuthControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void me_shouldReturn401_whenNotAuthenticated() throws Exception {
+    void me_shouldReturn403_whenNotAuthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/auth/me"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void me_shouldReturn403_whenTokenDoesNotContainRoleUser() throws Exception {
+        RegisterRequest reg = new RegisterRequest("Admin Token User", "admin-token@example.com", "pass1234", "pass1234");
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reg)))
+                .andExpect(status().isCreated());
+
+        String adminOnlyToken = jwtService.generateToken(new User(
+                "admin-token@example.com",
+                "password",
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        ));
+
+        mockMvc.perform(get("/api/v1/auth/me")
+                        .header("Authorization", "Bearer " + adminOnlyToken))
+                .andExpect(status().isForbidden());
     }
 
         @Test
