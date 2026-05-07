@@ -8,7 +8,7 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 
 - **Java 21**
 - **Spring Boot 3.2** (Web, Data JPA, Security, Validation)
-- **Spring Security** with stateless JWT authentication
+- **Spring Security** with stateless JWT authentication + role-based authorization (`USER`, `BETA`, `ADMIN`)
 - **JWT + Refresh Tokens** (access: 15 min, refresh: 7 days with rotation)
 - **Resilience4j Rate Limiting** on auth endpoints
 - **MariaDB** (production) / **Testcontainers** (tests)
@@ -52,27 +52,45 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register a new user |
-| POST | `/api/auth/login` | Login and receive tokens |
-| POST | `/api/auth/refresh` | Refresh access token |
-| POST | `/api/auth/logout` | Logout and revoke refresh token |
-| POST | `/api/auth/forgot-password` | Request password reset |
-| POST | `/api/auth/reset-password` | Reset password with token |
-| GET | `/api/auth/me` | Get current user info |
+| POST | `/api/v1/auth/register` | Register a new user |
+| POST | `/api/v1/auth/login` | Login and receive tokens |
+| POST | `/api/v1/auth/refresh` | Refresh access token |
+| POST | `/api/v1/auth/logout` | Logout and revoke refresh token |
+| POST | `/api/v1/auth/forgot-password` | Request password reset |
+| POST | `/api/v1/auth/reset-password` | Reset password with token |
+| GET | `/api/v1/auth/me` | Get current user info |
 
 ### Applications
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/applications` | Create application |
-| GET | `/api/applications` | List all (paginated + filterable) |
-| GET | `/api/applications/{id}` | Get by ID |
-| PUT | `/api/applications/{id}` | Full update |
-| PATCH | `/api/applications/{id}/status` | Update status |
-| PATCH | `/api/applications/{id}/reminder` | Toggle reminder |
-| DELETE | `/api/applications/{id}` | Delete |
-| GET | `/api/applications/upcoming` | Upcoming next steps |
-| GET | `/api/applications/overdue` | Overdue next steps |
+| POST | `/api/v1/applications` | Create application |
+| GET | `/api/v1/applications` | List all (paginated + filterable) |
+| GET | `/api/v1/applications/{id}` | Get by ID |
+| PUT | `/api/v1/applications/{id}` | Full update |
+| PATCH | `/api/v1/applications/{id}/status` | Update status |
+| PATCH | `/api/v1/applications/{id}/reminder` | Toggle reminder |
+| DELETE | `/api/v1/applications/{id}` | Delete |
+| GET | `/api/v1/applications/upcoming` | Upcoming next steps |
+| GET | `/api/v1/applications/overdue` | Overdue next steps |
+
+## Authorization Model
+
+- JWT access tokens now include a `roles` claim (e.g., `ROLE_USER`, `ROLE_ADMIN`).
+- Existing users are backfilled with `ROLE_USER` during migration.
+- A default `ROLE_USER` is assigned on registration.
+
+Flyway seeds the roles catalog (`USER`, `BETA`, `ADMIN`) and then assigns `ROLE_USER` to all existing users.
+
+### Endpoints currently requiring `ROLE_USER`
+
+- `GET /api/v1/auth/me`
+- `PUT /api/v1/auth/me`
+- `PUT /api/v1/auth/me/password`
+- `POST|GET|PUT|PATCH|DELETE /api/v1/applications/**`
+- `GET|POST /api/v1/gamification/**`
+- `GET /api/v1/dashboard/summary`
+- `POST /api/v1/account/test-email`
 
 ### Gamification
 

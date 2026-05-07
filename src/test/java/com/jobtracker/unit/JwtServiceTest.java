@@ -3,11 +3,13 @@ package com.jobtracker.unit;
 import com.jobtracker.config.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -66,6 +68,20 @@ class JwtServiceTest {
     void extractUsername_shouldThrowForInvalidToken() {
         assertThatThrownBy(() -> jwtService.extractUsername("invalid.token.here"))
                 .isInstanceOf(Exception.class);
+    }
+
+    @Test
+    void generateToken_shouldIncludeRolesClaim() {
+        UserDetails userDetails = new User(
+                "user@example.com",
+                "password",
+                List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
+        String token = jwtService.generateToken(userDetails);
+
+        assertThat(jwtService.extractAuthorities(token))
+                .extracting(SimpleGrantedAuthority::getAuthority)
+                .containsExactlyInAnyOrder("ROLE_USER", "ROLE_ADMIN");
     }
 
     private UserDetails buildUserDetails(String email) {

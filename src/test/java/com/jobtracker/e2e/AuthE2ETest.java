@@ -299,22 +299,22 @@ class AuthE2ETest extends AbstractE2ETest {
     }
 
     @Test
-    void protectedEndpoint_shouldReturn401_whenNoToken() {
+    void protectedEndpoint_shouldReturn403_whenNoToken() {
         given()
                 .when()
                 .get("/api/v1/auth/me")
                 .then()
-                .statusCode(401);
+                .statusCode(403);
     }
 
     @Test
-    void me_shouldReturn401_whenAccessTokenInvalidOrExpired() {
+    void me_shouldReturn403_whenAccessTokenInvalidOrExpired() {
         given()
                 .header("Authorization", "Bearer invalid.token.here")
                 .when()
                 .get("/api/v1/auth/me")
                 .then()
-                .statusCode(401);
+                .statusCode(403);
     }
 
     /**
