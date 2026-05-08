@@ -2,47 +2,19 @@ name: Backend CI/CD
 
 on:
   push:
-    branches:
-      - main
-      - master
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-    branches:
-      - main
-      - master
+    branches: [ "main", "master" ]
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Branch, tag, or PR ref to deploy manually
-        required: false
-        type: string
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/jobapplytracker-backend
-  CONTAINER_NAME: job-tracker-app
-
-permissions:
-  contents: read
-  packages: write
-
-concurrency:
-  group: backend-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test-and-build:
     name: Test and Build (Native)
     runs-on: ubuntu-latest
-    timeout-minutes: 60 # Native build demora mais, normal
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref || github.sha }}
 
       - name: Set up GraalVM
         uses: graalvm/setup-graalvm@v1
@@ -53,29 +25,28 @@ jobs:
           cache: maven
 
       - name: Build Native Binary
-        # Aqui a gente ativa o perfil nativo do Spring Boot. 
-        # Isso gera o binário no GitHub, poupando sua VPS de fritar.
         run: mvn -Pnative native:compile -DskipTests -B -ntp
+
+      - name: Rename Binary for Consistency
+        run: mv target/SpringBoot-JobApplyTracker target/app-native
 
       - name: Upload Native Binary
         uses: actions/upload-artifact@v4
         with:
-          name: native-executable
-          path: target/job-tracker-app # Ajuste para o nome do executável gerado pelo Maven
-          retention-days: 1
+          name: native-executable 
+          path: target/app-native
+          if-no-files-found: error
 
   publish-image:
     name: Publish Image
     needs: test-and-build
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref || github.sha }}
 
       - name: Download Native Binary
         uses: actions/download-artifact@v4
@@ -93,53 +64,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=sha-
-
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy-vps:
     name: Deploy to VPS
     needs: publish-image
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
     steps:
-      - name: Deploy latest image over SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets['VPS_IP'] }}
-          username: ${{ secrets['VPS_USER'] }}
-          key: ${{ secrets['SSH_KEY'] }}
-          port: 22
-          script_stop: true
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
-            set -eu
             cd /docker/jobpplytracker-api
-            
-            echo "Puxando a imagem nova..."
             docker compose pull
-            
-            echo "Subindo o container (sem downtime desnecessário)..."
-            # Removi o 'down'. O 'up -d' já recria apenas o que mudou.
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
-            
-            echo "Limpando a bagunça..."
-            # Comando vital para não encher o disco da VPS de 4GB com imagens antigas
+            docker compose up -d --remove-orphans
             docker image prune -f
