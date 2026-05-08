@@ -4,6 +4,7 @@ import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +61,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleRateLimitExceeded(RequestNotPermitted ex) {
         log.warn("event=RATE_LIMIT_EXCEEDED message={}", ex.getMessage());
         return buildResponse(HttpStatus.TOO_MANY_REQUESTS, "Too many requests. Please try again later.");
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("event=ACCESS_DENIED message={}", ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, "Access denied");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

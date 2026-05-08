@@ -7,12 +7,16 @@ import com.jobtracker.dto.auth.RegisterRequest;
 import com.jobtracker.entity.GoogleDriveBaseResume;
 import com.jobtracker.entity.GoogleDriveConnection;
 import com.jobtracker.entity.JobApplication;
+import com.jobtracker.entity.Role;
+import com.jobtracker.entity.User;
+import com.jobtracker.entity.enums.RoleName;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.GoogleDriveBaseResumeRepository;
 import com.jobtracker.repository.GoogleDriveConnectionRepository;
 import com.jobtracker.repository.GoogleDriveOAuthStateRepository;
 import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
+import com.jobtracker.repository.RoleRepository;
 import com.jobtracker.repository.UserAchievementRepository;
 import com.jobtracker.repository.UserGamificationRepository;
 import com.jobtracker.repository.UserRepository;
@@ -32,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,9 +61,11 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
     @Autowired private GoogleDriveConnectionRepository googleDriveConnectionRepository;
     @Autowired private GoogleDriveBaseResumeRepository googleDriveBaseResumeRepository;
     @Autowired private GoogleDriveOAuthStateRepository googleDriveOAuthStateRepository;
+    @Autowired private RoleRepository roleRepository;
     @Autowired private FakeGoogleDriveApiClient googleDriveApiClient;
 
-    private String accessToken;
+    private String betaAccessToken;
+    private String nonBetaAccessToken;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -79,18 +86,50 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 .andReturn();
 
         AuthResponse auth = objectMapper.readValue(result.getResponse().getContentAsString(), AuthResponse.class);
-        accessToken = auth.accessToken();
+        nonBetaAccessToken = auth.accessToken();
+
+        User user = userRepository.findByEmail("driveuser@example.com").orElseThrow();
+        Role betaRole = roleRepository.findByName(RoleName.BETA)
+                .orElseGet(() -> {
+                    Role role = new Role();
+                    role.setName(RoleName.BETA);
+                    return roleRepository.save(role);
+                });
+        user.setRoles(Set.of(
+                user.getRoles().stream().findFirst().orElseThrow(),
+                betaRole));
+        userRepository.save(user);
+
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "driveuser@example.com",
+                                  "password": "pass1234"
+                                }
+                                """))
+                .andReturn();
+
+        AuthResponse betaAuth = objectMapper.readValue(loginResult.getResponse().getContentAsString(), AuthResponse.class);
+        betaAccessToken = betaAuth.accessToken();
     }
 
     @Test
     void startOauth_shouldReturnAuthorizationUrl() throws Exception {
         mockMvc.perform(post("/api/v1/google-drive/oauth/start")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + betaAccessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.authorizationUrl").value(org.hamcrest.Matchers.containsString("https://accounts.google.com/o/oauth2/v2/auth")))
                 .andExpect(jsonPath("$.state").isNotEmpty())
                 .andExpect(jsonPath("$.redirectUri").value("http://localhost:8080/api/v1/google-drive/oauth/callback"))
                 .andExpect(jsonPath("$.scopes[0]").value("https://www.googleapis.com/auth/drive"));
+    }
+
+    @Test
+    void startOauth_shouldReturn403_whenUserDoesNotHaveBetaRole() throws Exception {
+        mockMvc.perform(post("/api/v1/google-drive/oauth/start")
+                        .header("Authorization", "Bearer " + nonBetaAccessToken))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -105,7 +144,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 new GoogleDriveApiClient.GoogleDriveAccountProfile("perm-123", "connected@example.com", "Drive User");
 
         MvcResult startResult = mockMvc.perform(post("/api/v1/google-drive/oauth/start")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + betaAccessToken))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -135,7 +174,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 ));
 
         mockMvc.perform(put("/api/v1/google-drive/root-folder")
-                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Authorization", "Bearer " + betaAccessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"folderIdOrUrl\":\"folder-123\"}"))
                 .andExpect(status().isOk())
@@ -150,7 +189,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
         assertThat(googleDriveConnectionRepository.findAll()).hasSize(1);
 
         mockMvc.perform(delete("/api/v1/google-drive/connection")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + betaAccessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Google Drive connection removed"));
 
@@ -160,7 +199,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
     @Test
     void disconnect_shouldSucceedEvenWithNoExistingConnection() throws Exception {
         mockMvc.perform(delete("/api/v1/google-drive/connection")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + betaAccessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Google Drive connection removed"));
     }
@@ -177,7 +216,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 ));
 
         mockMvc.perform(post("/api/v1/google-drive/base-resumes")
-                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Authorization", "Bearer " + betaAccessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"documentIdOrUrl\":\"doc-abc\"}"))
                 .andExpect(status().isCreated())
@@ -200,7 +239,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 ));
 
         mockMvc.perform(post("/api/v1/google-drive/base-resumes")
-                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Authorization", "Bearer " + betaAccessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"documentIdOrUrl\":\"pdf-file\"}"))
                 .andExpect(status().isBadRequest());
@@ -213,7 +252,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
         googleDriveBaseResumeRepository.save(resume);
 
         mockMvc.perform(delete("/api/v1/google-drive/base-resumes/" + resume.getId())
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + betaAccessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Base resume deleted successfully"));
 
@@ -223,7 +262,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
     @Test
     void deleteBaseResume_shouldReturn404ForUnknownId() throws Exception {
         mockMvc.perform(delete("/api/v1/google-drive/base-resumes/" + UUID.randomUUID())
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + betaAccessToken))
                 .andExpect(status().isNotFound());
     }
 
@@ -249,7 +288,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 ));
 
         mockMvc.perform(post("/api/v1/google-drive/applications/" + application.getId() + "/resume-copies")
-                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Authorization", "Bearer " + betaAccessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"baseResumeId\":\"" + resume.getId() + "\"}"))
                 .andExpect(status().isCreated())
@@ -273,7 +312,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
         application = applicationRepository.save(application);
 
         mockMvc.perform(post("/api/v1/google-drive/applications/" + application.getId() + "/resume-copies")
-                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Authorization", "Bearer " + betaAccessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"baseResumeId\":\"" + resume.getId() + "\"}"))
                 .andExpect(status().isBadRequest());

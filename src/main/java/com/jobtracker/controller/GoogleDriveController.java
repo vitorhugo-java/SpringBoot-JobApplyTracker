@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ public class GoogleDriveController {
             responses = @ApiResponse(responseCode = "200", description = "Authorization URL generated",
                     content = @Content(schema = @Schema(implementation = GoogleDriveOAuthStartResponse.class)))
     )
+    @PreAuthorize("hasRole('BETA')")
     @PostMapping("/oauth/start")
     public ResponseEntity<GoogleDriveOAuthStartResponse> startOauth() {
         return ResponseEntity.ok(googleDriveOAuthService.startAuthorization());
@@ -55,18 +57,21 @@ public class GoogleDriveController {
             responses = @ApiResponse(responseCode = "200", description = "Current Google Drive integration status",
                     content = @Content(schema = @Schema(implementation = GoogleDriveStatusResponse.class)))
     )
+    @PreAuthorize("hasRole('BETA')")
     @GetMapping("/status")
     public ResponseEntity<GoogleDriveStatusResponse> getStatus() {
         return ResponseEntity.ok(googleDriveService.getStatus());
     }
 
     @Operation(summary = "Disconnect Google Drive")
+    @PreAuthorize("hasRole('BETA')")
     @DeleteMapping("/connection")
     public ResponseEntity<MessageResponse> disconnect() {
         return ResponseEntity.ok(googleDriveOAuthService.disconnect());
     }
 
     @Operation(summary = "Update Google Drive root folder")
+    @PreAuthorize("hasRole('BETA')")
     @PutMapping("/root-folder")
     public ResponseEntity<GoogleDriveStatusResponse> updateRootFolder(
             @Valid @RequestBody GoogleDriveRootFolderRequest request) {
@@ -74,6 +79,7 @@ public class GoogleDriveController {
     }
 
     @Operation(summary = "Register a Google Docs base resume")
+    @PreAuthorize("hasRole('BETA')")
     @PostMapping("/base-resumes")
     public ResponseEntity<GoogleDriveBaseResumeResponse> addBaseResume(
             @Valid @RequestBody GoogleDriveBaseResumeRequest request) {
@@ -81,6 +87,7 @@ public class GoogleDriveController {
     }
 
     @Operation(summary = "Delete a configured base resume")
+    @PreAuthorize("hasRole('BETA')")
     @DeleteMapping("/base-resumes/{baseResumeId}")
     public ResponseEntity<MessageResponse> deleteBaseResume(@PathVariable UUID baseResumeId) {
         googleDriveService.deleteBaseResume(baseResumeId);
@@ -88,6 +95,7 @@ public class GoogleDriveController {
     }
 
     @Operation(summary = "Copy a base resume into an application folder")
+    @PreAuthorize("hasRole('BETA')")
     @PostMapping("/applications/{applicationId}/resume-copies")
     public ResponseEntity<GoogleDriveResumeCopyResponse> copyBaseResume(
             @PathVariable UUID applicationId,

@@ -3,6 +3,7 @@ package com.jobtracker.dto.auth;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Schema(description = "Authenticated user profile")
@@ -14,5 +15,9 @@ public record UserResponse(
         @Schema(description = "User email address", example = "john@example.com")
         String email,
         @Schema(description = "Preferred daily reminder time", example = "19:00:00")
-        LocalTime reminderTime
+        LocalTime reminderTime,
+        @Schema(description = "Granted application roles", example = "[\"USER\", \"BETA\"]")
+        Set<String> roles,
+        @Schema(description = "Whether the user can access Google integration features", example = "true")
+        boolean canUseGoogleIntegration
 ) {}

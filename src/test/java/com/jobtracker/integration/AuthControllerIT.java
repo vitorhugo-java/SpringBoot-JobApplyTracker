@@ -61,6 +61,8 @@ class AuthControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.user.email").value("register@example.com"))
+                .andExpect(jsonPath("$.user.roles[0]").value("USER"))
+                .andExpect(jsonPath("$.user.canUseGoogleIntegration").value(false))
                 // Refresh token should NOT be in JSON body (now in HttpOnly cookie)
                 .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andReturn();
@@ -121,6 +123,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.user.email").value("login@example.com"))
+                .andExpect(jsonPath("$.user.canUseGoogleIntegration").value(false))
                 .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andReturn();
 
@@ -240,7 +243,9 @@ class AuthControllerIT extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/auth/me")
                         .header("Authorization", "Bearer " + auth.accessToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("me@example.com"));
+                .andExpect(jsonPath("$.email").value("me@example.com"))
+                .andExpect(jsonPath("$.roles[0]").value("USER"))
+                .andExpect(jsonPath("$.canUseGoogleIntegration").value(false));
     }
 
     @Test
