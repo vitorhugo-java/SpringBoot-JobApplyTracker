@@ -1,6 +1,6 @@
 package com.jobtracker.unit;
 
-import com.jobtracker.config.ApplicationConfig;
+import com.jobtracker.config.UserDetailsConfig;
 import com.jobtracker.entity.Role;
 import com.jobtracker.entity.User;
 import com.jobtracker.entity.enums.RoleName;
@@ -16,12 +16,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class ApplicationConfigTest {
+class UserDetailsConfigTest {
 
     @Test
     void userDetailsService_shouldMapPersistedRolesToGrantedAuthorities() {
         UserRepository userRepository = mock(UserRepository.class);
-        ApplicationConfig applicationConfig = new ApplicationConfig(userRepository);
+        UserDetailsConfig UserDetailsConfig = new UserDetailsConfig(userRepository);
         User user = new User();
         user.setId(UUID.randomUUID());
         user.setEmail("roles@example.com");
@@ -35,7 +35,7 @@ class ApplicationConfigTest {
 
         when(userRepository.findByEmail("roles@example.com")).thenReturn(Optional.of(user));
 
-        UserDetails userDetails = applicationConfig.userDetailsService().loadUserByUsername("roles@example.com");
+        UserDetails userDetails = UserDetailsConfig.userDetailsService().loadUserByUsername("roles@example.com");
 
         assertThat(userDetails.getAuthorities())
                 .extracting("authority")
