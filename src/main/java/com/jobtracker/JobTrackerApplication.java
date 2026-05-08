@@ -17,6 +17,7 @@ import org.springframework.boot.actuate.autoconfigure.endpoint.jmx.JmxEndpointAu
         MustacheAutoConfiguration.class,
         WebSocketServletAutoConfiguration.class
 })
+@RegisterReflectionForBinding(org.hibernate.id.uuid.UuidGenerator.class)
 public class JobTrackerApplication {
 
     public static void main(String[] args) {
