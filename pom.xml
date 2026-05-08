@@ -248,6 +248,9 @@
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
+                        <configuration>
+                            <imageName>app-native</imageName>
+                        </configuration>
                         <version>${native.maven.plugin.version}</version>
                         <extensions>true</extensions>
                         <executions>
