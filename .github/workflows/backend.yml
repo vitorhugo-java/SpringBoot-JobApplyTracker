@@ -27,9 +27,6 @@ jobs:
       - name: Build Native Binary
         run: mvn -Pnative native:compile -DskipTests -B -ntp
 
-      - name: Rename Binary for Consistency
-        run: mv target/SpringBoot-JobApplyTracker target/app-native
-
       - name: Upload Native Binary
         uses: actions/upload-artifact@v4
         with:
