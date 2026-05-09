@@ -23,6 +23,9 @@ public class GraalVMConfig {
             );
 
             Arrays.asList(
+                    "io.jsonwebtoken.impl.security.KeysBridge",
+                    "io.jsonwebtoken.security.Keys",
+
                     "io.jsonwebtoken.impl.security.StandardKeyOperations",
                     "io.jsonwebtoken.impl.security.KeyOperationConverter",
 
