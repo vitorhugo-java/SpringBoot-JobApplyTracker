@@ -55,10 +55,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-graalvm</artifactId>
-        </dependency>
 
         <!-- MariaDB Driver -->
         <dependency>
@@ -241,55 +237,6 @@
                     </includes>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.hibernate.orm.tooling</groupId>
-                <artifactId>hibernate-enhance-maven-plugin</artifactId>
-                <version>6.5.2.Final</version> <executions>
-                <execution>
-                    <goals>
-                        <goal>enhance</goal>
-                    </goals>
-                    <configuration>
-                        <enableLazyInitialization>true</enableLazyInitialization>
-                        <enableDirtyTracking>true</enableDirtyTracking>
-                        <enableAssociationManagement>true</enableAssociationManagement>
-                    </configuration>
-                </execution>
-            </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.graalvm.buildtools</groupId>
-                <artifactId>native-maven-plugin</artifactId>
-                <configuration>
-                    <metadataRepository>
-                        <enabled>true</enabled>
-                    </metadataRepository>
-                    <buildArgs>
-                        <buildArg>--initialize-at-build-time=io.jsonwebtoken.Jwts,io.jsonwebtoken.Jwts$SIG,io.jsonwebtoken.Jwts$KEY,io.jsonwebtoken.Jwts$ENC</buildArg>
-                    </buildArgs>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>native</id>
-            <build>
-                <plugins>
-                    <plugin>
-                      <groupId>org.graalvm.buildtools</groupId>
-                      <artifactId>native-maven-plugin</artifactId>
-                      <configuration>
-                          <imageName>app-native</imageName>
-                          <buildArgs>
-                              <buildArg>-J-Xmx6g</buildArg>
-                              <buildArg>-Ob</buildArg> 
-                          </buildArgs>
-                      </configuration>
-                  </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
