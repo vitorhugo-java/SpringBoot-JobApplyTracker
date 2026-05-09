@@ -42,6 +42,9 @@ public class GoogleDriveClientConfig {
 
     private static final int CONNECT_TIMEOUT_MS = 10_000;
     private static final int READ_TIMEOUT_MS = 30_000;
+    private static final String DISABLED_CLIENT_ID = "google-drive-disabled-client";
+    private static final String DISABLED_CLIENT_SECRET = "google-drive-disabled-secret";
+    private static final String DISABLED_REDIRECT_URI = "http://localhost/google-drive-disabled";
 
     /**
      * The {@link ClientRegistration} for Google Drive. Built programmatically from
@@ -52,12 +55,18 @@ public class GoogleDriveClientConfig {
      */
     @Bean
     public ClientRegistration googleDriveClientRegistration(GoogleDriveProperties properties) {
+        // Keep the application bootable even when Google credentials are absent.
+        // Runtime operations are still blocked by GoogleDriveProperties#validateConfigured().
+        String clientId = properties.isConfigured() ? properties.getClientId() : DISABLED_CLIENT_ID;
+        String clientSecret = properties.isConfigured() ? properties.getClientSecret() : DISABLED_CLIENT_SECRET;
+        String redirectUri = properties.isConfigured() ? properties.getRedirectUri() : DISABLED_REDIRECT_URI;
+
         return ClientRegistration.withRegistrationId("google-drive")
-                .clientId(properties.getClientId())
-                .clientSecret(properties.getClientSecret())
+                .clientId(clientId)
+                .clientSecret(clientSecret)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(properties.getRedirectUri())
+                .redirectUri(redirectUri)
                 .scope(properties.getScopes().toArray(new String[0]))
                 .authorizationUri(properties.getAuthorizationUri())
                 .tokenUri(properties.getTokenUri())
