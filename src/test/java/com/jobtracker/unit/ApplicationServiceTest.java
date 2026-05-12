@@ -328,6 +328,7 @@ class ApplicationServiceTest {
     private ApplicationResponse buildApplicationResponse(UUID id) {
         return new ApplicationResponse(id, "Software Engineer", "Recruiter", "HR",
                 "https://example.com/job", LocalDate.now(), false, false, null, "RH", null,
-                false, LocalDateTime.now(), "Follow up this week", false, null, LocalDateTime.now(), LocalDateTime.now());
+                false, LocalDateTime.now(), "Follow up this week", false, null, null, null, null, null, null,
+                LocalDateTime.now(), LocalDateTime.now());
     }
 }

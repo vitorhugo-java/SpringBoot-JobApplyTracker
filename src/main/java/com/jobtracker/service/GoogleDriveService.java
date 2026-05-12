@@ -151,17 +151,26 @@ public class GoogleDriveService {
                 vacancyFolder.id(),
                 copiedFileName
         );
+        String copiedDocumentUrl = resolveDocumentLink(copiedFile);
+        LocalDateTime generatedAt = LocalDateTime.now();
+
+        application.setDriveResumeFileId(copiedFile.id());
+        application.setDriveResumeFileName(copiedFile.name());
+        application.setDriveResumeDocumentUrl(copiedDocumentUrl);
+        application.setDriveResumeGeneratedAt(generatedAt);
 
         connectionRepository.save(connection);
+        applicationRepository.save(application);
         return new GoogleDriveResumeCopyResponse(
                 application.getId(),
                 baseResume.getId(),
                 copiedFile.id(),
                 copiedFile.name(),
-                resolveDocumentLink(copiedFile),
+                copiedDocumentUrl,
                 vacancyFolder.id(),
                 vacancyFolder.name(),
-                resolveFolderLink(vacancyFolder.id(), vacancyFolder.webViewLink())
+                resolveFolderLink(vacancyFolder.id(), vacancyFolder.webViewLink()),
+                generatedAt
         );
     }
 

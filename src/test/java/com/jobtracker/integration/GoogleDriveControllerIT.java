@@ -295,7 +295,14 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.applicationId").value(application.getId().toString()))
                 .andExpect(jsonPath("$.baseResumeId").value(resume.getId().toString()))
                 .andExpect(jsonPath("$.copiedFileId").value("copied-file"))
-                .andExpect(jsonPath("$.vacancyFolderId").value("created-folder"));
+                .andExpect(jsonPath("$.vacancyFolderId").value("created-folder"))
+                .andExpect(jsonPath("$.generatedAt").isNotEmpty());
+
+        JobApplication savedApplication = applicationRepository.findById(application.getId()).orElseThrow();
+        assertThat(savedApplication.getDriveResumeFileId()).isEqualTo("copied-file");
+        assertThat(savedApplication.getDriveResumeFileName()).contains("APP-" + application.getId());
+        assertThat(savedApplication.getDriveResumeDocumentUrl()).contains("copied-file");
+        assertThat(savedApplication.getDriveResumeGeneratedAt()).isNotNull();
     }
 
     @Test

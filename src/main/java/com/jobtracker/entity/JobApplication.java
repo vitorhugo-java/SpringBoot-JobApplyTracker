@@ -87,6 +87,18 @@ public class JobApplication {
     @Column(name = "drive_vacancy_folder_id", length = 255)
     private String driveVacancyFolderId;
 
+    @Column(name = "drive_resume_file_id", length = 255)
+    private String driveResumeFileId;
+
+    @Column(name = "drive_resume_file_name", length = 255)
+    private String driveResumeFileName;
+
+    @Column(name = "drive_resume_document_url", length = 2048)
+    private String driveResumeDocumentUrl;
+
+    @Column(name = "drive_resume_generated_at")
+    private LocalDateTime driveResumeGeneratedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -173,6 +185,18 @@ public class JobApplication {
 
     public String getDriveVacancyFolderId() { return driveVacancyFolderId; }
     public void setDriveVacancyFolderId(String driveVacancyFolderId) { this.driveVacancyFolderId = driveVacancyFolderId; }
+
+    public String getDriveResumeFileId() { return driveResumeFileId; }
+    public void setDriveResumeFileId(String driveResumeFileId) { this.driveResumeFileId = driveResumeFileId; }
+
+    public String getDriveResumeFileName() { return driveResumeFileName; }
+    public void setDriveResumeFileName(String driveResumeFileName) { this.driveResumeFileName = driveResumeFileName; }
+
+    public String getDriveResumeDocumentUrl() { return driveResumeDocumentUrl; }
+    public void setDriveResumeDocumentUrl(String driveResumeDocumentUrl) { this.driveResumeDocumentUrl = driveResumeDocumentUrl; }
+
+    public LocalDateTime getDriveResumeGeneratedAt() { return driveResumeGeneratedAt; }
+    public void setDriveResumeGeneratedAt(LocalDateTime driveResumeGeneratedAt) { this.driveResumeGeneratedAt = driveResumeGeneratedAt; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

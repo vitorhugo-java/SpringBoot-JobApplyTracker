@@ -194,9 +194,15 @@ class GoogleDriveServiceTest {
         assertThat(response.baseResumeId()).isEqualTo(RESUME_ID);
         assertThat(response.copiedFileId()).isEqualTo("copied-doc-id");
         assertThat(response.documentWebViewLink()).contains("copied-doc-id");
+        assertThat(response.generatedAt()).isNotNull();
+        assertThat(application.getDriveResumeFileId()).isEqualTo("copied-doc-id");
+        assertThat(application.getDriveResumeFileName()).contains("APP-" + APPLICATION_ID);
+        assertThat(application.getDriveResumeDocumentUrl()).contains("copied-doc-id");
+        assertThat(application.getDriveResumeGeneratedAt()).isNotNull();
 
         ArgumentCaptor<String> folderNameCaptor = ArgumentCaptor.forClass(String.class);
         verify(googleDriveApiClient).createFolder(eq("access-token"), eq("root-folder-id"), folderNameCaptor.capture());
+        verify(applicationRepository).save(application);
         assertThat(folderNameCaptor.getValue()).contains("APP-" + APPLICATION_ID);
     }
 }

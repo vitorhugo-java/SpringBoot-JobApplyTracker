@@ -25,6 +25,11 @@ public class ApplicationMapper {
             app.getNote(),
             app.isArchived(),
             app.getArchivedAt(),
+            app.getDriveVacancyFolderId(),
+            app.getDriveResumeFileId(),
+            app.getDriveResumeFileName(),
+            app.getDriveResumeDocumentUrl(),
+            app.getDriveResumeGeneratedAt(),
             app.getCreatedAt(),
             app.getUpdatedAt()
         );

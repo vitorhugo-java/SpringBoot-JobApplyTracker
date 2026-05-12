@@ -45,6 +45,17 @@ public record ApplicationResponse(
         @Schema(description = "Timestamp when application was archived", example = "2024-06-10T09:15:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime archivedAt,
+        @Schema(description = "Google Drive vacancy folder ID associated with this application", example = "folder-123")
+        String driveVacancyFolderId,
+        @Schema(description = "Last generated Google Docs resume file ID", example = "doc-123")
+        String driveResumeFileId,
+        @Schema(description = "Last generated Google Docs resume file name", example = "APP-123 - Backend Engineer - Base Resume")
+        String driveResumeFileName,
+        @Schema(description = "URL for the last generated Google Docs resume", example = "https://docs.google.com/document/d/doc-123/edit")
+        String driveResumeDocumentUrl,
+        @Schema(description = "Timestamp when the latest Google Docs resume was generated", example = "2024-06-11T14:45:00")
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        LocalDateTime driveResumeGeneratedAt,
         @Schema(description = "Record creation timestamp", example = "2024-06-01T10:00:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime createdAt,
