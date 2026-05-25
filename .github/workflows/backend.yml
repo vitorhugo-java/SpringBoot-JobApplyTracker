@@ -46,6 +46,36 @@ jobs:
       - name: Run tests and package JAR
         run: mvn -B -ntp clean verify
 
+      - name: Print Surefire report summary on failure
+        if: failure()
+        run: |
+          if [ -d target/surefire-reports ]; then
+            echo "Collected Surefire reports:"
+            find target/surefire-reports -maxdepth 1 -type f \( -name '*.txt' -o -name '*.xml' \)
+            echo
+            for report in target/surefire-reports/*.txt; do
+              [ -f "$report" ] || continue
+              echo "===== $report ====="
+              sed -n '1,200p' "$report"
+              echo
+            done
+          else
+            echo "No target/surefire-reports directory found."
+          fi
+
+      - name: Upload Surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: |
+            target/surefire-reports/**
+            **/*.dump
+            **/*-jvmRun*.dump
+            **/*.dumpstream
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload packaged JAR
         uses: actions/upload-artifact@v4
         with:
