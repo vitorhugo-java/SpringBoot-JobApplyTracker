@@ -16,10 +16,14 @@ import java.util.UUID;
 public class DashboardService {
 
     private final ApplicationRepository applicationRepository;
+    private final InterviewMetricsService interviewMetricsService;
     private final SecurityUtils securityUtils;
 
-    public DashboardService(ApplicationRepository applicationRepository, SecurityUtils securityUtils) {
+    public DashboardService(ApplicationRepository applicationRepository,
+                            InterviewMetricsService interviewMetricsService,
+                            SecurityUtils securityUtils) {
         this.applicationRepository = applicationRepository;
+        this.interviewMetricsService = interviewMetricsService;
         this.securityUtils = securityUtils;
     }
 
@@ -37,6 +41,7 @@ public class DashboardService {
         long waitingResponses = applicationRepository.countByUserIdAndStatusInAndArchivedFalse(userId, waitingStatuses);
 
         long interviewsScheduled = applicationRepository.countByUserIdAndInterviewScheduledTrueAndArchivedFalse(userId);
+        long interviewCount = interviewMetricsService.getInterviewCount(userId);
 
         long overdueFollowUps = applicationRepository.findOverdueByUserId(userId, LocalDateTime.now().minusHours(6), LocalDateTime.now().minusDays(2)).size();
 
@@ -62,6 +67,7 @@ public class DashboardService {
                 totalApplications,
                 waitingResponses,
                 interviewsScheduled,
+                interviewCount,
                 overdueFollowUps,
                 dmRemindersEnabled,
                 toSendLater,

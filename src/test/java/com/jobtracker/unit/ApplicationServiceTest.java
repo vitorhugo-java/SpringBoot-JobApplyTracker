@@ -10,6 +10,7 @@ import com.jobtracker.mapper.ApplicationMapper;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.service.ApplicationService;
 import com.jobtracker.service.GamificationService;
+import com.jobtracker.service.InterviewMetricsService;
 import com.jobtracker.util.SecurityUtils;
 import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +47,7 @@ class ApplicationServiceTest {
     @Mock private ApplicationRepository applicationRepository;
     @Mock private ApplicationMapper applicationMapper;
     @Mock private GamificationService gamificationService;
+    @Mock private InterviewMetricsService interviewMetricsService;
     @Mock private SecurityUtils securityUtils;
     @Mock(answer = RETURNS_DEEP_STUBS) private Tracer tracer;
 
@@ -73,6 +75,7 @@ class ApplicationServiceTest {
         ApplicationResponse result = applicationService.create(request);
         assertThat(result.id()).isEqualTo(APP_UUID);
         verify(applicationRepository).save(any(JobApplication.class));
+        verify(interviewMetricsService).recordStatusTransition(app, null, ApplicationStatus.RH);
         verify(gamificationService).onApplicationCreated(app);
     }
 
@@ -105,6 +108,7 @@ class ApplicationServiceTest {
         ApplicationResponse result = applicationService.update(APP_UUID, request);
         assertThat(result).isNotNull();
         verify(gamificationService).onApplicationUpdated(eq(app), eq(ApplicationStatus.RH), eq(false), eq("Follow up this week"));
+        verify(interviewMetricsService).recordStatusTransition(app, ApplicationStatus.RH, ApplicationStatus.RH);
     }
 
     @Test
@@ -118,6 +122,7 @@ class ApplicationServiceTest {
         ApplicationResponse result = applicationService.updateStatus(APP_UUID, statusRequest);
         assertThat(result).isNotNull();
         assertThat(app.getStatus()).isEqualTo(ApplicationStatus.RH);
+        verify(interviewMetricsService).recordStatusTransition(app, ApplicationStatus.RH, ApplicationStatus.RH);
         verify(gamificationService).onApplicationStatusUpdated(app, ApplicationStatus.RH);
     }
 

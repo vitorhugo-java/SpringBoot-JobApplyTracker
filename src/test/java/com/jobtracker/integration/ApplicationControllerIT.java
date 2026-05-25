@@ -5,10 +5,12 @@ import com.jobtracker.dto.application.ApplicationRequest;
 import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.RegisterRequest;
 import com.jobtracker.repository.ApplicationRepository;
+import com.jobtracker.repository.InterviewEventRepository;
 import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
 import com.jobtracker.repository.UserAchievementRepository;
 import com.jobtracker.repository.UserGamificationRepository;
+import com.jobtracker.repository.UserInterviewMetricsRepository;
 import com.jobtracker.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,14 +33,18 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
     @Autowired private RefreshTokenRepository refreshTokenRepository;
     @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
     @Autowired private ApplicationRepository applicationRepository;
+    @Autowired private InterviewEventRepository interviewEventRepository;
     @Autowired private UserGamificationRepository userGamificationRepository;
     @Autowired private UserAchievementRepository userAchievementRepository;
+    @Autowired private UserInterviewMetricsRepository userInterviewMetricsRepository;
 
     private String accessToken;
 
     @BeforeEach
     void setUp() throws Exception {
         userAchievementRepository.deleteAll();
+        interviewEventRepository.deleteAll();
+        userInterviewMetricsRepository.deleteAll();
         userGamificationRepository.deleteAll();
         applicationRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
@@ -154,6 +160,68 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
                         .content("{\"status\": \"Teste Técnico\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("Teste Técnico"));
+    }
+
+    @Test
+    void statusUpdates_shouldExposeCumulativeInterviewCountWithoutRepeatedSaveDoubleCounting() throws Exception {
+        ApplicationRequest create = buildRequest("Interview Counter");
+        MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(create)))
+                .andReturn();
+
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(get("/api/v1/dashboard/summary")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.interviewCount").value(0));
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"Teste Técnico\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/dashboard/summary")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.interviewCount").value(1));
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"Teste Técnico\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"RH (Negociação)\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/dashboard/summary")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.interviewCount").value(1));
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"Rejeitado\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"Entrevista marcada\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/dashboard/summary")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.interviewCount").value(2));
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.jobtracker.entity.enums;
 
 public enum ApplicationStatus {
     RH("RH"),
+    ENTREVISTA_MARCADA("Entrevista marcada"),
     FIZ_A_RH_AGUARDANDO_ATUALIZACAO("Fiz a RH - Aguardando Atualização"),
     FIZ_A_HIRING_MANAGER_AGUARDANDO_ATUALIZACAO("Fiz a Hiring Manager - Aguardando Atualização"),
     TESTE_TECNICO("Teste Técnico"),

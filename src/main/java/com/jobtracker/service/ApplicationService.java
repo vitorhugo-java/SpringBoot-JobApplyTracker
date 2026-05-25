@@ -40,17 +40,20 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final ApplicationMapper applicationMapper;
     private final GamificationService gamificationService;
+    private final InterviewMetricsService interviewMetricsService;
     private final SecurityUtils securityUtils;
     private final Tracer tracer;
 
     public ApplicationService(ApplicationRepository applicationRepository,
                               ApplicationMapper applicationMapper,
                               GamificationService gamificationService,
+                              InterviewMetricsService interviewMetricsService,
                               SecurityUtils securityUtils,
                               Tracer tracer) {
         this.applicationRepository = applicationRepository;
         this.applicationMapper = applicationMapper;
         this.gamificationService = gamificationService;
+        this.interviewMetricsService = interviewMetricsService;
         this.securityUtils = securityUtils;
         this.tracer = tracer;
     }
@@ -63,6 +66,7 @@ public class ApplicationService {
             mapRequestToEntity(request, app);
             app.setUser(securityUtils.getCurrentUser());
             JobApplication saved = applicationRepository.save(app);
+            interviewMetricsService.recordStatusTransition(saved, null, saved.getStatus());
             gamificationService.onApplicationCreated(saved);
             return applicationMapper.toResponse(saved);
         } catch (Exception e) {
@@ -91,6 +95,7 @@ public class ApplicationService {
         String previousNote = app.getNote();
         mapRequestToEntity(request, app);
         JobApplication saved = applicationRepository.save(app);
+        interviewMetricsService.recordStatusTransition(saved, previousStatus, saved.getStatus());
         gamificationService.onApplicationUpdated(saved, previousStatus, previousInterviewScheduled, previousNote);
         return applicationMapper.toResponse(saved);
     }
@@ -103,6 +108,7 @@ public class ApplicationService {
         ApplicationStatus previousStatus = app.getStatus();
         applyStatusChange(app, resolveStatus(request.status()));
         JobApplication saved = applicationRepository.save(app);
+        interviewMetricsService.recordStatusTransition(saved, previousStatus, saved.getStatus());
         gamificationService.onApplicationStatusUpdated(saved, previousStatus);
         return applicationMapper.toResponse(saved);
     }

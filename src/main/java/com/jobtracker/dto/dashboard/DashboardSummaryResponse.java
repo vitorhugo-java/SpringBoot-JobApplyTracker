@@ -10,6 +10,8 @@ public record DashboardSummaryResponse(
         long waitingResponses,
         @Schema(description = "Applications with an interview scheduled", example = "3")
         long interviewsScheduled,
+        @Schema(description = "Cumulative count of interview status entries", example = "7")
+        long interviewCount,
         @Schema(description = "Applications with overdue follow-up dates", example = "2")
         long overdueFollowUps,
         @Schema(description = "Applications with recruiter DM reminder enabled", example = "5")

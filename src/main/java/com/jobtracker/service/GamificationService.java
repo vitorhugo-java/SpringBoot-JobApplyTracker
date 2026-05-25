@@ -51,6 +51,7 @@ public class GamificationService {
      *   to an offer/closing stage until dedicated OFFER/HIRED statuses exist.
      */
     private static final Set<ApplicationStatus> INTERVIEW_PROGRESS_STATUSES = EnumSet.of(
+            ApplicationStatus.ENTREVISTA_MARCADA,
             ApplicationStatus.FIZ_A_RH_AGUARDANDO_ATUALIZACAO,
             ApplicationStatus.FIZ_A_HIRING_MANAGER_AGUARDANDO_ATUALIZACAO,
             ApplicationStatus.TESTE_TECNICO,
