@@ -6,6 +6,7 @@ import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.LoginRequest;
 import com.jobtracker.dto.auth.RegisterRequest;
 import com.jobtracker.repository.ApplicationRepository;
+import com.jobtracker.repository.GoogleDriveConnectionRepository;
 import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
 import com.jobtracker.repository.UserAchievementRepository;
@@ -35,6 +36,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private JwtService jwtService;
     @Autowired private UserRepository userRepository;
+    @Autowired private GoogleDriveConnectionRepository googleDriveConnectionRepository;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
     @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
     @Autowired private ApplicationRepository applicationRepository;
@@ -43,6 +45,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void cleanDb() {
+        googleDriveConnectionRepository.deleteAll();
         userAchievementRepository.deleteAll();
         userGamificationRepository.deleteAll();
         applicationRepository.deleteAll();
