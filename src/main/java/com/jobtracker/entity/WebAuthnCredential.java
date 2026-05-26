@@ -26,7 +26,7 @@ public class WebAuthnCredential {
     private String credentialId;
 
     @Lob
-    @Column(name = "public_key_cose", nullable = false)
+    @Column(name = "public_key_cose", nullable = false, columnDefinition = "TEXT")
     private String publicKeyCose;
 
     @Column(name = "sign_count", nullable = false)
