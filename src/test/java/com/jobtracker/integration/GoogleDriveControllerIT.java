@@ -36,6 +36,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -73,6 +74,7 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        googleDriveApiClient.reset();
         googleDriveOAuthStateRepository.deleteAll();
         googleDriveBaseResumeRepository.deleteAll();
         googleDriveConnectionRepository.deleteAll();
@@ -331,6 +333,71 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void detectResumePlaceholders_shouldReturnTemplatePlaceholders() throws Exception {
+        GoogleDriveConnection connection = googleDriveConnectionRepository.save(buildConnection());
+        GoogleDriveBaseResume resume = buildBaseResume(connection);
+        googleDriveBaseResumeRepository.save(resume);
+
+        mockMvc.perform(post("/api/v1/google-drive/resume-placeholders")
+                        .header("Authorization", "Bearer " + betaAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"baseResumeId\":\"" + resume.getId() + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.baseResumeId").value(resume.getId().toString()))
+                .andExpect(jsonPath("$.applicationId").isEmpty())
+                .andExpect(jsonPath("$.placeholders[0]").value("SUMMARY"))
+                .andExpect(jsonPath("$.placeholders[1]").value("SKILLS"));
+    }
+
+    @Test
+    void generateResume_shouldReplaceTemplatePlaceholdersAndReturnGeneratedResume() throws Exception {
+        GoogleDriveConnection connection = googleDriveConnectionRepository.save(buildConnectionWithRootFolder());
+        GoogleDriveBaseResume resume = buildBaseResume(connection);
+        googleDriveBaseResumeRepository.save(resume);
+
+        JobApplication application = new JobApplication();
+        application.setUser(userRepository.findByEmail("driveuser@example.com").orElseThrow());
+        application.setVacancyName("Backend Engineer");
+        application.setOrganization("Acme");
+        application.setApplicationDate(LocalDate.now());
+        application = applicationRepository.save(application);
+
+        googleDriveApiClient.fileMetadataById.put("root-folder-id",
+                new GoogleDriveApiClient.DriveFileMetadata(
+                        "root-folder-id",
+                        "Job Tracker Root",
+                        GoogleDriveApiClient.GOOGLE_FOLDER_MIME_TYPE,
+                        "https://drive.google.com/drive/folders/root-folder-id"
+                ));
+
+        mockMvc.perform(post("/api/v1/google-drive/applications/" + application.getId() + "/generated-resumes")
+                        .header("Authorization", "Bearer " + betaAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "baseResumeId": "%s",
+                                  "values": {
+                                    "SUMMARY": "Senior Java Engineer",
+                                    "SKILLS": "Spring Boot, PostgreSQL"
+                                  }
+                                }
+                                """.formatted(resume.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.applicationId").value(application.getId().toString()))
+                .andExpect(jsonPath("$.baseResumeId").value(resume.getId().toString()))
+                .andExpect(jsonPath("$.values.SUMMARY").value("Senior Java Engineer"))
+                .andExpect(jsonPath("$.values.SKILLS").value("Spring Boot, PostgreSQL"))
+                .andExpect(jsonPath("$.placeholders").isEmpty())
+                .andExpect(jsonPath("$.copiedFileId").value("copied-file"))
+                .andExpect(jsonPath("$.pdfFileId").value("pdf-file"))
+                .andExpect(jsonPath("$.generatedAt").isNotEmpty());
+
+        JobApplication savedApplication = applicationRepository.findById(application.getId()).orElseThrow();
+        assertThat(savedApplication.getDriveResumeFileId()).isEqualTo("copied-file");
+        assertThat(savedApplication.getDriveResumeDocumentUrl()).contains("copied-file");
+    }
+
     private GoogleDriveConnection buildConnectionWithRootFolder() {
         GoogleDriveConnection connection = buildConnection();
         connection.setRootFolderId("root-folder-id");
@@ -380,6 +447,14 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
         private GoogleDriveAccountProfile accountProfile =
                 new GoogleDriveAccountProfile("perm-123", "connected@example.com", "Drive User");
         private final Map<String, DriveFileMetadata> fileMetadataById = new HashMap<>();
+        private final Map<String, String> documentTextById = new HashMap<>();
+
+        void reset() {
+            fileMetadataById.clear();
+            documentTextById.clear();
+            documentTextById.put("resume-file-id", "{{SUMMARY}}\n{{SKILLS}}");
+            documentTextById.put("copied-file", "{{SUMMARY}}\n{{SKILLS}}");
+        }
 
         @Override
         public String buildAuthorizationUrl(String state) {
@@ -418,16 +493,29 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
 
         @Override
         public DriveFileMetadata copyGoogleDoc(String accessToken, String sourceFileId, String targetFolderId, String newName) {
+            String sourceText = documentTextById.getOrDefault(sourceFileId, "{{SUMMARY}}\n{{SKILLS}}");
+            documentTextById.put("copied-file", sourceText);
             return new DriveFileMetadata("copied-file", newName, GOOGLE_DOC_MIME_TYPE, null);
         }
 
         @Override
         public String readGoogleDocText(String accessToken, String documentId) {
-            return "{{SUMMARY}}\n{{SKILLS}}";
+            return documentTextById.getOrDefault(documentId, "{{SUMMARY}}\n{{SKILLS}}");
         }
 
         @Override
         public void replaceGoogleDocPlaceholders(String accessToken, String documentId, Map<String, String> values) {
+            if (values == null || values.isEmpty()) {
+                return;
+            }
+            String currentText = documentTextById.getOrDefault(documentId, "{{SUMMARY}}\n{{SKILLS}}");
+            String updatedText = currentText;
+            Map<String, String> orderedValues = new LinkedHashMap<>(values);
+            for (Map.Entry<String, String> entry : orderedValues.entrySet()) {
+                String replacement = entry.getValue() == null ? "" : entry.getValue();
+                updatedText = updatedText.replace("{{" + entry.getKey() + "}}", replacement);
+            }
+            documentTextById.put(documentId, updatedText);
         }
 
         @Override
