@@ -397,6 +397,46 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
         assertThat(savedApplication.getDriveResumeDocumentUrl()).contains("copied-file");
     }
 
+    @Test
+    void generateResume_shouldReplacePlaceholdersWhenTemplateContainsWhitespaceInBraces() throws Exception {
+        GoogleDriveConnection connection = googleDriveConnectionRepository.save(buildConnectionWithRootFolder());
+        GoogleDriveBaseResume resume = buildBaseResume(connection);
+        googleDriveBaseResumeRepository.save(resume);
+        googleDriveApiClient.setDocumentText("resume-file-id", "{{ SUMMARY }}\n{{SKILLS}}\n{{UNKNOWN}}");
+
+        JobApplication application = new JobApplication();
+        application.setUser(userRepository.findByEmail("driveuser@example.com").orElseThrow());
+        application.setVacancyName("Backend Engineer");
+        application.setOrganization("Acme");
+        application.setApplicationDate(LocalDate.now());
+        application = applicationRepository.save(application);
+
+        googleDriveApiClient.fileMetadataById.put("root-folder-id",
+                new GoogleDriveApiClient.DriveFileMetadata(
+                        "root-folder-id",
+                        "Job Tracker Root",
+                        GoogleDriveApiClient.GOOGLE_FOLDER_MIME_TYPE,
+                        "https://drive.google.com/drive/folders/root-folder-id"
+                ));
+
+        mockMvc.perform(post("/api/v1/google-drive/applications/" + application.getId() + "/generated-resumes")
+                        .header("Authorization", "Bearer " + betaAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "baseResumeId": "%s",
+                                  "values": {
+                                    "SUMMARY": "Senior Java Engineer",
+                                    "SKILLS": "Spring Boot, PostgreSQL"
+                                  }
+                                }
+                                """.formatted(resume.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.values.SUMMARY").value("Senior Java Engineer"))
+                .andExpect(jsonPath("$.values.SKILLS").value("Spring Boot, PostgreSQL"))
+                .andExpect(jsonPath("$.placeholders[0]").value("UNKNOWN"));
+    }
+
     private GoogleDriveConnection buildConnectionWithRootFolder() {
         GoogleDriveConnection connection = buildConnection();
         connection.setRootFolderId("root-folder-id");
@@ -457,6 +497,10 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
             documentTextById.put("copied-file", DEFAULT_TEMPLATE_TEXT);
         }
 
+        void setDocumentText(String documentId, String text) {
+            documentTextById.put(documentId, text);
+        }
+
         @Override
         public String buildAuthorizationUrl(String state) {
             return "https://accounts.google.com/o/oauth2/v2/auth?state=" + state;
@@ -513,7 +557,14 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
             String updatedText = currentText;
             for (Map.Entry<String, String> entry : values.entrySet()) {
                 String replacement = entry.getValue() == null ? "" : entry.getValue();
-                updatedText = updatedText.replace("{{" + entry.getKey() + "}}", replacement);
+                String token = entry.getKey();
+                if (token == null || token.isBlank()) {
+                    continue;
+                }
+                String placeholderToken = token.trim().startsWith("{{") && token.trim().endsWith("}}")
+                        ? token.trim()
+                        : "{{" + token + "}}";
+                updatedText = updatedText.replace(placeholderToken, replacement);
             }
             documentTextById.put(documentId, updatedText);
         }

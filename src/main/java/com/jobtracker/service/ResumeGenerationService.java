@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +107,9 @@ public class ResumeGenerationService {
         );
 
         Map<String, String> values = request.values() == null ? Map.of() : request.values();
-        googleDriveApiClient.replaceGoogleDocPlaceholders(connection.getAccessToken(), copiedFile.id(), values);
+        String copiedTextBeforeReplacement = googleDriveApiClient.readGoogleDocText(connection.getAccessToken(), copiedFile.id());
+        Map<String, String> replacementValues = buildReplacementValues(copiedTextBeforeReplacement, values);
+        googleDriveApiClient.replaceGoogleDocPlaceholders(connection.getAccessToken(), copiedFile.id(), replacementValues);
 
         String copiedDocumentUrl = resolveDocumentLink(copiedFile);
         String copiedText = googleDriveApiClient.readGoogleDocText(connection.getAccessToken(), copiedFile.id());
@@ -160,6 +163,23 @@ public class ResumeGenerationService {
             }
         }
         return List.copyOf(placeholders);
+    }
+
+    private Map<String, String> buildReplacementValues(String templateText, Map<String, String> providedValues) {
+        if (!StringUtils.hasText(templateText) || providedValues == null || providedValues.isEmpty()) {
+            return Map.of();
+        }
+
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(templateText);
+        Map<String, String> replacementValues = new LinkedHashMap<>();
+        while (matcher.find()) {
+            String placeholderName = matcher.group(1) == null ? null : matcher.group(1).trim();
+            if (!StringUtils.hasText(placeholderName) || !providedValues.containsKey(placeholderName)) {
+                continue;
+            }
+            replacementValues.putIfAbsent(matcher.group(0), providedValues.get(placeholderName));
+        }
+        return replacementValues;
     }
 
     private GoogleDriveBaseResume getBaseResume(UUID baseResumeId, UUID userId) {

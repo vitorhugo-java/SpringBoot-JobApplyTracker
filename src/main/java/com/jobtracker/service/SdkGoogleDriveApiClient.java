@@ -249,12 +249,16 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
         }
 
         List<Request> requests = values.entrySet().stream()
+                .filter(entry -> entry.getKey() != null && !entry.getKey().isBlank())
                 .map(entry -> new Request().setReplaceAllText(new ReplaceAllTextRequest()
                         .setContainsText(new SubstringMatchCriteria()
-                                .setText("{{" + entry.getKey() + "}}")
+                                .setText(resolvePlaceholderToken(entry.getKey()))
                                 .setMatchCase(true))
                         .setReplaceText(entry.getValue() == null ? "" : entry.getValue())))
                 .toList();
+        if (requests.isEmpty()) {
+            return;
+        }
 
         executeDocsOp(accessToken, "replace placeholders", docs -> {
             docs.documents().batchUpdate(documentId, new BatchUpdateDocumentRequest().setRequests(requests)).execute();
@@ -354,5 +358,13 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
                 file.getName(),
                 file.getMimeType(),
                 file.getWebViewLink());
+    }
+
+    private String resolvePlaceholderToken(String value) {
+        String trimmed = value.trim();
+        if (trimmed.startsWith("{{") && trimmed.endsWith("}}")) {
+            return trimmed;
+        }
+        return "{{" + trimmed + "}}";
     }
 }
