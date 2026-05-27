@@ -49,8 +49,6 @@ import java.util.Set;
  *   <li>All Drive file operations (getFileMetadata, findFolderByName, createFolder, copyGoogleDoc,
  *       getCurrentAccount) use the {@code google-api-services-drive} SDK via {@link DriveClientFactory}.
  *   <li>OAuth2 token exchange and refresh use Spring Security's
- *       {@link org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient}
- *       and {@link org.springframework.security.oauth2.client.endpoint.DefaultRefreshTokenTokenResponseClient},
  *       eliminating all manual HTTP token requests.
  *   <li>Google API errors are classified: 4xx responses become {@link BadRequestException} (HTTP
  *       400); 5xx and rate-limit (429) responses become {@link ServiceUnavailableException} (HTTP
@@ -103,7 +101,6 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
 
     /**
      * Exchanges an authorization code for tokens using Spring's
-     * {@link org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient}.
      * State validation is performed upstream by {@code GoogleDriveOAuthService} before calling
      * this method, so a placeholder value is used here to satisfy the exchange API contract.
      */
@@ -297,7 +294,7 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
     }
 
     private <T> T executeDriveOp(String accessToken, String action, DriveOperation<T> op) {
-        Drive drive = driveClientFactory.create(accessToken, null);
+        Drive drive = driveClientFactory.create(accessToken);
         try {
             return op.execute(drive);
         } catch (GoogleJsonResponseException ex) {
@@ -309,7 +306,7 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
     }
 
     private <T> T executeDocsOp(String accessToken, String action, DocsOperation<T> op) {
-        Docs docs = driveClientFactory.createDocs(accessToken, null);
+        Docs docs = driveClientFactory.createDocs(accessToken);
         try {
             return op.execute(docs);
         } catch (GoogleJsonResponseException ex) {
