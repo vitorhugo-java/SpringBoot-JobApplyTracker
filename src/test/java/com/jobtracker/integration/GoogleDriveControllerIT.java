@@ -561,8 +561,9 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
                 if (token == null || token.isBlank()) {
                     continue;
                 }
-                String placeholderToken = token.trim().startsWith("{{") && token.trim().endsWith("}}")
-                        ? token.trim()
+                String trimmedToken = token.trim();
+                String placeholderToken = trimmedToken.startsWith("{{") && trimmedToken.endsWith("}}")
+                        ? trimmedToken
                         : "{{" + token + "}}";
                 updatedText = updatedText.replace(placeholderToken, replacement);
             }

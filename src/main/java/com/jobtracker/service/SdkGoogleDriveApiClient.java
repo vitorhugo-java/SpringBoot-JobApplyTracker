@@ -252,6 +252,7 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
                 .filter(entry -> entry.getKey() != null && !entry.getKey().isBlank())
                 .map(entry -> new Request().setReplaceAllText(new ReplaceAllTextRequest()
                         .setContainsText(new SubstringMatchCriteria()
+                                // Supports both legacy keys (SUMMARY) and detected tokens ({{ SUMMARY }}).
                                 .setText(resolvePlaceholderToken(entry.getKey()))
                                 .setMatchCase(true))
                         .setReplaceText(entry.getValue() == null ? "" : entry.getValue())))

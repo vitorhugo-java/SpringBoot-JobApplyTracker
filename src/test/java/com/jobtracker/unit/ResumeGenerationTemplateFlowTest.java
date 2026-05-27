@@ -105,16 +105,16 @@ class ResumeGenerationTemplateFlowTest {
                         GoogleDriveApiClient.GOOGLE_DOC_MIME_TYPE,
                         "https://docs.google.com/document/d/copied-doc-id/edit"
                 ));
-        AtomicReference<String> copiedText = new AtomicReference<>("{{ SUMMARY }}\n{{SKILLS}}\n{{UNMAPPED}}");
+        AtomicReference<String> mockDocumentContent = new AtomicReference<>("{{ SUMMARY }}\n{{SKILLS}}\n{{UNMAPPED}}");
         when(googleDriveApiClient.readGoogleDocText("access-token", "copied-doc-id"))
-                .thenAnswer(invocation -> copiedText.get());
+                .thenAnswer(invocation -> mockDocumentContent.get());
         doAnswer(invocation -> {
             Map<String, String> replacements = invocation.getArgument(2);
-            String updated = copiedText.get();
+            String updated = mockDocumentContent.get();
             for (Map.Entry<String, String> entry : replacements.entrySet()) {
                 updated = updated.replace(entry.getKey(), entry.getValue());
             }
-            copiedText.set(updated);
+            mockDocumentContent.set(updated);
             return null;
         }).when(googleDriveApiClient).replaceGoogleDocPlaceholders(eq("access-token"), eq("copied-doc-id"), any());
         when(googleDriveApiClient.exportGoogleDocAsPdf(eq("access-token"), eq("copied-doc-id"), eq("vacancy-folder-id"), any()))
