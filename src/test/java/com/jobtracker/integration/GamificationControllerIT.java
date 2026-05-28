@@ -5,14 +5,7 @@ import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.RegisterRequest;
 import com.jobtracker.dto.gamification.GamificationEventRequest;
 import com.jobtracker.entity.enums.GamificationEventType;
-import com.jobtracker.repository.ApplicationRepository;
-import com.jobtracker.repository.InterviewEventRepository;
-import com.jobtracker.repository.PasswordResetTokenRepository;
-import com.jobtracker.repository.RefreshTokenRepository;
-import com.jobtracker.repository.UserAchievementRepository;
-import com.jobtracker.repository.UserGamificationRepository;
-import com.jobtracker.repository.UserInterviewMetricsRepository;
-import com.jobtracker.repository.UserRepository;
+import com.jobtracker.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +50,12 @@ class GamificationControllerIT extends AbstractIntegrationTest {
     @Autowired
     private UserInterviewMetricsRepository userInterviewMetricsRepository;
 
+    @Autowired
+    private GoogleDriveConnectionRepository googleDriveConnectionRepository;
+
+    @Autowired
+    private GoogleDriveBaseResumeRepository googleDriveBaseResumeRepository;
+
     @BeforeEach
     void cleanDb() {
         userAchievementRepository.deleteAll();
@@ -66,6 +65,8 @@ class GamificationControllerIT extends AbstractIntegrationTest {
         passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userInterviewMetricsRepository.deleteAll();
+        googleDriveBaseResumeRepository.deleteAll();
+        googleDriveConnectionRepository.deleteAll();
         userRepository.deleteAll();
     }
 
