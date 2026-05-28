@@ -3,12 +3,11 @@ package com.jobtracker.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Component
 public class GoogleDriveProperties {
-
-    private static final List<String> DEFAULT_SCOPES = List.of("https://www.googleapis.com/auth/drive");
 
     private final String clientId;
     private final String clientSecret;
@@ -24,7 +23,8 @@ public class GoogleDriveProperties {
             @Value("${app.google-drive.redirect-uri:}") String redirectUri,
             @Value("${app.google-drive.oauth-complete-url:}") String oauthCompleteUrl,
             @Value("${app.google-drive.authorization-uri:https://accounts.google.com/o/oauth2/v2/auth}") String authorizationUri,
-            @Value("${app.google-drive.token-uri:https://oauth2.googleapis.com/token}") String tokenUri
+            @Value("${app.google-drive.token-uri:https://oauth2.googleapis.com/token}") String tokenUri,
+            @Value("${app.google-drive.scopes:https://www.googleapis.com/auth/drive,https://www.googleapis.com/auth/documents.readonly}") String scopesValue
     ) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
@@ -32,7 +32,10 @@ public class GoogleDriveProperties {
         this.oauthCompleteUrl = oauthCompleteUrl;
         this.authorizationUri = authorizationUri;
         this.tokenUri = tokenUri;
-        this.scopes = DEFAULT_SCOPES;
+        this.scopes = Arrays.stream(scopesValue.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .toList();
     }
 
     public String getClientId() {
