@@ -148,6 +148,36 @@ public class GoogleDriveController {
         return ResponseEntity.ok(resumeGenerationService.getBaseResumeContent(resumeId));
     }
 
+    @Operation(summary = "Download base resume as DOCX",
+            responses = @ApiResponse(
+                    responseCode = "200",
+                    content = @Content(
+                            mediaType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            )
+    )
+    @PreAuthorize("hasRole('BETA')")
+    @GetMapping("/base-resumes/{baseResumeId}/docx")
+    public ResponseEntity<ByteArrayResource> downloadBaseResumeDocx(@PathVariable UUID baseResumeId) {
+        return buildDownloadResponse(generatedResumeDownloadService.downloadBaseResumeAsDocx(baseResumeId));
+    }
+
+    @Operation(summary = "Download base resume as PDF",
+            responses = @ApiResponse(
+                    responseCode = "200",
+                    content = @Content(
+                            mediaType = "application/pdf",
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            )
+    )
+    @PreAuthorize("hasRole('BETA')")
+    @GetMapping("/base-resumes/{baseResumeId}/pdf")
+    public ResponseEntity<ByteArrayResource> downloadBaseResumePdf(@PathVariable UUID baseResumeId) {
+        return buildDownloadResponse(generatedResumeDownloadService.downloadBaseResumeAsPdf(baseResumeId));
+    }
+
     @Operation(summary = "Copy a base resume into an application folder")
     @PreAuthorize("hasRole('BETA')")
     @PostMapping("/applications/{applicationId}/resume-copies")
