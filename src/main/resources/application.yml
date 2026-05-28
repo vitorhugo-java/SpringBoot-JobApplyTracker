@@ -78,6 +78,7 @@ app:
     oauth-complete-url: ${GOOGLE_DRIVE_OAUTH_COMPLETE_URL:}
     authorization-uri: ${GOOGLE_DRIVE_AUTHORIZATION_URI:https://accounts.google.com/o/oauth2/v2/auth}
     token-uri: ${GOOGLE_DRIVE_TOKEN_URI:https://oauth2.googleapis.com/token}
+    scopes: ${GOOGLE_DRIVE_SCOPES:https://www.googleapis.com/auth/drive,https://www.googleapis.com/auth/documents.readonly}
   webauthn:
     rp-id: ${APP_WEBAUTHN_RP_ID:localhost}
     rp-name: ${APP_WEBAUTHN_RP_NAME:JobApplyTracker}
