@@ -321,12 +321,17 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
 
     private RuntimeException translateDriveException(String action, GoogleJsonResponseException ex) {
         int status = ex.getStatusCode();
-        String message = "Failed to " + action + " (status " + status + ")";
+
+        log.error("event=GOOGLE_DRIVE_ERROR action={} status={} details={}", action, status, ex.getDetails(), ex);
+
+        String googleMessage = ex.getDetails() != null ? ex.getDetails().getMessage() : ex.getMessage();
+
+        String message = "Failed to " + action + " (status " + status + ") - " + googleMessage;
+
         if (status == 429 || status >= 500) {
-            log.warn("event=GOOGLE_DRIVE_UPSTREAM_ERROR action={} status={}", action, status);
             return new ServiceUnavailableException(message);
         }
-        log.warn("event=GOOGLE_DRIVE_CLIENT_ERROR action={} status={}", action, status);
+
         return new BadRequestException(message);
     }
 
