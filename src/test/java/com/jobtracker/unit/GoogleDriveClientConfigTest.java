@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GoogleDriveClientConfigTest {
 
+    private static final String TEST_SCOPES = "https://www.googleapis.com/auth/drive,https://www.googleapis.com/auth/documents.readonly";
+
     private final GoogleDriveClientConfig config = new GoogleDriveClientConfig();
 
     @Test
@@ -19,7 +21,8 @@ class GoogleDriveClientConfigTest {
                 "http://localhost:8080/api/v1/google-drive/oauth/callback",
                 "http://localhost:5173/settings/google-drive/callback",
                 "https://accounts.google.com/o/oauth2/v2/auth",
-                "https://oauth2.googleapis.com/token"
+                "https://oauth2.googleapis.com/token",
+                TEST_SCOPES
         );
 
         ClientRegistration registration = config.googleDriveClientRegistration(properties);
@@ -37,7 +40,8 @@ class GoogleDriveClientConfigTest {
                 "http://localhost:8080/api/v1/google-drive/oauth/callback",
                 "",
                 "https://accounts.google.com/o/oauth2/v2/auth",
-                "https://oauth2.googleapis.com/token"
+                "https://oauth2.googleapis.com/token",
+                TEST_SCOPES
         );
 
         ClientRegistration registration = config.googleDriveClientRegistration(properties);
