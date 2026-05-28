@@ -11,6 +11,8 @@ import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.GoogleDriveBaseResumeRepository;
 import com.jobtracker.repository.GoogleDriveConnectionRepository;
 import com.jobtracker.util.SecurityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -22,6 +24,8 @@ import java.util.UUID;
 
 @Service
 public class GoogleDriveGeneratedResumeDownloadService {
+
+    private static final Logger log = LoggerFactory.getLogger(GoogleDriveGeneratedResumeDownloadService.class);
 
     private static final String DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     private static final String PDF_MIME_TYPE = "application/pdf";
@@ -138,6 +142,7 @@ public class GoogleDriveGeneratedResumeDownloadService {
             drive.files().export(documentId, mimeType).executeMediaAndDownloadTo(outputStream);
             return outputStream.toByteArray();
         } catch (IOException ex) {
+            log.error("event=GOOGLE_DRIVE_EXPORT_ERROR documentId={} mimeType={} message={}", documentId, mimeType, ex.getMessage(), ex);
             throw new BadRequestException("Failed to export generated resume as " + mimeType);
         }
     }
@@ -150,7 +155,7 @@ public class GoogleDriveGeneratedResumeDownloadService {
     }
 
     private String sanitizeFileName(String value) {
-        return value.replaceAll("[\\\\/:*?\"<>|]+", "-").replaceAll("\\s+", " ").trim();
+        return value.replaceAll("[\\/:*?\"<>|]+", "-").replaceAll("\\s+", " ").trim();
     }
 
     private String firstNonBlank(String... values) {
