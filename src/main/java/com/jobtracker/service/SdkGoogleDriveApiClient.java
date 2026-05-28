@@ -222,8 +222,6 @@ public class SdkGoogleDriveApiClient implements GoogleDriveApiClient {
         return executeDocsOp(accessToken, "read document", docs -> {
             com.google.api.services.docs.v1.model.Document document = docs.documents().get(documentId).execute();
 
-            log.info("googleDocBody={}", document.getBody().toPrettyString());
-
             StringBuilder text = new StringBuilder();
             if (document.getBody() == null || document.getBody().getContent() == null) {
                 return "";
