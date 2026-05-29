@@ -8,17 +8,18 @@ import com.jobtracker.util.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @Component
 @Primary
+@Profile("!test")
 public class RetryingGoogleDriveApiClient implements GoogleDriveApiClient {
 
     private static final Logger log = LoggerFactory.getLogger(RetryingGoogleDriveApiClient.class);
