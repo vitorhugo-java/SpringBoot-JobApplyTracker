@@ -32,6 +32,8 @@ public class SecurityConfig {
     @Bean
     @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Keep the legacy JWT application chain after the dedicated GPT OAuth chain so
+        // `/oauth2/**` and `/api/v1/gpt/**` stay isolated from the existing JWT filter.
         http
                 .cors(Customizer.withDefaults())
                 // CSRF is safe to disable: this API uses stateless JWT Bearer token

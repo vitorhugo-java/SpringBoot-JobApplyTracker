@@ -37,8 +37,10 @@ public class GptAuthorizationPageRenderer {
                             <input type="hidden" name="state" value="%s" />
                             <input type="hidden" name="code_challenge" value="%s" />
                             <input type="hidden" name="code_challenge_method" value="%s" />
-                            <label style="display:block; margin-bottom: 12px;">Email<br/><input style="width:100%%; padding:8px; margin-top:4px;" type="email" name="email" required /></label>
-                            <label style="display:block; margin-bottom: 12px;">Password<br/><input style="width:100%%; padding:8px; margin-top:4px;" type="password" name="password" required /></label>
+                            <label for="email" style="display:block; margin-bottom: 12px;">Email</label>
+                            <input id="email" style="width:100%%; padding:8px; margin-top:4px; margin-bottom:12px;" type="email" name="email" required />
+                            <label for="password" style="display:block; margin-bottom: 12px;">Password</label>
+                            <input id="password" style="width:100%%; padding:8px; margin-top:4px; margin-bottom:12px;" type="password" name="password" required />
                             <label style="display:flex; gap:8px; align-items:center; margin-bottom: 16px;"><input type="checkbox" name="approve" value="true" required />Approve access for this GPT Action</label>
                             <button style="background:#2563eb; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer;" type="submit">Authorize</button>
                         </form>

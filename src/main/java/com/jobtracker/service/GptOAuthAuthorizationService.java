@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class GptOAuthAuthorizationService {
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -122,7 +121,7 @@ public class GptOAuthAuthorizationService {
         authorizationCode.setUsedAt(LocalDateTime.now());
         authorizationCodeRepository.save(authorizationCode);
 
-        Set<String> scopes = Arrays.stream(authorizationCode.getScopeValue().split(" "))
+        Set<String> scopes = Arrays.stream(authorizationCode.getScopeValue().split(GptOAuthClientService.SCOPE_DELIMITER))
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
@@ -174,11 +173,18 @@ public class GptOAuthAuthorizationService {
 
     private String generateCode() {
         byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
+        SecureRandomHolder.INSTANCE.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private String hash(String value) {
         return DigestUtils.sha256Hex(value);
+    }
+
+    private static final class SecureRandomHolder {
+        private static final SecureRandom INSTANCE = new SecureRandom();
+
+        private SecureRandomHolder() {
+        }
     }
 }

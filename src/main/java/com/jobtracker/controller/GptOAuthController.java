@@ -1,5 +1,7 @@
 package com.jobtracker.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jobtracker.dto.gpt.GptAuthorizationLoginRequest;
 import com.jobtracker.dto.gpt.GptAuthorizationRequest;
 import com.jobtracker.dto.gpt.GptTokenRequest;
@@ -30,11 +32,14 @@ public class GptOAuthController {
 
     private final GptOAuthAuthorizationService authorizationService;
     private final GptAuthorizationPageRenderer pageRenderer;
+    private final ObjectMapper objectMapper;
 
     public GptOAuthController(GptOAuthAuthorizationService authorizationService,
-                              GptAuthorizationPageRenderer pageRenderer) {
+                              GptAuthorizationPageRenderer pageRenderer,
+                              ObjectMapper objectMapper) {
         this.authorizationService = authorizationService;
         this.pageRenderer = pageRenderer;
+        this.objectMapper = objectMapper;
     }
 
     @Operation(summary = "Render GPT Action authorization page")
@@ -97,6 +102,14 @@ public class GptOAuthController {
 
         return ResponseEntity.status(ex instanceof UnauthorizedException ? HttpStatus.UNAUTHORIZED : HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body("{\"message\":\"" + ex.getMessage().replace("\"", "'") + "\"}");
+                .body(toJsonError(ex.getMessage()));
+    }
+
+    private String toJsonError(String message) {
+        try {
+            return objectMapper.writeValueAsString(java.util.Map.of("message", message));
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Unable to serialize OAuth error response", ex);
+        }
     }
 }

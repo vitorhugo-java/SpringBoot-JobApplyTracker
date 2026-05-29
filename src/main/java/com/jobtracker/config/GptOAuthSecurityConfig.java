@@ -11,7 +11,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -49,7 +48,7 @@ public class GptOAuthSecurityConfig {
                                                            Converter<Jwt, ? extends AbstractAuthenticationToken> gptJwtAuthenticationConverter) throws Exception {
         http
                 .securityMatcher("/oauth2/**", "/api/v1/gpt/**")
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/oauth2/**", "/api/v1/gpt/**"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/oauth2/authorize", "/oauth2/token").permitAll()

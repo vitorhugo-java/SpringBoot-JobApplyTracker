@@ -14,6 +14,7 @@ import java.util.Set;
 
 @Service
 public class GptOAuthClientService {
+    public static final String SCOPE_DELIMITER = " ";
 
     private final GptOAuthProperties properties;
 
@@ -85,7 +86,7 @@ public class GptOAuthClientService {
         if (!hasText(scopeValue)) {
             return scopes;
         }
-        for (String scope : scopeValue.split(" ")) {
+        for (String scope : scopeValue.split(SCOPE_DELIMITER)) {
             String trimmed = scope.trim();
             if (!trimmed.isBlank()) {
                 scopes.add(trimmed);
@@ -107,7 +108,7 @@ public class GptOAuthClientService {
             String codeChallengeMethod
     ) {
         public String scopeValue() {
-            return String.join(" ", scopes);
+            return String.join(SCOPE_DELIMITER, scopes);
         }
     }
 
