@@ -161,7 +161,8 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/oauth2/jwks"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.keys").isArray());
+                .andExpect(jsonPath("$.keys").isArray())
+                .andExpect(jsonPath("$.keys[0].kid").value("gpt-oauth-rsa"));
     }
 
     @Test

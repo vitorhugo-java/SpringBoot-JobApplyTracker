@@ -3,7 +3,7 @@ package com.jobtracker.service;
 import com.jobtracker.config.GptOAuthProperties;
 import com.jobtracker.entity.enums.RoleName;
 import com.jobtracker.entity.User;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -44,7 +44,7 @@ public class GptOAuthTokenService {
 
         String tokenValue = gptOAuthJwtEncoder.encode(
                 JwtEncoderParameters.from(
-                        JwsHeader.with(MacAlgorithm.HS256).build(),
+                        JwsHeader.with(SignatureAlgorithm.RS256).build(),
                         claimsSet
                 )
         ).getTokenValue();
