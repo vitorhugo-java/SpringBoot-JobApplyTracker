@@ -227,6 +227,10 @@ export GOOGLE_DRIVE_CLIENT_ID=your-google-client-id
 export GOOGLE_DRIVE_CLIENT_SECRET=your-google-client-secret
 export GOOGLE_DRIVE_REDIRECT_URI=http://localhost:8080/api/v1/google-drive/oauth/callback
 export GOOGLE_DRIVE_OAUTH_COMPLETE_URL=http://localhost:5173/settings/google-drive/callback
+export OPENAI_GPT_CLIENT_ID=your-openai-gpt-client-id
+export OPENAI_GPT_CLIENT_SECRET=your-openai-gpt-client-secret
+export OPENAI_GPT_REDIRECT_URIS=https://chat.openai.com/aip/default/callback
+export OPENAI_GPT_SCOPES=read:profile,read:applications,write:applications,read:resume,read:google-drive,read:metrics
 mvn spring-boot:run
 ```
 
@@ -309,6 +313,59 @@ Response:
   ]
 }
 ```
+
+## GPT Actions OAuth integration
+
+This backend now exposes a dedicated OAuth 2.0 Authorization Code + PKCE flow for GPT Actions without changing the existing JWT login flow for human users. GPT-issued access tokens are scoped, bearer-only, and isolated to `/api/v1/gpt/**`.
+
+### Required environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_GPT_CLIENT_ID` | Yes | OAuth client ID configured for the GPT Action |
+| `OPENAI_GPT_CLIENT_SECRET` | Yes | OAuth client secret configured for the GPT Action |
+| `OPENAI_GPT_REDIRECT_URIS` | Yes | Comma-separated list of allowed GPT Action redirect URIs |
+| `OPENAI_GPT_SCOPES` | No | Comma-separated allowed GPT scopes; defaults to the built-in GPT scopes |
+
+### Supported GPT scopes
+
+- `read:profile`
+- `read:applications`
+- `write:applications`
+- `read:resume`
+- `read:google-drive`
+- `read:metrics`
+
+### OAuth endpoints
+
+- Authorization endpoint: `GET/POST /oauth2/authorize`
+- Token endpoint: `POST /oauth2/token`
+
+### GPT Action setup steps
+
+1. Create or update your GPT Action OAuth client with the backend base URL.
+2. Register the same callback URL in `OPENAI_GPT_REDIRECT_URIS`.
+3. Configure the client ID and client secret with `OPENAI_GPT_CLIENT_ID` and `OPENAI_GPT_CLIENT_SECRET`.
+4. Set the action scopes to the minimum required set from `OPENAI_GPT_SCOPES`.
+5. In the GPT Action OAuth settings, use:
+   - Authorization URL: `https://<your-api-host>/oauth2/authorize`
+   - Token URL: `https://<your-api-host>/oauth2/token`
+6. After OAuth succeeds, call the GPT-friendly endpoints under `/api/v1/gpt/**`.
+
+### GPT-friendly endpoints
+
+- `GET /api/v1/gpt/profile`
+- `GET /api/v1/gpt/applications`
+- `GET /api/v1/gpt/applications/{id}`
+- `POST /api/v1/gpt/applications`
+- `PATCH /api/v1/gpt/applications/{id}/status`
+- `GET /api/v1/gpt/resumes/base`
+- `GET /api/v1/gpt/resumes/base/{resumeId}/content`
+- `GET /api/v1/gpt/resumes/generated/{applicationId}/content`
+- `GET /api/v1/gpt/google-drive/status`
+- `GET /api/v1/gpt/metrics/summary`
+
+Google Drive and resume GPT endpoints still enforce the user's existing `BETA` role in addition to the new OAuth scopes, so the GPT flow does not bypass the repository's current authorization rules.
 
 `GET /api/v1/google-drive/status`
 
@@ -438,6 +495,10 @@ If `APP_SEED_ENABLED=true` and `APP_SEED_USER_EMAIL` is not provided (or the use
 | `GOOGLE_DRIVE_CLIENT_SECRET` | *(empty)* | Google OAuth client secret for Drive integration |
 | `GOOGLE_DRIVE_REDIRECT_URI` | `http://localhost:8080/api/v1/google-drive/oauth/callback` | OAuth callback URL registered in Google Cloud |
 | `GOOGLE_DRIVE_OAUTH_COMPLETE_URL` | *(empty)* | Frontend URL that receives OAuth completion redirects |
+| `OPENAI_GPT_CLIENT_ID` | *(empty)* | OAuth client ID for GPT Actions |
+| `OPENAI_GPT_CLIENT_SECRET` | *(empty)* | OAuth client secret for GPT Actions |
+| `OPENAI_GPT_REDIRECT_URIS` | *(empty)* | Comma-separated GPT Action redirect URIs |
+| `OPENAI_GPT_SCOPES` | `read:profile,read:applications,write:applications,read:resume,read:google-drive,read:metrics` | Allowed GPT Action scopes |
 | `RATE_LIMIT_AUTH_LOGIN_LIMIT_FOR_PERIOD` | `10` | Max login requests allowed per refresh period |
 | `RATE_LIMIT_AUTH_LOGIN_REFRESH_PERIOD` | `1m` | Window used by the login rate limiter |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint (Jaeger/OpenTelemetry collector) |

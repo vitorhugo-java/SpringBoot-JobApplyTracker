@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -42,6 +43,7 @@ public class ApplicationController {
             @ApiResponse(responseCode = "400", description = "Validation error")
         }
     )
+    @PreAuthorize("hasRole('USER') or hasAuthority('SCOPE_write:applications')")
     @PostMapping
     public ResponseEntity<ApplicationResponse> create(@Valid @RequestBody ApplicationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(applicationService.create(request));
@@ -56,6 +58,7 @@ public class ApplicationController {
             @ApiResponse(responseCode = "404", description = "Application not found")
         }
     )
+    @PreAuthorize("hasRole('USER') or hasAuthority('SCOPE_read:applications')")
     @GetMapping("/{id}")
     public ResponseEntity<ApplicationResponse> getById(
             @Parameter(description = "Application ID", required = true) @PathVariable UUID id) {
@@ -88,6 +91,7 @@ public class ApplicationController {
             @ApiResponse(responseCode = "404", description = "Application not found")
         }
     )
+    @PreAuthorize("hasRole('USER') or hasAuthority('SCOPE_write:applications')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApplicationResponse> updateStatus(
             @Parameter(description = "Application ID", required = true) @PathVariable UUID id,
@@ -163,6 +167,7 @@ public class ApplicationController {
                 content = @Content(schema = @Schema(implementation = ApplicationPageResponse.class)))
         }
     )
+    @PreAuthorize("hasRole('USER') or hasAuthority('SCOPE_read:applications')")
     @GetMapping
     public ResponseEntity<ApplicationPageResponse> getAll(
             @Parameter(description = "Filter by status") @RequestParam(required = false) String status,

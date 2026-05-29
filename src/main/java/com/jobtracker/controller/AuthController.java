@@ -33,6 +33,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Auth", description = "Authentication and user management endpoints")
@@ -205,6 +206,7 @@ public class AuthController {
                     @ApiResponse(responseCode = "401", description = "Not authenticated")
             }
     )
+    @PreAuthorize("hasRole('USER') or hasAuthority('SCOPE_read:profile')")
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me() {
         return ResponseEntity.ok(authMapper.toUserResponse(securityUtils.getCurrentUser()));

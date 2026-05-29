@@ -3,6 +3,7 @@ package com.jobtracker.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,7 +30,10 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Keep the legacy JWT application chain after the dedicated GPT OAuth chain so
+        // `/oauth2/**` and `/api/v1/gpt/**` stay isolated from the existing JWT filter.
         http
                 .cors(Customizer.withDefaults())
                 // CSRF is safe to disable: this API uses stateless JWT Bearer token
@@ -54,6 +58,17 @@ public class SecurityConfig {
                         // Actuator is served on a dedicated management port (8081) that is never
                         // exposed to the host; security is enforced via Docker network isolation.
                         .requestMatchers("/actuator/**").permitAll()
+                        // GPT OAuth tokens (ROLE_GPT_CLIENT) may access these specific endpoints.
+                        // Method-level @PreAuthorize further enforces required scopes.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/me").hasAnyRole("USER", "GPT_CLIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/applications").hasAnyRole("USER", "GPT_CLIENT")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/applications").hasAnyRole("USER", "GPT_CLIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/applications/*").hasAnyRole("USER", "GPT_CLIENT")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/applications/*/status").hasAnyRole("USER", "GPT_CLIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/google-drive/status").hasAnyRole("USER", "GPT_CLIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/google-drive/base-resumes").hasAnyRole("USER", "GPT_CLIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/google-drive/base-resumes/*/content").hasAnyRole("USER", "GPT_CLIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/google-drive/applications/*/generated-resumes/content").hasAnyRole("USER", "GPT_CLIENT")
                         // ROLE_USER endpoints: all remaining application APIs under /api/v1/**
                         // (including /api/v1/auth/me and /api/v1/auth/me/**).
                         .requestMatchers("/api/v1/**").hasRole("USER")

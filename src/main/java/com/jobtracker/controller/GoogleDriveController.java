@@ -73,7 +73,7 @@ public class GoogleDriveController {
             responses = @ApiResponse(responseCode = "200", description = "Current Google Drive integration status",
                     content = @Content(schema = @Schema(implementation = GoogleDriveStatusResponse.class)))
     )
-    @PreAuthorize("hasRole('BETA')")
+    @PreAuthorize("hasRole('BETA') and (hasRole('USER') or hasAuthority('SCOPE_read:google-drive'))")
     @GetMapping("/status")
     public ResponseEntity<GoogleDriveStatusResponse> getStatus() {
         return ResponseEntity.ok(googleDriveService.getStatus());
@@ -114,7 +114,7 @@ public class GoogleDriveController {
             responses = @ApiResponse(responseCode = "200", description = "List of base resumes",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = BaseResumeResponse.class))))
     )
-    @PreAuthorize("hasRole('BETA')")
+    @PreAuthorize("hasRole('BETA') and (hasRole('USER') or hasAuthority('SCOPE_read:resume'))")
     @GetMapping("/base-resumes")
     public ResponseEntity<List<BaseResumeResponse>> listBaseResumes() {
         return ResponseEntity.ok(googleDriveService.listBaseResumes());
@@ -139,7 +139,7 @@ public class GoogleDriveController {
                     @ApiResponse(responseCode = "404", description = "Base resume not found")
             }
     )
-    @PreAuthorize("hasRole('BETA')")
+    @PreAuthorize("hasRole('BETA') and (hasRole('USER') or hasAuthority('SCOPE_read:resume'))")
     @GetMapping("/base-resumes/{resumeId}/content")
     public ResponseEntity<BaseResumeContentResponse> getBaseResumeContent(
             @Parameter(description = "UUID of the base resume. NOT the filename.",
@@ -157,7 +157,7 @@ public class GoogleDriveController {
                     @ApiResponse(responseCode = "404", description = "Application or generated resume not found")
             }
     )
-    @PreAuthorize("hasRole('BETA')")
+    @PreAuthorize("hasRole('BETA') and (hasRole('USER') or hasAuthority('SCOPE_read:resume'))")
     @GetMapping("/applications/{applicationId}/generated-resumes/content")
     public ResponseEntity<ResumeGenerationService.GeneratedResumeContentResponse> getGeneratedResumeContent(
             @Parameter(description = "UUID of the application.",

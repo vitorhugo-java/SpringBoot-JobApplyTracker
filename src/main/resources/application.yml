@@ -79,6 +79,15 @@ app:
     authorization-uri: ${GOOGLE_DRIVE_AUTHORIZATION_URI:https://accounts.google.com/o/oauth2/v2/auth}
     token-uri: ${GOOGLE_DRIVE_TOKEN_URI:https://oauth2.googleapis.com/token}
     scopes: ${GOOGLE_DRIVE_SCOPES:https://www.googleapis.com/auth/drive,https://www.googleapis.com/auth/documents.readonly}
+  gpt-oauth:
+    client-id: ${OPENAI_GPT_CLIENT_ID:}
+    client-secret: ${OPENAI_GPT_CLIENT_SECRET:}
+    redirect-uris: ${OPENAI_GPT_REDIRECT_URIS:}
+    scopes: ${OPENAI_GPT_SCOPES:read:profile,read:applications,write:applications,read:resume,read:google-drive,read:metrics}
+    issuer: ${OPENAI_GPT_ISSUER:${app.api.base-url}}
+    audience: ${OPENAI_GPT_AUDIENCE:jobtracker-gpt-actions}
+    authorization-code-expiration-seconds: ${OPENAI_GPT_AUTHORIZATION_CODE_EXPIRATION_SECONDS:300}
+    access-token-expiration-seconds: ${OPENAI_GPT_ACCESS_TOKEN_EXPIRATION_SECONDS:900}
   webauthn:
     rp-id: ${APP_WEBAUTHN_RP_ID:localhost}
     rp-name: ${APP_WEBAUTHN_RP_NAME:JobApplyTracker}
