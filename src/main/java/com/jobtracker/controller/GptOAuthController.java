@@ -7,6 +7,7 @@ import com.jobtracker.dto.gpt.GptTokenResponse;
 import com.jobtracker.service.GptAuthorizationPageRenderer;
 import com.jobtracker.service.GptOAuthAuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -60,7 +61,7 @@ public class GptOAuthController {
     @ResponseBody
     public ResponseEntity<GptTokenResponse> token(
             @ModelAttribute @Valid GptTokenRequest request,
-            @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
+            @Parameter(hidden = true) @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
 
         GptTokenResponse response = authorizationService.exchangeToken(request, authorizationHeader);
         log.info("Issued GPT Action access token for access_token={}, scope={}", response.access_token(), response.scope());
