@@ -22,11 +22,11 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.core.OAuth2TokenType;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -41,7 +41,6 @@ import org.springframework.security.oauth2.server.authorization.token.JwtEncodin
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -68,7 +67,7 @@ public class AuthorizationServerConfig {
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
-        RequestMatcher authServerMatcher = new OrRequestMatcher(endpointsMatcher, AntPathRequestMatcher.antMatcher("/login"));
+        RequestMatcher authServerMatcher = new OrRequestMatcher(endpointsMatcher, request -> "/login".equals(request.getServletPath()));
 
         http
                 .securityMatcher(authServerMatcher)
@@ -80,9 +79,9 @@ public class AuthorizationServerConfig {
                         new LoginUrlAuthenticationEntryPoint("/login"),
                         new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .csrf(csrf -> csrf.ignoringRequestMatchers(
-                        AntPathRequestMatcher.antMatcher("/oauth2/token"),
-                        AntPathRequestMatcher.antMatcher("/oauth2/revoke"),
-                        AntPathRequestMatcher.antMatcher("/oauth2/introspect")))
+                        request -> "/oauth2/token".equals(request.getServletPath()),
+                        request -> "/oauth2/revoke".equals(request.getServletPath()),
+                        request -> "/oauth2/introspect".equals(request.getServletPath())))
                 .formLogin(Customizer.withDefaults());
 
         return http.build();
