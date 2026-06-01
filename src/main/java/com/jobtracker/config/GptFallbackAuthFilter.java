@@ -12,8 +12,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -30,8 +30,7 @@ import java.util.stream.Collectors;
 public class GptFallbackAuthFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String GPT_FALLBACK_USER_EMAIL = "gpt-fallback@jobtracker.local";
-    private static final String GPT_FALLBACK_USER_NAME = "GPT Fallback";
+
     private static final List<GrantedAuthority> GPT_SCOPE_AUTHORITIES = List.of(
             new SimpleGrantedAuthority("SCOPE_read:profile"),
             new SimpleGrantedAuthority("SCOPE_read:applications"),
@@ -97,11 +96,14 @@ public class GptFallbackAuthFilter extends OncePerRequestFilter {
     }
 
     private org.springframework.security.core.userdetails.UserDetails ensureFallbackUser() {
-        User user = userRepository.findByEmail(GPT_FALLBACK_USER_EMAIL).orElseGet(() -> {
+        String accountEmail = properties.getAccountEmail();
+        String accountName = properties.getAccountName();
+
+        User user = userRepository.findByEmail(accountEmail).orElseGet(() -> {
             User newUser = new User();
-            newUser.setName(GPT_FALLBACK_USER_NAME);
-            newUser.setEmail(GPT_FALLBACK_USER_EMAIL);
-            newUser.setPasswordHash(passwordEncoder.encode(GPT_FALLBACK_USER_EMAIL));
+            newUser.setName(accountName);
+            newUser.setEmail(accountEmail);
+            newUser.setPasswordHash(passwordEncoder.encode(accountEmail));
             newUser.setRoles(resolveFallbackRoles());
             return userRepository.save(newUser);
         });
