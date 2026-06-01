@@ -220,6 +220,9 @@ public class AuthorizationServerConfig {
                 || !existing.getClientAuthenticationMethods().contains(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 || !existing.getAuthorizationGrantTypes().contains(AuthorizationGrantType.AUTHORIZATION_CODE)
                 || !existing.getAuthorizationGrantTypes().contains(AuthorizationGrantType.REFRESH_TOKEN)
-                || !existing.getClientSettings().isRequireProofKey();
+                || existing.getClientSettings().isRequireProofKey()
+                    != registeredClient.getClientSettings().isRequireProofKey()
+                || existing.getClientSettings().isRequireAuthorizationConsent()
+                    != registeredClient.getClientSettings().isRequireAuthorizationConsent();
     }
 }
