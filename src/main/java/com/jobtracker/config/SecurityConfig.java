@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
@@ -31,7 +32,9 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import org.springframework.security.oauth2.server.resource.web.authentication.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.util.Collection;
@@ -43,6 +46,8 @@ import java.util.List;
 @EnableMethodSecurity
 @EnableConfigurationProperties(GptFallbackAuthProperties.class)
 public class SecurityConfig {
+
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final GptFallbackAuthFilter gptFallbackAuthFilter;
     private final RequestLoggingFilter requestLoggingFilter;
@@ -58,7 +63,8 @@ public class SecurityConfig {
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            AuthenticationManagerResolver<HttpServletRequest> apiAuthenticationManagerResolver) throws Exception {
+            AuthenticationManagerResolver<HttpServletRequest> apiAuthenticationManagerResolver,
+            BearerTokenResolver bearerTokenResolver) throws Exception {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -92,6 +98,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) ->
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN)))
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(bearerTokenResolver)
                         .authenticationEntryPoint((request, response, authException) ->
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN))
                         .authenticationManagerResolver(apiAuthenticationManagerResolver))
@@ -99,6 +106,18 @@ public class SecurityConfig {
                 .addFilterBefore(requestLoggingFilter, BearerTokenAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public BearerTokenResolver bearerTokenResolver(GptFallbackAuthProperties properties) {
+        DefaultBearerTokenResolver delegate = new DefaultBearerTokenResolver();
+        return request -> {
+            String token = delegate.resolve(request);
+            if (token == null || !properties.isConfigured()) {
+                return token;
+            }
+            return properties.getToken().equals(token) ? null : token;
+        };
     }
 
     @Bean
@@ -176,5 +195,10 @@ public class SecurityConfig {
         }
 
         return authorities;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
