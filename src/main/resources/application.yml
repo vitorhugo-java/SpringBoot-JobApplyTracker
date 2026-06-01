@@ -54,13 +54,6 @@ server:
       max: 50
   forward-headers-strategy: framework
 
-logging:
-  level:
-    org.springframework.security.oauth2.server.authorization: TRACE
-    org.springframework.security.web.access: TRACE
-    org.springframework.security.oauth2.server.authorization.web.OAuth2AuthorizationEndpointFilter: TRACE
-    org.springframework.security.oauth2.server.authorization.authentication: TRACE
-
 jwt:
   secret: ${JWT_SECRET:ThisIsAVeryLongSecretKeyForJWTTokensAndItMustBeAtLeast256BitsLong}
   access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
