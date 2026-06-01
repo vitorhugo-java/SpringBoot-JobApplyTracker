@@ -3,16 +3,16 @@ package com.jobtracker.config;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.OAuthFlow;
 import io.swagger.v3.oas.models.security.OAuthFlows;
 import io.swagger.v3.oas.models.security.Scopes;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 
@@ -81,8 +81,6 @@ public class OpenApiConfig {
                 .displayName("GPT Actions API")
                 .packagesToScan(CONTROLLER_PACKAGE)
                 .pathsToMatch(
-                        "/oauth2/authorize",
-                        "/oauth2/token",
                         "/api/v1/auth/me",
                         "/api/v1/applications",
                         "/api/v1/applications/{id}",
@@ -95,6 +93,11 @@ public class OpenApiConfig {
                         "/api/v1/google-drive/resume-placeholders"
                 )
                 .addOpenApiCustomizer(openApi -> {
+                    openApi.setSecurity(List.of(new SecurityRequirement().addList(GPT_OAUTH_SCHEME_NAME)));
+                    if (openApi.getComponents() != null && openApi.getComponents().getSecuritySchemes() != null) {
+                        openApi.getComponents().getSecuritySchemes().remove(SECURITY_SCHEME_NAME);
+                    }
+
                     var authMe = openApi.getPaths().get("/api/v1/auth/me");
                     if (authMe != null) {
                         authMe.setPut(null);

@@ -15,7 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
                 "spring.jpa.show-sql=false",
                 "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
                 "spring.flyway.enabled=false",
-                "spring.sql.init.mode=never"
+                "spring.sql.init.mode=always"
         }
 )
 @AutoConfigureMockMvc

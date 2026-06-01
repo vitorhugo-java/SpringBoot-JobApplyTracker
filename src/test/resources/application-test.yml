@@ -18,6 +18,9 @@ spring:
     enabled: false
     locations: classpath:db/migration
     baseline-on-migrate: true
+  sql:
+    init:
+      mode: always
 
 jwt:
   secret: TestSecretKeyThatIsAtLeast256BitsLongForTestingPurposesOnly123456
@@ -42,11 +45,11 @@ app:
     client-id: test-openai-client-id
     client-secret: test-openai-client-secret
     redirect-uris: https://chat.openai.com/aip/test/callback
-    scopes: read:profile,read:applications,write:applications,read:resume,read:google-drive,read:metrics
+    scopes: read:profile,read:applications,write:applications,read:resume,read:google-drive,read:metrics,openid
     issuer: https://jobapply-api.hugojava.dev
-    audience: jobtracker-gpt-actions
     authorization-code-expiration-seconds: 300
     access-token-expiration-seconds: 900
+    refresh-token-expiration-seconds: 2592000
   webauthn:
     rp-id: localhost
     rp-name: JobApplyTracker Test

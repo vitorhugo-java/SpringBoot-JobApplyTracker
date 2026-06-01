@@ -46,10 +46,12 @@ class OpenApiDocumentationIT extends AbstractIntegrationTest {
 
         assertThat(openApi.path("paths").has("/api/v1/auth/me")).isTrue();
         assertThat(openApi.path("paths").has("/api/v1/applications")).isTrue();
-        assertThat(openApi.path("paths").has("/oauth2/token")).isTrue();
+        assertThat(openApi.path("paths").has("/oauth2/token")).isFalse();
         assertThat(openApi.at("/components/securitySchemes/gptOAuth/type").asText()).isEqualTo("oauth2");
         assertThat(openApi.at("/components/securitySchemes/gptOAuth/flows/authorizationCode/authorizationUrl").asText())
                 .isEqualTo("https://jobapply-api.hugojava.dev/oauth2/authorize");
+        assertThat(openApi.at("/security/0/gptOAuth").isMissingNode()).isFalse();
+        assertThat(openApi.at("/components/securitySchemes/bearerAuth").isMissingNode()).isTrue();
     }
 
     private JsonNode fetchOpenApiGroup(String group) throws Exception {

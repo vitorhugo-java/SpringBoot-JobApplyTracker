@@ -7,7 +7,6 @@ import com.jobtracker.dto.auth.RegisterRequest;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.GoogleDriveConnectionRepository;
 import com.jobtracker.repository.GoogleDriveOAuthStateRepository;
-import com.jobtracker.repository.GptOAuthAuthorizationCodeRepository;
 import com.jobtracker.repository.InterviewEventRepository;
 import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
@@ -29,16 +28,15 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.Arrays;
 import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class GptOAuthFlowIT extends AbstractIntegrationTest {
@@ -49,11 +47,10 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
-    @Autowired private JwtDecoder gptOAuthJwtDecoder;
+    @Autowired private JwtDecoder authorizationServerJwtDecoder;
     @Autowired private UserRepository userRepository;
     @Autowired private GoogleDriveConnectionRepository googleDriveConnectionRepository;
     @Autowired private GoogleDriveOAuthStateRepository googleDriveOAuthStateRepository;
-    @Autowired private GptOAuthAuthorizationCodeRepository gptOAuthAuthorizationCodeRepository;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
     @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
     @Autowired private ApplicationRepository applicationRepository;
@@ -68,7 +65,6 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
     void cleanDb() {
         googleDriveOAuthStateRepository.deleteAll();
         googleDriveConnectionRepository.deleteAll();
-        gptOAuthAuthorizationCodeRepository.deleteAll();
         userAchievementRepository.deleteAll();
         userGamificationRepository.deleteAll();
         interviewEventRepository.deleteAll();
@@ -82,21 +78,40 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void openidDiscoveryAndJwksEndpoints_shouldBePublic() throws Exception {
+        mockMvc.perform(get("/.well-known/openid-configuration"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authorization_endpoint").value("https://jobapply-api.hugojava.dev/oauth2/authorize"))
+                .andExpect(jsonPath("$.token_endpoint").value("https://jobapply-api.hugojava.dev/oauth2/token"))
+                .andExpect(jsonPath("$.jwks_uri").value("https://jobapply-api.hugojava.dev/oauth2/jwks"))
+                .andExpect(jsonPath("$.scopes_supported").isArray());
+
+        mockMvc.perform(get("/oauth2/jwks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.keys").isArray())
+                .andExpect(jsonPath("$.keys[0].kty").value("RSA"));
+    }
+
+    @Test
     void oauthCodeFlow_shouldIssueScopedTokenAndAllowGptEndpoints() throws Exception {
         registerUser("gpt-user@example.com", "pass1234");
         PkcePair pkcePair = generatePkcePair();
 
-        String authorizationCode = authorize("gpt-user@example.com", "pass1234",
-                "read:profile read:applications write:applications read:metrics", pkcePair);
-        String accessToken = exchangeToken(authorizationCode, pkcePair.verifier());
+        String authorizationCode = authorizeWithPkce("gpt-user@example.com", "pass1234",
+                "openid read:profile read:applications write:applications read:metrics", pkcePair);
+        TokenResponse tokenResponse = exchangeTokenWithBasic(authorizationCode, pkcePair.verifier());
 
-        Jwt jwt = gptOAuthJwtDecoder.decode(accessToken);
+        Jwt jwt = authorizationServerJwtDecoder.decode(tokenResponse.accessToken());
         assertThat(jwt.getSubject()).isEqualTo("gpt-user@example.com");
-        assertThat(jwt.getClaimAsString("scope")).contains("write:applications");
-        assertThat(jwt.getClaimAsString("token_use")).isEqualTo("gpt_action_access");
+        assertThat(jwt.getClaimAsStringList("scope"))
+                .contains("write:applications", "read:profile");
+        assertThat(jwt.getClaimAsStringList("roles")).contains("ROLE_GPT_CLIENT");
+        assertThat(jwt.getClaimAsString("user_id")).isNotBlank();
+        assertThat(tokenResponse.idToken()).isNotBlank();
+        assertThat(tokenResponse.refreshToken()).isNotBlank();
 
         mockMvc.perform(post("/api/v1/applications")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponse.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -114,55 +129,44 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.vacancyName").value("GPT Backend Engineer"));
 
         mockMvc.perform(get("/api/v1/auth/me")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponse.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("gpt-user@example.com"));
 
         mockMvc.perform(get("/api/v1/applications")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponse.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
-    void oauthCodeFlow_withoutPkce_shouldIssueScopedTokenAndAllowGptEndpoints() throws Exception {
-        registerUser("gpt-user-no-pkce@example.com", "pass1234");
+    void pkceProtectedCodeFlow_shouldRejectInvalidVerifier() throws Exception {
+        registerUser("pkce-user@example.com", "pass1234");
+        PkcePair pkcePair = generatePkcePair();
+        String authorizationCode = authorizeWithPkce("pkce-user@example.com", "pass1234",
+                "openid read:profile read:applications", pkcePair);
 
-        String authorizationCode = authorize("gpt-user-no-pkce@example.com", "pass1234",
-                "read:profile read:applications", null);
-        String accessToken = exchangeToken(authorizationCode, null);
-
-        mockMvc.perform(get("/api/v1/auth/me")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("gpt-user-no-pkce@example.com"));
-    }
-
-    @Test
-    void oauthAuthorizeGet_withoutPkce_shouldReturnConsentPage() throws Exception {
-        mockMvc.perform(get("/oauth2/authorize")
-                        .param("response_type", "code")
-                        .param("client_id", CLIENT_ID)
+        mockMvc.perform(post("/oauth2/token")
+                        .header(HttpHeaders.AUTHORIZATION, basicAuthHeader())
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "authorization_code")
+                        .param("code", authorizationCode)
                         .param("redirect_uri", REDIRECT_URI)
-                        .param("scope", "read:profile")
-                        .param("state", "chatgpt-state"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Authorize GPT Action")));
+                        .param("code_verifier", "wrong-verifier"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void openidDiscoveryEndpoint_shouldBePublic() throws Exception {
-        mockMvc.perform(get("/.well-known/openid-configuration"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.authorization_endpoint").value("https://jobapply-api.hugojava.dev/oauth2/authorize"))
-                .andExpect(jsonPath("$.token_endpoint").value("https://jobapply-api.hugojava.dev/oauth2/token"))
-                .andExpect(jsonPath("$.jwks_uri").value("https://jobapply-api.hugojava.dev/oauth2/jwks"));
+    void tokenExchange_shouldSupportClientSecretPost() throws Exception {
+        registerUser("post-client@example.com", "pass1234");
+        PkcePair pkcePair = generatePkcePair();
+        String authorizationCode = authorizeWithPkce("post-client@example.com", "pass1234",
+                "openid read:profile read:applications", pkcePair);
 
-        mockMvc.perform(get("/oauth2/jwks"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.keys").isArray())
-                .andExpect(jsonPath("$.keys[0].kid").value("gpt-oauth-rsa"));
+        TokenResponse tokenResponse = exchangeTokenWithPost(authorizationCode, pkcePair.verifier());
+
+        assertThat(tokenResponse.accessToken()).isNotBlank();
+        assertThat(tokenResponse.refreshToken()).isNotBlank();
     }
 
     @Test
@@ -170,12 +174,12 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
         registerUser("readonly-gpt@example.com", "pass1234");
         PkcePair pkcePair = generatePkcePair();
 
-        String authorizationCode = authorize("readonly-gpt@example.com", "pass1234",
-                "read:profile read:applications", pkcePair);
-        String accessToken = exchangeToken(authorizationCode, pkcePair.verifier());
+        String authorizationCode = authorizeWithPkce("readonly-gpt@example.com", "pass1234",
+                "openid read:profile read:applications", pkcePair);
+        TokenResponse tokenResponse = exchangeTokenWithBasic(authorizationCode, pkcePair.verifier());
 
         mockMvc.perform(post("/api/v1/applications")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponse.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -193,7 +197,7 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void legacyJwtFlow_shouldStillWork_andNotAuthenticateAgainstGptEndpoints() throws Exception {
+    void legacyJwtFlow_shouldStillWork() throws Exception {
         AuthResponse authResponse = registerUser("legacy-user@example.com", "pass1234");
 
         mockMvc.perform(get("/api/v1/auth/me")
@@ -224,56 +228,74 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
         return objectMapper.readValue(result.getResponse().getContentAsString(), AuthResponse.class);
     }
 
-    private String authorize(String email, String password, String scope, PkcePair pkcePair) throws Exception {
-        var request = post("/oauth2/authorize")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("response_type", "code")
-                .param("client_id", CLIENT_ID)
-                .param("redirect_uri", REDIRECT_URI)
-                .param("scope", scope)
-                .param("state", "test-state")
-                .param("email", email)
-                .param("password", password)
-                .param("approve", "true");
-        if (pkcePair != null) {
-            request.param("code_challenge", pkcePair.challenge());
-            request.param("code_challenge_method", "S256");
-        }
-
-        MvcResult result = mockMvc.perform(request)
-                .andExpect(status().isFound())
+    private String authorizeWithPkce(String email, String password, String scope, PkcePair pkcePair) throws Exception {
+        MvcResult result = mockMvc.perform(get("/oauth2/authorize")
+                        .with(user(email).roles("USER"))
+                        .queryParam("response_type", "code")
+                        .queryParam("client_id", CLIENT_ID)
+                        .queryParam("redirect_uri", REDIRECT_URI)
+                        .queryParam("scope", scope)
+                        .queryParam("state", "test-state")
+                        .queryParam("code_challenge", pkcePair.challenge())
+                        .queryParam("code_challenge_method", "S256"))
+                .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrlPattern(REDIRECT_URI + "?*"))
                 .andReturn();
 
         String redirectLocation = result.getResponse().getHeader(HttpHeaders.LOCATION);
         assertThat(redirectLocation).contains("state=test-state");
-        return Arrays.stream(java.net.URI.create(redirectLocation).getQuery().split("&"))
-                .filter(entry -> entry.startsWith("code="))
-                .map(entry -> entry.substring("code=".length()))
-                .findFirst()
-                .orElseThrow();
+        return extractQueryParam(redirectLocation, "code");
     }
 
-    private String exchangeToken(String authorizationCode, String verifier) throws Exception {
-        String basicAuth = Base64.getEncoder().encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes(StandardCharsets.UTF_8));
-
-        var request = post("/oauth2/token")
-                .header(HttpHeaders.AUTHORIZATION, "Basic " + basicAuth)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("grant_type", "authorization_code")
-                .param("code", authorizationCode)
-                .param("redirect_uri", REDIRECT_URI);
-        if (verifier != null) {
-            request.param("code_verifier", verifier);
-        }
-
-        MvcResult result = mockMvc.perform(request)
+    private TokenResponse exchangeTokenWithBasic(String authorizationCode, String verifier) throws Exception {
+        MvcResult result = mockMvc.perform(post("/oauth2/token")
+                        .header(HttpHeaders.AUTHORIZATION, basicAuthHeader())
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "authorization_code")
+                        .param("code", authorizationCode)
+                        .param("redirect_uri", REDIRECT_URI)
+                        .param("code_verifier", verifier))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token_type").value("Bearer"))
                 .andReturn();
+        return toTokenResponse(result);
+    }
 
+    private TokenResponse exchangeTokenWithPost(String authorizationCode, String verifier) throws Exception {
+        MvcResult result = mockMvc.perform(post("/oauth2/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "authorization_code")
+                        .param("client_id", CLIENT_ID)
+                        .param("client_secret", CLIENT_SECRET)
+                        .param("code", authorizationCode)
+                        .param("redirect_uri", REDIRECT_URI)
+                        .param("code_verifier", verifier))
+                .andExpect(status().isOk())
+                .andReturn();
+        return toTokenResponse(result);
+    }
+
+    private TokenResponse toTokenResponse(MvcResult result) throws Exception {
         JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
-        return json.get("access_token").asText();
+        return new TokenResponse(
+                json.get("access_token").asText(),
+                json.path("refresh_token").asText(null),
+                json.path("id_token").asText(null));
+    }
+
+    private String basicAuthHeader() {
+        return "Basic " + Base64.getEncoder()
+                .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String extractQueryParam(String redirectLocation, String parameterName) {
+        String prefix = parameterName + "=";
+        for (String entry : java.net.URI.create(redirectLocation).getQuery().split("&")) {
+            if (entry.startsWith(prefix)) {
+                return entry.substring(prefix.length());
+            }
+        }
+        throw new IllegalStateException("Missing query parameter: " + parameterName);
     }
 
     private PkcePair generatePkcePair() throws Exception {
@@ -285,5 +307,8 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
     }
 
     private record PkcePair(String verifier, String challenge) {
+    }
+
+    private record TokenResponse(String accessToken, String refreshToken, String idToken) {
     }
 }

@@ -24,6 +24,7 @@
         <rest-assured.version>5.4.0</rest-assured.version>
         <native.maven.plugin.version>0.10.2</native.maven.plugin.version>
         <webauthn-server.version>2.9.0</webauthn-server.version>
+        <spring-authorization-server.version>1.5.1</spring-authorization-server.version>
     </properties>
 
     <dependencies>
@@ -168,6 +169,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-authorization-server</artifactId>
+            <version>${spring-authorization-server.version}</version>
+        </dependency>
 
         <!-- Google Drive SDK -->
         <dependency>
@@ -238,7 +244,6 @@
                         <id>process-aot</id>
                         <goals>
                             <goal>process-aot</goal>
-                            <goal>process-test-aot</goal>
                         </goals>
                     </execution>
                 </executions>
