@@ -52,6 +52,7 @@ server:
   tomcat:
     threads:
       max: 50
+  forward-headers-strategy: framework
 
 jwt:
   secret: ${JWT_SECRET:ThisIsAVeryLongSecretKeyForJWTTokensAndItMustBeAtLeast256BitsLong}
