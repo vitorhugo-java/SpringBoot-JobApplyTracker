@@ -54,10 +54,17 @@ server:
       max: 50
   forward-headers-strategy: framework
 
-# logging:
-#   level:
-#     org.springframework.jdbc: TRACE
-#     org.springframework.security.oauth2.server.authorization: TRACE
+logging:
+  level:
+    org.springframework.security: TRACE
+    org.springframework.security.web.FilterChainProxy: TRACE
+
+    org.springframework.security.oauth2: TRACE
+    org.springframework.security.oauth2.server.authorization: TRACE
+
+    org.springframework.web: DEBUG
+
+    com.jobtracker: DEBUG
 
 jwt:
   secret: ${JWT_SECRET:ThisIsAVeryLongSecretKeyForJWTTokensAndItMustBeAtLeast256BitsLong}
