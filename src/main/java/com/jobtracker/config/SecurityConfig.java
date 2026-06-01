@@ -1,10 +1,5 @@
 package com.jobtracker.config;
 
-import com.jobtracker.entity.Role;
-import com.jobtracker.entity.User;
-import com.jobtracker.entity.enums.RoleName;
-import com.jobtracker.repository.RoleRepository;
-import com.jobtracker.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,7 +24,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -40,13 +34,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -54,12 +44,13 @@ import java.util.stream.Collectors;
 @EnableConfigurationProperties(GptFallbackAuthProperties.class)
 public class SecurityConfig {
 
-    private static final String GPT_FALLBACK_USER_EMAIL = "gpt-fallback@jobtracker.local";
-    private static final String GPT_FALLBACK_USER_NAME = "GPT Fallback";
-
+    private final GptFallbackAuthFilter gptFallbackAuthFilter;
     private final RequestLoggingFilter requestLoggingFilter;
 
-    public SecurityConfig(RequestLoggingFilter requestLoggingFilter) {
+    public SecurityConfig(
+            GptFallbackAuthFilter gptFallbackAuthFilter,
+            RequestLoggingFilter requestLoggingFilter) {
+        this.gptFallbackAuthFilter = gptFallbackAuthFilter;
         this.requestLoggingFilter = requestLoggingFilter;
     }
 
@@ -104,6 +95,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) ->
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN))
                         .authenticationManagerResolver(apiAuthenticationManagerResolver))
+                .addFilterBefore(gptFallbackAuthFilter, BearerTokenAuthenticationFilter.class)
                 .addFilterBefore(requestLoggingFilter, BearerTokenAuthenticationFilter.class);
 
         return http.build();
@@ -114,29 +106,7 @@ public class SecurityConfig {
             JwtService jwtService,
             UserDetailsService userDetailsService,
             JwtDecoder authorizationServerJwtDecoder,
-            Converter<Jwt, ? extends org.springframework.security.authentication.AbstractAuthenticationToken> apiJwtAuthenticationConverter,
-            GptFallbackAuthProperties gptFallbackAuthProperties,
-            UserRepository userRepository,
-            RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
-        AuthenticationManager fallbackAuthenticationManager = authentication -> {
-            if (!(authentication instanceof BearerTokenAuthenticationToken bearerTokenAuthenticationToken)) {
-                throw new BadCredentialsException("Unsupported authentication token");
-            }
-
-            if (!gptFallbackAuthProperties.isConfigured()
-                    || !isMatchingToken(gptFallbackAuthProperties.getToken(), bearerTokenAuthenticationToken.getToken())) {
-                throw new BadCredentialsException("Invalid GPT fallback bearer token");
-            }
-
-            UserDetails userDetails = ensureFallbackUser(userRepository, roleRepository, passwordEncoder);
-            Set<GrantedAuthority> authorities = new LinkedHashSet<>(userDetails.getAuthorities());
-            authorities.add(new SimpleGrantedAuthority("ROLE_GPT_CLIENT"));
-            return new UsernamePasswordAuthenticationToken(
-                    userDetails,
-                    bearerTokenAuthenticationToken.getToken(),
-                    authorities);
-        };
+            Converter<Jwt, ? extends org.springframework.security.authentication.AbstractAuthenticationToken> apiJwtAuthenticationConverter) {
 
         AuthenticationManager legacyJwtAuthenticationManager = authentication -> {
             if (!(authentication instanceof BearerTokenAuthenticationToken bearerTokenAuthenticationToken)) {
@@ -160,12 +130,6 @@ public class SecurityConfig {
         AuthenticationManager authorizationServerAuthenticationManager = new ProviderManager(jwtAuthenticationProvider);
 
         AuthenticationManager compositeAuthenticationManager = authentication -> {
-            try {
-                return fallbackAuthenticationManager.authenticate(authentication);
-            } catch (Exception ex) {
-                // Fall through to the existing JWT-based authentication paths.
-            }
-
             try {
                 return legacyJwtAuthenticationManager.authenticate(authentication);
             } catch (Exception ex) {
@@ -217,55 +181,5 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    private static boolean isMatchingToken(String expectedToken, String actualToken) {
-        if (expectedToken == null || actualToken == null) {
-            return false;
-        }
-
-        byte[] expectedBytes = expectedToken.getBytes(StandardCharsets.UTF_8);
-        byte[] actualBytes = actualToken.getBytes(StandardCharsets.UTF_8);
-        return expectedBytes.length == actualBytes.length && MessageDigest.isEqual(expectedBytes, actualBytes);
-    }
-
-    private UserDetails ensureFallbackUser(
-            UserRepository userRepository,
-            RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
-        User user = userRepository.findByEmail(GPT_FALLBACK_USER_EMAIL).orElseGet(() -> {
-            User newUser = new User();
-            newUser.setName(GPT_FALLBACK_USER_NAME);
-            newUser.setEmail(GPT_FALLBACK_USER_EMAIL);
-            newUser.setPasswordHash(passwordEncoder.encode(GPT_FALLBACK_USER_EMAIL));
-            newUser.setRoles(resolveFallbackRoles(roleRepository));
-            return userRepository.save(newUser);
-        });
-
-        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            user.setRoles(resolveFallbackRoles(roleRepository));
-            user = userRepository.save(user);
-        }
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPasswordHash(),
-                user.getRoles().stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
-                        .collect(Collectors.toSet()));
-    }
-
-    private Set<Role> resolveFallbackRoles(RoleRepository roleRepository) {
-        Role userRole = roleRepository.findByName(RoleName.USER)
-                .orElseGet(() -> saveRole(roleRepository, RoleName.USER));
-        Role betaRole = roleRepository.findByName(RoleName.BETA)
-                .orElseGet(() -> saveRole(roleRepository, RoleName.BETA));
-        return new LinkedHashSet<>(List.of(userRole, betaRole));
-    }
-
-    private Role saveRole(RoleRepository roleRepository, RoleName roleName) {
-        Role role = new Role();
-        role.setName(roleName);
-        return roleRepository.save(role);
     }
 }
