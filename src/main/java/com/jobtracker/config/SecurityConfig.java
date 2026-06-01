@@ -257,9 +257,15 @@ public class SecurityConfig {
 
     private Set<Role> resolveFallbackRoles(RoleRepository roleRepository) {
         Role userRole = roleRepository.findByName(RoleName.USER)
-                .orElseThrow(() -> new UsernameNotFoundException("USER role not found"));
+                .orElseGet(() -> saveRole(roleRepository, RoleName.USER));
         Role betaRole = roleRepository.findByName(RoleName.BETA)
-                .orElseThrow(() -> new UsernameNotFoundException("BETA role not found"));
+                .orElseGet(() -> saveRole(roleRepository, RoleName.BETA));
         return new LinkedHashSet<>(List.of(userRole, betaRole));
+    }
+
+    private Role saveRole(RoleRepository roleRepository, RoleName roleName) {
+        Role role = new Role();
+        role.setName(roleName);
+        return roleRepository.save(role);
     }
 }
