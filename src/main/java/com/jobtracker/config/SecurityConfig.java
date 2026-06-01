@@ -177,9 +177,4 @@ public class SecurityConfig {
 
         return authorities;
     }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 }
