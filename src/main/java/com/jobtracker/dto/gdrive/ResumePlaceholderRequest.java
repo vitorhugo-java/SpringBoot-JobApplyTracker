@@ -13,5 +13,6 @@ public record ResumePlaceholderRequest(
         UUID baseResumeId,
 
         @Schema(description = "Placeholder values keyed by placeholder name without braces")
+        @NotNull(message = "values map is required")
         Map<String, String> values
 ) {}

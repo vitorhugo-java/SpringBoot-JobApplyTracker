@@ -107,8 +107,7 @@ public class ResumeGenerationService {
     public ResumePlaceholderResponse generateTemplateResume(UUID applicationId, ResumePlaceholderRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         GoogleDriveConnection connection = getConnectionWithFreshAccessToken();
-        JobApplication application = applicationRepository.findByIdAndUserId(applicationId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
+        JobApplication application = applicationRepository.findByIdAndUserId(applicationId, userId).orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
         GoogleDriveBaseResume baseResume = getBaseResume(request.baseResumeId(), userId);
 
         if (!StringUtils.hasText(connection.getRootFolderId())) {
@@ -122,8 +121,7 @@ public class ResumeGenerationService {
         }
         connection.setRootFolderName(rootFolder.name());
 
-        GoogleDriveApiClient.DriveFileMetadata vacancyFolder =
-                resolveOrCreateVacancyFolder(connection, application, rootFolder.id(), userId);
+        GoogleDriveApiClient.DriveFileMetadata vacancyFolder = resolveOrCreateVacancyFolder(connection, application, rootFolder.id(), userId);
 
         String copiedFileName = buildCopiedDocumentName(application, baseResume.getDocumentName());
         GoogleDriveApiClient.DriveFileMetadata copiedFile = googleDriveApiClient.copyGoogleDoc(

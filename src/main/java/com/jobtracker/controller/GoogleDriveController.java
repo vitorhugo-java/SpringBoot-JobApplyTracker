@@ -221,12 +221,20 @@ public class GoogleDriveController {
         return ResponseEntity.ok(resumeGenerationService.detectPlaceholders(applicationId));
     }
 
-    @Operation(summary = "Generate an application resume by replacing template placeholders")
+    @Operation(summary = "Generate an application resume by replacing template placeholders",
+        description = "Generates a resume for the specified application by replacing template placeholders in the associated base resume. " +
+                "The request body should contain key-value pairs where keys correspond to placeholder names (without curly braces) and values are the content to replace them with. " +
+                "For example, if the base resume contains {{SUMMARY}} and {{SKILLS}}, the request body might be: { \"SUMMARY\": \"Experienced software engineer...\", \"SKILLS\": \"Java, Spring Boot, ...\" }. " +
+                "The `applicationId` path parameter MUST be a UUID.",
+    responses = {
+        @ApiResponse(responseCode = "201", description = "Resume generated successfully",
+            content = @Content(schema = @Schema(implementation = ResumePlaceholderResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Application or base resume not found")
+    })
     @PreAuthorize("hasRole('BETA')")
     @PostMapping("/applications/{applicationId}/generated-resumes")
     public ResponseEntity<ResumePlaceholderResponse> generateResume(@PathVariable UUID applicationId, @Valid @RequestBody ResumePlaceholderRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(resumeGenerationService.generateTemplateResume(applicationId, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(resumeGenerationService.generateTemplateResume(applicationId, request));
     }
 
     @Operation(summary = "Download generated resume as DOCX",
