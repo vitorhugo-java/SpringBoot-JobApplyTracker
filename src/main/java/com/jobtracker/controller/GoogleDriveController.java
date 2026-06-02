@@ -97,7 +97,9 @@ public class GoogleDriveController {
     @Operation(
             summary = "Register a Google Docs base resume",
             description = "Registers a Google Docs document as a base resume for the authenticated user. " +
-                    "Optionally set the language code and template flag for GPT/frontend discovery."
+                    "Optionally set the language code and template flag for GPT/frontend discovery.",
+            responses = @ApiResponse(responseCode = "201", description = "Base resume registered successfully",
+                    content = @Content(schema = @Schema(implementation = GoogleDriveBaseResumeResponse.class)))
     )
     @PreAuthorize("hasRole('BETA')")
     @PostMapping("/base-resumes")
@@ -222,10 +224,7 @@ public class GoogleDriveController {
     }
 
     @Operation(summary = "Generate an application resume by replacing template placeholders",
-        description = "Generates a resume for the specified application by replacing template placeholders in the associated base resume. " +
-                "The request body should contain key-value pairs where keys correspond to placeholder names (without curly braces) and values are the content to replace them with. " +
-                "For example, if the base resume contains {{SUMMARY}} and {{SKILLS}}, the request body might be: { \"SUMMARY\": \"Experienced software engineer...\", \"SKILLS\": \"Java, Spring Boot, ...\" }. " +
-                "The `applicationId` path parameter MUST be a UUID.",
+        description = "Generates a CV for the specified application by replacing template placeholders in the resume. The request body should contain key-value pairs where keys correspond to placeholder names (without curly braces) and values are the content. The `applicationId` path parameter MUST be a UUID.",
     responses = {
         @ApiResponse(responseCode = "201", description = "Resume generated successfully",
             content = @Content(schema = @Schema(implementation = ResumePlaceholderResponse.class))),
