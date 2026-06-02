@@ -90,6 +90,7 @@ public class OpenApiConfig {
                         "/api/v1/google-drive/base-resumes/{resumeId}/content",
                         "/api/v1/google-drive/applications/{applicationId}/generated-resumes/content",
                         "/api/v1/google-drive/applications/{applicationId}/generated-resumes/pdf",
+                        "/api/v1/google-drive/applications/{applicationId}/generated-resumes",
                         "/api/v1/google-drive/resume-placeholders"
                 )
                 .addOpenApiCustomizer(openApi -> {
