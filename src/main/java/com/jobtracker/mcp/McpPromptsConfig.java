@@ -6,10 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Registers MCP prompt templates. The Spring AI MCP server auto-configuration collects beans of
- * type List&lt;McpServerFeatures.SyncPromptRegistration&gt; and exposes them via the
+ * type List&lt;McpServerFeatures.SyncPromptSpecification&gt; and exposes them via the
  * prompts/list and prompts/get protocol endpoints.
  *
  * Prompts are parameterised instructions that tell an MCP client (e.g. Claude) exactly which
@@ -19,7 +20,7 @@ import java.util.List;
 public class McpPromptsConfig {
 
     @Bean
-    public List<McpServerFeatures.SyncPromptRegistration> mcpPrompts() {
+    public List<McpServerFeatures.SyncPromptSpecification> mcpPrompts() {
         return List.of(
                 prepareNewApplicationPrompt(),
                 tailorResumePrompt(),
@@ -27,7 +28,7 @@ public class McpPromptsConfig {
         );
     }
 
-    private McpServerFeatures.SyncPromptRegistration prepareNewApplicationPrompt() {
+    private McpServerFeatures.SyncPromptSpecification prepareNewApplicationPrompt() {
         McpSchema.Prompt prompt = new McpSchema.Prompt(
                 "prepare_new_application",
                 "Guides the user through logging a new job application step-by-step",
@@ -41,7 +42,7 @@ public class McpPromptsConfig {
                 )
         );
 
-        return new McpServerFeatures.SyncPromptRegistration(prompt, (exchange, req) -> {
+        return new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, req) -> {
             String vacancy   = getArg(req, "vacancyName",   "(not yet informed)");
             String recruiter = getArg(req, "recruiterName", "(not yet informed)");
             String org       = getArg(req, "organization",  "(not yet informed)");
@@ -67,7 +68,7 @@ public class McpPromptsConfig {
         });
     }
 
-    private McpServerFeatures.SyncPromptRegistration tailorResumePrompt() {
+    private McpServerFeatures.SyncPromptSpecification tailorResumePrompt() {
         McpSchema.Prompt prompt = new McpSchema.Prompt(
                 "tailor_resume",
                 "Generates a tailored resume for a specific application using Google Drive",
@@ -77,7 +78,7 @@ public class McpPromptsConfig {
                 )
         );
 
-        return new McpServerFeatures.SyncPromptRegistration(prompt, (exchange, req) -> {
+        return new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, req) -> {
             String appId = getArg(req, "applicationId", "");
 
             String text = """
@@ -99,14 +100,14 @@ public class McpPromptsConfig {
         });
     }
 
-    private McpServerFeatures.SyncPromptRegistration summarizePipelinePrompt() {
+    private McpServerFeatures.SyncPromptSpecification summarizePipelinePrompt() {
         McpSchema.Prompt prompt = new McpSchema.Prompt(
                 "summarize_pipeline",
                 "Produces a human-readable summary of the current job search pipeline",
                 List.of()
         );
 
-        return new McpServerFeatures.SyncPromptRegistration(prompt, (exchange, req) -> {
+        return new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, req) -> {
             String text = """
                     Please summarise my current job search pipeline by following these steps:
 
@@ -136,7 +137,12 @@ public class McpPromptsConfig {
         if (req == null || req.arguments() == null) {
             return defaultValue;
         }
-        String value = req.arguments().get(key);
-        return (value != null && !value.isBlank()) ? value : defaultValue;
+        Map<String, Object> args = req.arguments();
+        Object value = args.get(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        String strValue = value.toString();
+        return strValue.isBlank() ? defaultValue : strValue;
     }
 }
