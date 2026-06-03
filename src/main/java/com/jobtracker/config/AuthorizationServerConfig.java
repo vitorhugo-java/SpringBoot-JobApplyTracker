@@ -56,7 +56,7 @@ import java.util.LinkedHashSet;
 import java.util.UUID;
 
 @Configuration
-@EnableConfigurationProperties(GptOAuthProperties.class)
+@EnableConfigurationProperties({GptOAuthProperties.class, McpOAuthProperties.class})
 public class AuthorizationServerConfig {
 
     @Bean
@@ -199,6 +199,65 @@ public class AuthorizationServerConfig {
             }
 
             if (registeredClientRequiresRefresh(existing, registeredClient, passwordEncoder, properties)) {
+                jdbcOperations.update("DELETE FROM oauth2_registered_client WHERE id = ?", existing.getId());
+                registeredClientRepository.save(registeredClient);
+            }
+        };
+    }
+
+    @Bean
+    public ApplicationRunner mcpRegisteredClientBootstrap(
+            McpOAuthProperties properties,
+            RegisteredClientRepository registeredClientRepository,
+            JdbcOperations jdbcOperations,
+            PasswordEncoder passwordEncoder) {
+        return args -> {
+            if (!properties.isConfigured()) {
+                return;
+            }
+
+            boolean hasSecret = properties.getClientSecret() != null && !properties.getClientSecret().isBlank();
+
+            RegisteredClient.Builder builder = RegisteredClient.withId(stableId(properties.getClientId()))
+                    .clientId(properties.getClientId())
+                    .clientIdIssuedAt(Instant.now())
+                    .clientName("MCP Client")
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                    .redirectUris(uris -> uris.addAll(properties.getRedirectUris()))
+                    .scopes(scopes -> scopes.addAll(properties.getScopes()))
+                    .clientSettings(ClientSettings.builder()
+                            .requireAuthorizationConsent(false)
+                            .requireProofKey(true)
+                            .build())
+                    .tokenSettings(TokenSettings.builder()
+                            .accessTokenTimeToLive(properties.getAccessTokenTimeToLive())
+                            .refreshTokenTimeToLive(properties.getRefreshTokenTimeToLive())
+                            .reuseRefreshTokens(false)
+                            .build());
+
+            if (hasSecret) {
+                builder
+                        .clientSecret(passwordEncoder.encode(properties.getClientSecret()))
+                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST);
+            } else {
+                builder.clientAuthenticationMethod(ClientAuthenticationMethod.NONE);
+            }
+
+            RegisteredClient registeredClient = builder.build();
+
+            RegisteredClient existing = registeredClientRepository.findByClientId(properties.getClientId());
+            if (existing == null) {
+                registeredClientRepository.save(registeredClient);
+                return;
+            }
+
+            boolean secretChanged = hasSecret && !passwordEncoder.matches(properties.getClientSecret(), existing.getClientSecret());
+            boolean redirectsChanged = !new LinkedHashSet<>(existing.getRedirectUris()).equals(new LinkedHashSet<>(registeredClient.getRedirectUris()));
+            boolean scopesChanged = !new LinkedHashSet<>(existing.getScopes()).equals(new LinkedHashSet<>(registeredClient.getScopes()));
+
+            if (secretChanged || redirectsChanged || scopesChanged) {
                 jdbcOperations.update("DELETE FROM oauth2_registered_client WHERE id = ?", existing.getId());
                 registeredClientRepository.save(registeredClient);
             }

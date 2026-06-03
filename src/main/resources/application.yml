@@ -1,6 +1,13 @@
 spring:
   config:
     import: optional:file:.env[.properties]
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: job-tracker-mcp
+        version: 1.0.0
+        protocol: STREAMABLE
   threads:
     virtual:
       enabled: true
@@ -92,6 +99,13 @@ app:
   gpt-fallback-auth:
     enabled: ${GPT_FALLBACK_AUTH_ENABLED:false}
     token: ${GPT_FALLBACK_AUTH_TOKEN:}
+  mcp-oauth:
+    client-id: ${MCP_CLIENT_ID:}
+    client-secret: ${MCP_CLIENT_SECRET:}
+    redirect-uris: ${MCP_REDIRECT_URIS:}
+    scopes: ${MCP_SCOPES:openid,read:profile,read:applications,write:applications,read:resume,read:google-drive,read:metrics}
+    access-token-expiration-seconds: ${MCP_ACCESS_TOKEN_EXPIRATION_SECONDS:900}
+    refresh-token-expiration-seconds: ${MCP_REFRESH_TOKEN_EXPIRATION_SECONDS:2592000}
   webauthn:
     rp-id: ${APP_WEBAUTHN_RP_ID:localhost}
     rp-name: ${APP_WEBAUTHN_RP_NAME:JobApplyTracker}

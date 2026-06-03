@@ -25,7 +25,20 @@
         <native.maven.plugin.version>0.10.2</native.maven.plugin.version>
         <webauthn-server.version>2.9.0</webauthn-server.version>
         <spring-authorization-server.version>1.5.1</spring-authorization-server.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Spring Boot Starters -->
@@ -163,6 +176,12 @@
             <groupId>com.yubico</groupId>
             <artifactId>webauthn-server-core</artifactId>
             <version>${webauthn-server.version}</version>
+        </dependency>
+
+        <!-- Spring AI MCP Server (Streamable HTTP) -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
         </dependency>
 
         <!-- Spring OAuth2 Client (token exchange infrastructure) -->
