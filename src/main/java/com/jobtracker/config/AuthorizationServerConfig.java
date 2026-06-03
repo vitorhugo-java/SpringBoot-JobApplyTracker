@@ -17,11 +17,13 @@ import org.springframework.http.MediaType;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.SqlParameterValue;
+import org.springframework.jdbc.core.PreparedStatementSetter;
 
 import javax.sql.DataSource;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.sql.PreparedStatement;
 import java.sql.Types;
-import java.util.Arrays;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
@@ -100,32 +102,43 @@ public class AuthorizationServerConfig {
     public OAuth2AuthorizationService authorizationService(
             DataSource dataSource,
             RegisteredClientRepository registeredClientRepository) {
-        // MariaDB JDBC 3.x maps LONGBLOB → LONGVARBINARY (-4) and LONGTEXT → LONGVARCHAR (-1).
-        // Spring AS binds all LOB parameters as Types.BLOB (2004), which MariaDB rejects with
-        // "Could not convert to -4". Retype each BLOB SqlParameterValue to the driver-native type
-        // so Spring JDBC calls ps.setBytes() / ps.setString() instead of ps.setObject(..., 2004).
+        // Spring AS calls jdbcTemplate.update(sql, LobCreatorArgumentPreparedStatementSetter),
+        // which eventually invokes ps.setObject(idx, value, Types.BLOB). MariaDB JDBC 3.x maps
+        // LONGBLOB as LONGVARBINARY (-4) and rejects the BLOB type code with "Could not convert
+        // to -4". We proxy the PreparedStatement so that any setObject(..., Types.BLOB) call is
+        // rewritten to setString / setBytes / setNull before it reaches the driver.
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource) {
             @Override
-            public int update(String sql, Object... args) throws DataAccessException {
-                return super.update(sql, args == null ? null : rewriteBlobArgs(args));
+            public int update(String sql, PreparedStatementSetter pss) throws DataAccessException {
+                return super.update(sql, ps -> pss.setValues(blobRewritingProxy(ps)));
             }
 
-            private Object[] rewriteBlobArgs(Object[] args) {
-                return Arrays.stream(args)
-                        .map(arg -> {
-                            if (!(arg instanceof SqlParameterValue spv)
-                                    || spv.getSqlType() != Types.BLOB) {
-                                return arg;
+            private PreparedStatement blobRewritingProxy(PreparedStatement target) {
+                return (PreparedStatement) Proxy.newProxyInstance(
+                        PreparedStatement.class.getClassLoader(),
+                        new Class<?>[]{ PreparedStatement.class },
+                        (proxy, method, args) -> {
+                            if ("setObject".equals(method.getName())
+                                    && args != null && args.length == 3
+                                    && args[2] instanceof Integer targetSqlType
+                                    && targetSqlType == Types.BLOB) {
+                                int idx = (int) args[0];
+                                Object value = args[1];
+                                if (value instanceof String str) {
+                                    target.setString(idx, str);
+                                } else if (value instanceof byte[] bytes) {
+                                    target.setBytes(idx, bytes);
+                                } else {
+                                    target.setNull(idx, Types.NULL);
+                                }
+                                return null;
                             }
-                            if (spv.getValue() instanceof byte[] bytes) {
-                                return new SqlParameterValue(Types.LONGVARBINARY, bytes);
+                            try {
+                                return method.invoke(target, args);
+                            } catch (InvocationTargetException e) {
+                                throw e.getCause();
                             }
-                            if (spv.getValue() instanceof String str) {
-                                return new SqlParameterValue(Types.LONGVARCHAR, str);
-                            }
-                            return new SqlParameterValue(Types.NULL, null);
-                        })
-                        .toArray();
+                        });
             }
         };
         return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
