@@ -2,12 +2,14 @@
 
 [Frontend - React-JobApplyTracker](https://github.com/vitorhugo-java/React-JobApplyTracker) 
 
-A production-ready Spring Boot REST API for tracking job applications, built with Java 21, Spring Security JWT authentication, MariaDB, and comprehensive test coverage.
+A production-ready Spring Boot REST API for tracking job applications, built with Java 21, Spring Security JWT authentication, MariaDB, and comprehensive test coverage. Exposes all domain services via a **Model Context Protocol (MCP) server** so AI assistants (Claude Desktop, Claude.ai, and any MCP-compatible client) can manage applications on behalf of authenticated users.
 
 ## Tech Stack
 
 - **Java 21**
-- **Spring Boot 3.2** (Web, Data JPA, Security, Validation)
+- **Spring Boot 3.5** (Web, Data JPA, Security, Validation)
+- **Spring AI 1.0.0** — MCP server (`spring-ai-starter-mcp-server-webmvc`, Streamable HTTP transport)
+- **Spring OAuth2 Authorization Server** (JDBC-backed, issues tokens for both GPT Actions and MCP clients)
 - **Spring Security** with stateless JWT authentication + role-based authorization (`USER`, `BETA`, `ADMIN`)
 - **JWT + Refresh Tokens** (access: 15 min, refresh: 7 days with rotation)
 - **Resilience4j Rate Limiting** on auth endpoints
@@ -24,12 +26,16 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 .
 ├── src/
 │   ├── main/java/com/jobtracker/
-│   │   ├── config/          # Security, JWT, CORS, filters
+│   │   ├── config/          # Security, JWT, CORS, OAuth2 AS, filters
 │   │   ├── controller/      # REST controllers
 │   │   ├── dto/             # Request/Response DTOs
 │   │   ├── entity/          # JPA entities
 │   │   ├── exception/       # Global exception handling
 │   │   ├── mapper/          # Entity-DTO mappers
+│   │   ├── mcp/             # MCP server — tools and prompts
+│   │   │   ├── tools/       # @Tool-annotated service wrappers
+│   │   │   ├── McpToolsConfig.java
+│   │   │   └── McpPromptsConfig.java
 │   │   ├── repository/      # Spring Data JPA repositories
 │   │   ├── service/         # Business logic
 │   │   └── util/            # Utilities
@@ -38,7 +44,9 @@ A production-ready Spring Boot REST API for tracking job applications, built wit
 │   │   └── db/migration/    # Flyway migrations
 │   └── test/java/com/jobtracker/
 │       ├── unit/            # Mockito unit tests
+│       │   └── mcp/         # MCP tool unit tests
 │       ├── integration/     # SpringBootTest + Testcontainers + MockMvc
+│       │   └── mcp/         # MCP auth and tool integration tests
 │       └── e2e/             # RestAssured end-to-end tests
 ├── pom.xml
 ├── Dockerfile
@@ -231,6 +239,9 @@ export OPENAI_GPT_CLIENT_ID=your-openai-gpt-client-id
 export OPENAI_GPT_CLIENT_SECRET=your-openai-gpt-client-secret
 export OPENAI_GPT_REDIRECT_URIS=https://chat.openai.com/aip/default/callback
 export OPENAI_GPT_SCOPES=read:profile,read:applications,write:applications,read:resume,read:google-drive,read:metrics
+# MCP client (optional — omit to disable MCP OAuth2 registration)
+export MCP_CLIENT_ID=your-mcp-client-id
+export MCP_REDIRECT_URIS=http://localhost:3000/mcp/callback
 mvn spring-boot:run
 ```
 
@@ -313,6 +324,166 @@ Response:
   ]
 }
 ```
+
+## MCP Server (Model Context Protocol)
+
+The backend exposes all core domain services as MCP tools via a **Streamable HTTP** endpoint at `POST /mcp`. Any MCP-compatible AI client (Claude Desktop, Claude.ai, `mcp-cli`, etc.) can call these tools on behalf of an authenticated user.
+
+### How authentication works
+
+MCP requests use the **same OAuth2 Authorization Server** already used by GPT Actions. There are no static tokens, no synthetic service accounts, and no parallel auth system. The flow is:
+
+1. MCP client completes OAuth2 **Authorization Code + PKCE** against the existing AS.
+2. The AS issues a JWT carrying the user's `id`, `roles` (`ROLE_USER`, `ROLE_BETA`, etc.), and scopes.
+3. MCP client presents the JWT as `Authorization: Bearer <token>` on every `POST /mcp` request.
+4. The existing `BearerTokenAuthenticationFilter` validates the JWT, populates the `SecurityContext` with the real user, and all domain service ownership checks (`SecurityUtils.getCurrentUser()`) and role guards (`@PreAuthorize`) work exactly as they do for REST requests.
+
+### Required environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MCP_CLIENT_ID` | Yes | OAuth2 client ID for your MCP client registration |
+| `MCP_CLIENT_SECRET` | No | If set, enables `CLIENT_SECRET_BASIC` / `CLIENT_SECRET_POST` auth methods (omit for public PKCE-only clients) |
+| `MCP_REDIRECT_URIS` | Yes | Comma-separated list of allowed redirect URIs for your MCP client |
+
+> If `MCP_CLIENT_ID` is not set, the MCP OAuth2 client is not registered and MCP authentication will fail. The MCP server endpoint itself always starts.
+
+### Supported scopes
+
+| Scope | Grants access to |
+|-------|-----------------|
+| `openid` | OIDC identity |
+| `read:profile` | User profile |
+| `read:applications` | List / read applications |
+| `write:applications` | Create / update / delete applications |
+| `read:resume` | Base resume metadata |
+| `read:google-drive` | Google Drive status (BETA role also required) |
+| `read:metrics` | Dashboard and gamification data |
+
+### MCP endpoint
+
+```
+POST /mcp
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+The endpoint implements JSON-RPC 2.0 over HTTP (Streamable HTTP transport). All MCP protocol messages (`initialize`, `tools/list`, `tools/call`, `prompts/list`, `prompts/get`) are sent as POST requests to this single URL.
+
+### Available tools
+
+#### Application tools
+
+| Tool | Description |
+|------|-------------|
+| `listApplications` | List paginated applications with optional filters (status, recruiter, date range, archived, etc.) |
+| `getApplication` | Get a single application by UUID |
+| `getUpcomingApplications` | Applications with a next-step date/time in the near future |
+| `getOverdueApplications` | Applications whose next-step date/time has passed |
+| `createApplication` | Create a new application |
+| `updateApplication` | Full update of an existing application |
+| `updateApplicationStatus` | Change status only |
+| `updateApplicationReminder` | Enable or disable the recruiter DM reminder |
+| `markRecruiterDmSent` | Record that a recruiter DM was sent |
+| `archiveApplication` | Archive an application |
+| `deleteApplication` | Permanently delete an application |
+
+#### Dashboard & gamification tools
+
+| Tool | Description |
+|------|-------------|
+| `getPipelineSummary` | Aggregate pipeline statistics |
+| `getGamificationProfile` | Current XP, level, rank, and streak |
+| `getAchievements` | Achievement catalog with unlocked state |
+
+#### Google Drive tools (ROLE_BETA required)
+
+| Tool | Description |
+|------|-------------|
+| `getDriveStatus` | Google Drive connection status and configured base resumes |
+| `listBaseResumes` | List available base resume templates |
+| `copyResumeToApplication` | Copy a base resume into the application's Drive folder |
+
+> Calling any Google Drive tool without `ROLE_BETA` returns 403 — the same restriction enforced on the REST controller.
+
+### Available prompts
+
+Prompts are pre-built guided workflows. Call `prompts/get` with the prompt name and arguments to receive an instruction message that tells the AI which tools to call and in what order.
+
+| Prompt | Required args | Description |
+|--------|--------------|-------------|
+| `prepare_new_application` | `vacancyName`, `recruiterName`, `organization` (all optional) | Guides the AI to gather any missing fields and call `createApplication` |
+| `tailor_resume` | `applicationId` | Fetches the application, lists base resumes, asks which to use, calls `copyResumeToApplication`, and returns the Google Docs link |
+| `summarize_pipeline` | *(none)* | Calls `getPipelineSummary`, `listApplications` (recent 10), `getOverdueApplications`, and `getGamificationProfile` to produce a full pipeline report |
+
+### Quick smoke-test with curl
+
+```bash
+# 1. Get an access token (exchange auth code from OAuth2 flow — or use a test user's JWT from /api/v1/auth/login)
+TOKEN="<your-access-token>"
+
+# 2. List available tools
+curl -X POST http://localhost:8080/mcp \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+
+# 3. Call a tool
+curl -X POST http://localhost:8080/mcp \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc":"2.0","id":2,
+    "method":"tools/call",
+    "params":{
+      "name":"listApplications",
+      "arguments":{"page":0,"size":5}
+    }
+  }'
+
+# 4. Get a prompt
+curl -X POST http://localhost:8080/mcp \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc":"2.0","id":3,
+    "method":"prompts/get",
+    "params":{
+      "name":"summarize_pipeline",
+      "arguments":{}
+    }
+  }'
+```
+
+### Connecting Claude Desktop
+
+Add the following to your Claude Desktop `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "job-tracker": {
+      "command": "mcp-remote",
+      "args": [
+        "http://localhost:8080/mcp",
+        "--header",
+        "Authorization: Bearer <your-access-token>"
+      ]
+    }
+  }
+}
+```
+
+> Replace `<your-access-token>` with a valid JWT obtained from the OAuth2 Authorization Server or from `POST /api/v1/auth/login`. For production deployments, replace `http://localhost:8080` with your API base URL and use tokens from the full OAuth2 PKCE flow.
+
+### OAuth2 endpoints (same AS used by GPT Actions)
+
+- Authorization: `GET/POST /oauth2/authorize`
+- Token: `POST /oauth2/token`
+- JWKS: `GET /oauth2/jwks`
+- Discovery: `GET /.well-known/openid-configuration`
+
+---
 
 ## GPT Actions OAuth integration
 
@@ -505,6 +676,9 @@ If `APP_SEED_ENABLED=true` and `APP_SEED_USER_EMAIL` is not provided (or the use
 | `APP_GPT_FALLBACK_AUTH_ACCOUNT_EMAIL` | No | Email of the account used by the fallback flow |
 | `APP_GPT_FALLBACK_AUTH_ACCOUNT_NAME` | No | Display name used when the fallback user is created |
 | `GPT_FALLBACK_AUTH_TOKEN` | *(empty)* | Static bearer token used when fallback auth is enabled |
+| `MCP_CLIENT_ID` | *(empty)* | OAuth2 client ID for MCP clients; if not set, no MCP client is registered |
+| `MCP_CLIENT_SECRET` | *(empty)* | OAuth2 client secret for MCP clients (omit for public PKCE-only clients) |
+| `MCP_REDIRECT_URIS` | *(empty)* | Comma-separated redirect URIs allowed for the MCP OAuth2 client |
 | `RATE_LIMIT_AUTH_LOGIN_LIMIT_FOR_PERIOD` | `10` | Max login requests allowed per refresh period |
 | `RATE_LIMIT_AUTH_LOGIN_REFRESH_PERIOD` | `1m` | Window used by the login rate limiter |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint (Jaeger/OpenTelemetry collector) |
