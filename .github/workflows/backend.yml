@@ -137,16 +137,18 @@ jobs:
 
     steps:
       - name: Deploy latest image over SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets['VPS_IP'] }}
-          username: ${{ secrets['VPS_USER'] }}
-          key: ${{ secrets['SSH_KEY'] }}
-          port: 22
-          script_stop: true
-          script: |
-            set -eu
-            cd /docker/jobpplytracker-api
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker image prune -f
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts 2>/dev/null
+
+          for i in 1 2 3; do
+            echo "Attempt $i..."
+            ssh -i ~/.ssh/deploy_key \
+                -o ConnectTimeout=30 \
+                -o StrictHostKeyChecking=no \
+                ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} \
+                "set -eu && cd /docker/jobpplytracker-api && docker compose pull && docker compose up -d --remove-orphans && docker image prune -f" && break
+            [ $i -lt 3 ] && sleep 15
+          done
