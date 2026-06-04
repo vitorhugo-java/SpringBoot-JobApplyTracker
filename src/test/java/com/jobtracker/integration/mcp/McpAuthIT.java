@@ -14,19 +14,22 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Verifies that the MCP endpoint requires authentication via the existing OAuth2/JWT machinery.
  *
- * Spring AI 1.0.0 uses SSE transport (WebMvcSseServerTransport). The message endpoint for
- * JSON-RPC requests is POST /mcp/messages. The response is returned directly in the HTTP
- * response body (as required by the MCP HTTP+SSE spec).
+ * Spring AI 1.1.x uses the Streamable HTTP transport (WebMvcStreamableServerTransport): a single
+ * endpoint, POST /mcp, that handles JSON-RPC messages (GET opens the SSE stream). Unauthenticated
+ * requests to /mcp/** receive a 401 with a WWW-Authenticate: Bearer challenge (RFC 6750 / RFC 9728)
+ * so MCP clients can discover the OAuth protected-resource metadata — see McpAuthenticationEntryPoint.
  */
 class McpAuthIT extends AbstractIntegrationTest {
 
-    private static final String MCP_ENDPOINT = "/mcp/messages";
+    private static final String MCP_ENDPOINT = "/mcp";
 
     private static final String MCP_INITIALIZE_BODY = """
             {
@@ -65,11 +68,12 @@ class McpAuthIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void mcpEndpoint_withoutToken_returns403() throws Exception {
+    void mcpEndpoint_withoutToken_returns401WithBearerChallenge() throws Exception {
         mockMvc.perform(post(MCP_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(MCP_INITIALIZE_BODY))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", containsString("resource_metadata")));
     }
 
     @Test
@@ -83,12 +87,12 @@ class McpAuthIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void mcpEndpoint_withMalformedToken_returns403() throws Exception {
+    void mcpEndpoint_withMalformedToken_returns401() throws Exception {
         mockMvc.perform(post(MCP_ENDPOINT)
                         .header("Authorization", "Bearer not-a-real-jwt-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(MCP_INITIALIZE_BODY))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

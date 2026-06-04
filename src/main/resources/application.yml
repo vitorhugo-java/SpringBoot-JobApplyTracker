@@ -7,11 +7,14 @@ spring:
         enabled: true
         name: job-tracker-mcp
         version: 1.0.0
-        # Spring AI 1.0.0 registers the MCP message route from this property.
-        # Default is "/mcp/message" (singular); the OAuth protected-resource
-        # metadata, SecurityConfig (/mcp/**) and the external client all use
-        # "/mcp/messages" (plural), so align the registered route to match.
-        sse-message-endpoint: /mcp/messages
+        # Claude.ai (and other modern MCP connectors) speak the Streamable HTTP
+        # transport: a single endpoint that handles both POST (JSON-RPC) and GET
+        # (SSE stream). Requires Spring AI 1.1+. The endpoint defaults to /mcp,
+        # which is already covered by SecurityConfig's /mcp/** rule and the
+        # OAuth protected-resource metadata controller.
+        protocol: STREAMABLE
+        streamable-http:
+          mcp-endpoint: /mcp
   threads:
     virtual:
       enabled: true

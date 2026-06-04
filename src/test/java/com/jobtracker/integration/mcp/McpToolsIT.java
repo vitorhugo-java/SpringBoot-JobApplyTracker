@@ -24,23 +24,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for MCP tool calls.
  *
- * These tests are disabled because Spring AI 1.0.0's WebMvcSseServerTransport registers its
- * routes via RouterFunction / WebMvcConfigurer rather than @RequestMapping, which is not
- * discoverable by MockMvc's DispatcherServlet in WebEnvironment.MOCK. Attempting to POST
- * to /mcp/messages results in "No static resource mcp/messages." (404 → 500).
+ * These tests are disabled because the Spring AI MCP transport registers its routes via
+ * RouterFunction rather than @RequestMapping, which is not discoverable by MockMvc's
+ * DispatcherServlet in WebEnvironment.MOCK. Attempting to POST to /mcp results in
+ * "No static resource mcp." (404 → 500).
  *
  * Test coverage for MCP:
  *   - Tool business logic: McpApplicationToolsTest, McpDashboardToolsTest, McpGoogleDriveToolsTest
  *   - Auth boundary:       McpAuthIT (security filter runs before MVC dispatch — works fine)
- *   - Protocol smoke test: run manually with curl or Claude Desktop against a live server
+ *   - Protocol smoke test: run manually with curl or Claude against a live server
  *
  * To re-enable, migrate to WebEnvironment.RANDOM_PORT + TestRestTemplate and ensure the
- * MCP transport is fully registered by Tomcat.
+ * Streamable HTTP transport is fully registered by Tomcat.
  */
-@Disabled("Spring AI 1.0.0 SSE transport routes not discoverable by MockMvc — see class javadoc")
+@Disabled("MCP RouterFunction routes not discoverable by MockMvc — see class javadoc")
 class McpToolsIT extends AbstractIntegrationTest {
 
-    private static final String MCP_ENDPOINT = "/mcp/messages";
+    private static final String MCP_ENDPOINT = "/mcp";
 
     private static final String MCP_INITIALIZE_BODY = """
             {

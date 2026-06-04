@@ -25,6 +25,7 @@ import java.io.IOException;
  */
 public class McpAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
+    private static final String MCP_PATH = "/mcp";
     private static final String MCP_PATH_PREFIX = "/mcp/";
     private static final String PROTECTED_RESOURCE_METADATA_PREFIX = "/.well-known/oauth-protected-resource";
 
@@ -41,7 +42,7 @@ public class McpAuthenticationEntryPoint implements AuthenticationEntryPoint {
             AuthenticationException authException) throws IOException {
 
         String path = request.getRequestURI();
-        if (path != null && path.startsWith(MCP_PATH_PREFIX)) {
+        if (path != null && (path.equals(MCP_PATH) || path.startsWith(MCP_PATH_PREFIX))) {
             // RFC 9728 §5.1: advertise the resource-specific metadata document.
             String resourceMetadataUrl = issuer + PROTECTED_RESOURCE_METADATA_PREFIX + path;
             response.setHeader("WWW-Authenticate",
