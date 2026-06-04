@@ -49,7 +49,7 @@ public class McpGoogleDriveTools {
             Get current Google Drive integration status for the authenticated user:
             connected account, root folder, and whether base resumes have been configured.
             Requires BETA role.
-            """)
+            """, name = "Google Drive Status")
     public GoogleDriveStatusResponse getDriveStatus() {
         return googleDriveService.getStatus();
     }
@@ -57,7 +57,7 @@ public class McpGoogleDriveTools {
     @Tool(description = """
             List all base resume templates configured in Google Drive for the authenticated user.
             Requires BETA role.
-            """)
+            """, name = "List Base Resumes")
     public List<BaseResumeResponse> listBaseResumes() {
         return googleDriveService.listBaseResumes();
     }
@@ -66,7 +66,7 @@ public class McpGoogleDriveTools {
             Copy a base resume template into the application's Google Drive folder to generate
             a tailored resume. Returns a link to the newly created Google Doc.
             Requires BETA role.
-            """)
+            """, name = "Copy Base Resume to Application")
     public GoogleDriveResumeCopyResponse copyResumeToApplication(
             @ToolParam(description = "UUID of the job application") String applicationId,
             @ToolParam(description = "UUID of the base resume template to copy") String baseResumeId) {
@@ -81,9 +81,8 @@ public class McpGoogleDriveTools {
             can be analyzed before generating a tailored resume.
             The resumeId MUST be the base resume UUID — filenames and Google file IDs are NOT valid.
             Requires BETA role.
-            """)
-    public BaseResumeContentResponse getBaseResumeContent(
-            @ToolParam(description = "UUID of the base resume (not the filename)") String resumeId) {
+            """, name = "Get Base Resume Content")
+    public BaseResumeContentResponse getBaseResumeContent(@ToolParam(description = "UUID of the base resume (not the filename)") String resumeId) {
         return resumeGenerationService.getBaseResumeContent(UUID.fromString(resumeId));
     }
 
@@ -91,9 +90,8 @@ public class McpGoogleDriveTools {
             Read the plain text content of the resume already generated for a job application.
             Returns 400/error if no resume has been generated for the application yet.
             Requires BETA role.
-            """)
-    public GeneratedResumeContentResponse getGeneratedResumeContent(
-            @ToolParam(description = "UUID of the job application") String applicationId) {
+            """, name = "Get Generated Resume Content")
+    public GeneratedResumeContentResponse getGeneratedResumeContent(@ToolParam(description = "UUID of the job application") String applicationId) {
         return resumeGenerationService.getGeneratedResumeContent(UUID.fromString(applicationId));
     }
 
@@ -103,9 +101,8 @@ public class McpGoogleDriveTools {
             (e.g. "RESUMO", "SKILLS").
             The baseResumeId MUST be the base resume UUID — filenames are NOT valid.
             Requires BETA role.
-            """)
-    public ResumePlaceholderDetectionResponse detectResumePlaceholders(
-            @ToolParam(description = "UUID of the base resume (not the filename)") String baseResumeId) {
+            """, name = "Detect Resume Placeholders")
+    public ResumePlaceholderDetectionResponse detectResumePlaceholders(@ToolParam(description = "UUID of the base resume (not the filename)") String baseResumeId) {
         return resumeGenerationService.detectPlaceholders(UUID.fromString(baseResumeId));
     }
 
@@ -117,7 +114,7 @@ public class McpGoogleDriveTools {
             {"RESUMO": "Senior Java Developer", "HARDSKILL1": "Java"}. Keys must match the names
             returned by detectResumePlaceholders. Provide a value for every detected placeholder.
             Requires BETA role.
-            """)
+            """, name = "Generate Resume from Template")
     public ResumePlaceholderResponse generateResume(
             @ToolParam(description = "UUID of the job application") String applicationId,
             @ToolParam(description = "UUID of the base resume template to use") String baseResumeId,
@@ -133,7 +130,7 @@ public class McpGoogleDriveTools {
             Base64-encoded together with its filename and content type. Generate a resume first
             (generateResume) before calling this.
             Requires BETA role.
-            """)
+            """, name = "Download Generated Resume PDF")
     public GeneratedResumePdf downloadGeneratedResumePdf(
             @ToolParam(description = "UUID of the job application") String applicationId) {
         DownloadedFile file = generatedResumeDownloadService.downloadAsPdf(UUID.fromString(applicationId));

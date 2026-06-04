@@ -36,7 +36,7 @@ public class McpApplicationTools {
             archived: true to include archived applications (default: false / active only).
             page: 0-based page number (default 0). size: page size (default 20).
             sort: field,direction — e.g. "createdAt,desc" (default) or "applicationDate,asc".
-            """)
+            """, name = "List Job Applications")
     public ApplicationPageResponse listApplications(
             @ToolParam(description = "Status filter — display name, e.g. 'RH' or 'Teste Técnico'") String status,
             @ToolParam(description = "Recruiter name partial match") String recruiterName,
@@ -61,18 +61,18 @@ public class McpApplicationTools {
                 sort  != null ? sort  : "createdAt,desc");
     }
 
-    @Tool(description = "Retrieve a single job application by its UUID.")
+    @Tool(description = "Retrieve a single job application by its UUID.", name = "Get Job Application")
     public ApplicationResponse getApplication(
             @ToolParam(description = "Application UUID") String id) {
         return applicationService.getById(UUID.fromString(id));
     }
 
-    @Tool(description = "List applications with upcoming next-step reminders that have not yet passed.")
+    @Tool(description = "List applications with upcoming next-step reminders that have not yet passed.", name = "Get Upcoming Applications")
     public List<ApplicationResponse> getUpcomingApplications() {
         return applicationService.getUpcoming();
     }
 
-    @Tool(description = "List applications whose next-step deadline has passed with no status update.")
+    @Tool(description = "List applications whose next-step deadline has passed with no status update.", name = "Get Overdue Applications")
     public List<ApplicationResponse> getOverdueApplications() {
         return applicationService.getOverdue();
     }
@@ -86,7 +86,7 @@ public class McpApplicationTools {
             Optional: vacancyName, recruiterName, organization, vacancyLink,
             applicationDate (yyyy-MM-dd), nextStepDateTime (yyyy-MM-ddTHH:mm:ss),
             status (display name — null means "no status / to send later"), note.
-            """)
+            """, name = "Create Job Application")
     public ApplicationResponse createApplication(
             @ToolParam(description = "Job title or vacancy name") String vacancyName,
             @ToolParam(description = "Recruiter name") String recruiterName,
@@ -116,7 +116,7 @@ public class McpApplicationTools {
     @Tool(description = """
             Update all fields of an existing job application.
             Same field rules as createApplication.
-            """)
+            """, name = "Update Job Application")
     public ApplicationResponse updateApplication(
             @ToolParam(description = "Application UUID to update") String id,
             @ToolParam(description = "Job title or vacancy name") String vacancyName,
@@ -151,33 +151,33 @@ public class McpApplicationTools {
             Fiz a Hiring Manager - Aguardando Atualização, Teste Técnico,
             Fiz teste Técnico - aguardando atualização, RH (Negociação),
             Rejeitado, Tarde demais, Ghosting.
-            """)
+            """, name = "Update Application Status")
     public void updateApplicationStatus(
             @ToolParam(description = "Application UUID") String id,
             @ToolParam(description = "New status display name") String status) {
         applicationService.updateStatus(UUID.fromString(id), new UpdateStatusRequest(status));
     }
 
-    @Tool(description = "Enable or disable the recruiter DM reminder for a job application.")
+    @Tool(description = "Enable or disable the recruiter DM reminder for a job application.", name = "Update DM Reminder")
     public void updateApplicationReminder(
             @ToolParam(description = "Application UUID") String id,
             @ToolParam(description = "true to enable the DM reminder, false to disable it") boolean enabled) {
         applicationService.updateReminder(UUID.fromString(id), new UpdateReminderRequest(enabled));
     }
 
-    @Tool(description = "Mark that a LinkedIn DM was sent to the recruiter for a job application.")
+    @Tool(description = "Mark that a LinkedIn DM was sent to the recruiter for a job application.", name = "Mark DM Sent")
     public void markRecruiterDmSent(
             @ToolParam(description = "Application UUID") String id) {
         applicationService.markDmSent(UUID.fromString(id), new MarkDmSentRequest());
     }
 
-    @Tool(description = "Archive a job application so it is hidden from the default active list.")
+    @Tool(description = "Archive a job application so it is hidden from the default active list.", name = "Archive Job Application")
     public void archiveApplication(
             @ToolParam(description = "Application UUID") String id) {
         applicationService.archive(UUID.fromString(id));
     }
 
-    @Tool(description = "Permanently delete a job application.")
+    @Tool(description = "Permanently delete a job application.", name = "Delete Job Application")
     public void deleteApplication(
             @ToolParam(description = "Application UUID") String id) {
         applicationService.delete(UUID.fromString(id));
