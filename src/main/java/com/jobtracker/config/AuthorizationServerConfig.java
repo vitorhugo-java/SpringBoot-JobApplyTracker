@@ -65,12 +65,17 @@ public class AuthorizationServerConfig {
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
-        RequestMatcher authServerMatcher = new OrRequestMatcher(endpointsMatcher, request -> "/login".equals(request.getServletPath()));
+        RequestMatcher authServerMatcher = new OrRequestMatcher(
+                endpointsMatcher,
+                request -> "/login".equals(request.getServletPath()),
+                // Static assets for the generated login page (served by DefaultResourcesFilter
+                // within this chain); otherwise they fall through to the main chain and 403.
+                request -> "/default-ui.css".equals(request.getServletPath()));
 
         http
                 .securityMatcher(authServerMatcher)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login").permitAll()
+                        .requestMatchers("/login", "/default-ui.css").permitAll()
                         .anyRequest().authenticated())
                 .with(authorizationServerConfigurer, authorizationServer -> authorizationServer.oidc(Customizer.withDefaults()))
                 .exceptionHandling(exceptions -> exceptions.defaultAuthenticationEntryPointFor(
