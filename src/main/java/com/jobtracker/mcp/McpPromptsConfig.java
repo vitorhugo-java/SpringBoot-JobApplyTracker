@@ -19,91 +19,87 @@ public class McpPromptsConfig {
     /**
      * Full autonomous vacancy-intake workflow.
      */
-    @McpPrompt(name = "intake_vacancy", description = "Executa o workflow autonomo completo de candidatura a partir de uma vaga colada")
+    @McpPrompt(name = "Intake-Vacancy", description = "Execute the autonomous application intake workflow from a pasted vacancy")
     public GetPromptResult intakeVacancyPrompt(
-            @McpArg(name = "vacancyContent", description = "Descricao da vaga, link, mensagem do recrutador ou post do LinkedIn", required = true)
+            @McpArg(name = "vacancyContent", description = "Job description, link, recruiter message, or LinkedIn post", required = true)
             String vacancyContent) {
         String text = """
-                Voce e meu assistente de candidaturas para engenharia de software, operando via os MCPs
-                "Job Apply Tracker - MCP", "Google Drive" e "Gmail". Fale SEMPRE comigo em PT-BR.
-                Conteudo gerado para o CV deve estar no IDIOMA DA VAGA.
+                You are my software engineering application assistant. Always communicate with me in PT-BR.
+                Content generated for the CV must be written in the vacancy language.
 
-                Execute o workflow completo de forma AUTONOMA, sem esperar confirmacoes intermediarias.
-                Pare apenas para perguntas genuinamente necessarias (ver Passo 5).
+                Execute the complete workflow autonomously, without waiting for intermediate confirmations.
+                Stop only for genuinely necessary questions (see Step 5).
 
-                Antes de executar os passos 7 e 8, leia os recursos:
-                  %s  (regras de campo da candidatura)
-                  %s  (sequencia obrigatoria de geracao de CV)
+                Before executing steps 7 and 8, read the resources:
+                  %s  (application field rules)
+                  %s  (mandatory CV generation sequence)
+                  %s  (allowed status values)
 
-                === VAGA ===
+                === VACANCY ===
                 %s
-                === FIM DA VAGA ===
+                === END VACANCY ===
 
-                Siga rigorosamente, nesta ordem:
+                Follow this order exactly:
 
-                PASSO 1 - Analisar a vaga
-                Extrair: vacancyName (cargo), organization (empresa), vacancyLink (URL se houver),
-                stack exigida, senioridade, idioma da vaga, nome/email do recrutador se presentes.
+                STEP 1 - Analyze the vacancy
+                Extract: vacancyName (title), organization (company), vacancyLink (URL if present),
+                required stack, seniority, vacancy language, recruiter name/email if present.
 
-                PASSO 2 - Ler meu curriculo REAL (obrigatorio antes de gerar qualquer conteudo)
-                - Chamar listApplications e selecionar o fileId de um CV JA GERADO no MESMO idioma da vaga.
-                  NUNCA usar um template como fonte de dados.
-                - Ler com Google Drive:read_file_content.
-                - Se nao houver CV anterior: Google Drive:search_files com
-                  "title contains 'curriculo' or title contains 'resume' or title contains 'cv'".
-                - Se ainda nao encontrar: pedir o nome/link do arquivo de CV no Drive.
-                Extrair: experiencias, stack real, projetos, formacao, certificacoes, conquistas, idiomas.
-                NUNCA inventar experiencias, tecnologias, projetos ou certificacoes.
+                STEP 2 - Read my REAL resume (required before generating any content)
+                - Call List-Applications and select the most recent application with driveResumeFileId populated.
+                - If such an application exists, read resource://job-apply-tracker/generated-resume/{applicationId}
+                  for the selected application and use that text as the real CV source.
+                - If no prior CV exists, ask for the current CV text because this MCP does not expose generic
+                  Drive search or file reading.
+                Extract: experience, real stack, projects, education, certifications, achievements, languages.
+                NEVER invent experience, technologies, projects, or certifications.
 
-                PASSO 3 - Listar e selecionar template de CV
-                Chamar listBaseResumes. Selecionar por idioma (PT→PT-BR; EN→EN-US). Nao perguntar se houver so um por idioma.
+                STEP 3 - List and select a CV template
+                Read resource://job-apply-tracker/base-resumes. Select by language (PT→PT-BR; EN→EN-US).
+                Do not ask if there is only one per language.
 
-                PASSO 4 - Detectar placeholders
-                Chamar detectResumePlaceholders com o baseResumeId selecionado (ver resume-workflow-rules).
+                STEP 4 - Detect placeholders
+                Call Detect-Resume-Placeholders with the selected baseResumeId (see resume-workflow-rules).
 
-                PASSO 5 - Perguntas minimas (so se necessario)
-                Perguntar SOMENTE se uma informacao estiver ausente no CV real E na vaga, e for necessaria
-                para um placeholder ou o registro. Nunca perguntar sobre tecnologias ou background.
+                STEP 5 - Minimum questions (only if needed)
+                Ask ONLY if a piece of information is missing from both the real CV AND the vacancy, and is required
+                for a placeholder or the record. Never ask about technologies or background.
 
-                PASSO 6 - Gerar valores dos placeholders
-                Cruzar CV real (passo 2) com requisitos da vaga (passo 1). ATS-friendly, sem inventar.
-                Seguir resume-workflow-rules para completude e formatacao de chaves.
+                STEP 6 - Generate placeholder values
+                Cross-check the real CV (step 2) with the vacancy requirements (step 1). ATS-friendly, without inventing anything.
+                Follow resume-workflow-rules for completeness and key formatting.
 
-                PASSO 7 - Criar a candidatura
-                Seguir application-creation-rules. Chamar createApplication com os dados extraidos.
-                NAO preencher nextStepDateTime.
-                note: resumo ATS-focused (stack, senioridade, fit, gaps).
+                STEP 7 - Create the application
+                Follow application-creation-rules. Call Create-Application with the extracted data.
+                Do NOT fill nextStepDateTime.
+                Note: ATS-focused summary (stack, seniority, fit, gaps).
 
-                PASSO 8 - Gerar o CV preenchido
-                Somente apos createApplication retornar um UUID valido E todos os placeholders gerados.
-                Seguir resume-workflow-rules. Chamar generateResume e retornar o link do Google Doc.
+                STEP 8 - Generate the filled CV
+                Only after Create-Application returns a valid UUID AND all placeholders are generated.
+                Follow resume-workflow-rules. Call Generate-Resume and return the Google Doc link.
 
-                PASSO 9 - Rascunho de email (se houver email de contato)
-                Email profissional conciso (max 150 palavras), baseado no CV real.
-                Chamar Gmail:create_draft automaticamente, sem perguntar.
-
-                PASSO 10 - Entrega final (em PT-BR)
-                1. Link do CV gerado
-                2. Placeholders detectados + valor gerado para cada um
-                3. Confirmacao do rascunho de email (se gerado)
-                4. UUID e status da candidatura criada
+                STEP 9 - Final delivery (in PT-BR)
+                1. Link to the generated CV
+                2. Detected placeholders + generated value for each one
+                3. UUID and status of the created application
                 """.formatted(
                 McpResourcesConfig.URI_APPLICATION_CREATION_RULES,
                 McpResourcesConfig.URI_RESUME_WORKFLOW_RULES,
+                McpResourcesConfig.URI_APPLICATION_STATUSES,
                 vacancyContent);
 
         return new GetPromptResult(
-                "Intake de vaga (workflow autonomo completo)",
+                "Intake Vacancy",
                 List.of(new PromptMessage(Role.USER, new TextContent(text))));
     }
 
-    @McpPrompt(name = "prepare_new_application", description = "Guides the user through logging a new job application step-by-step")
+    @McpPrompt(name = "Prepare-New-Application", description = "Guide the user through logging a new job application step-by-step")
     public GetPromptResult prepareNewApplicationPrompt(
             @McpArg(name = "vacancyName", description = "The job title or vacancy name, e.g. 'Backend Engineer'", required = false)
             String vacancyName,
             @McpArg(name = "recruiterName", description = "Recruiter's full name if known", required = false)
             String recruiterName,
-            @McpArg(name = "organization", description = "Company or organisation name", required = false)
+            @McpArg(name = "organization", description = "Company or organization name", required = false)
             String organization) {
         String text = """
                 You are helping me log a new job application in my tracker.
@@ -111,57 +107,58 @@ public class McpPromptsConfig {
                 Known details so far:
                 - Vacancy: %s
                 - Recruiter: %s
-                - Organisation: %s
+                - Organization: %s
 
-                Read resource://job-tracker/application-creation-rules for field defaults before calling
-                createApplication. Ask me for any missing required fields (rhAcceptedConnection,
-                interviewScheduled, recruiterDmReminderEnabled), then call createApplication with the
-                complete data. Use status "RH" for a standard LinkedIn/HR cold outreach.
+                Read %s for field defaults before calling Create-Application. Ask me for any missing
+                required fields (rhAcceptedConnection, interviewScheduled, recruiterDmReminderEnabled),
+                then call Create-Application with the complete data. Use status "RH" for a standard
+                LinkedIn/HR cold outreach.
                 """.formatted(
                 valueOrDefault(vacancyName),
                 valueOrDefault(recruiterName),
-                valueOrDefault(organization));
+                valueOrDefault(organization),
+                McpResourcesConfig.URI_APPLICATION_CREATION_RULES);
 
         return new GetPromptResult(
-                "Prepare new application: " + valueOrDefault(vacancyName),
+                "Prepare-New-Application: " + valueOrDefault(vacancyName),
                 List.of(new PromptMessage(Role.USER, new TextContent(text))));
     }
 
-    @McpPrompt(name = "tailor_resume", description = "Generates a tailored resume for a specific application using Google Drive")
+    @McpPrompt(name = "Tailor-Resume", description = "Generate a tailored resume for a specific application using Google Drive")
     public GetPromptResult tailorResumePrompt(
             @McpArg(name = "applicationId", description = "UUID of the target job application", required = true)
             String applicationId) {
         String text = """
                 I want to tailor a resume for job application ID: %s
 
-                1. Call `getApplication` with id="%s" to see the vacancy name and organisation.
-                2. Call `listBaseResumes` to see available resume templates.
+                1. Call `Get-Application` with id="%s" to see the vacancy name and organization.
+                2. Read `resource://job-apply-tracker/base-resumes` to see available resume templates.
                 3. Ask me which base resume template to use if more than one exists.
-                4. Call `copyResumeToApplication` with the applicationId and the chosen baseResumeId.
+                4. Call `Copy-Resume-To-Application` with the applicationId and the chosen baseResumeId.
                 5. Return the Google Docs link from the response so I can start editing.
                 """.formatted(applicationId, applicationId);
 
         return new GetPromptResult(
-                "Tailor resume for application " + applicationId,
+                "Tailor-Resume for Application " + applicationId,
                 List.of(new PromptMessage(Role.USER, new TextContent(text))));
     }
 
-    @McpPrompt(name = "summarize_pipeline", description = "Produces a human-readable summary of the current job search pipeline")
+    @McpPrompt(name = "Summarize-Pipeline", description = "Produce a human-readable summary of the current job search pipeline")
     public GetPromptResult summarizePipelinePrompt() {
         String text = """
-                Please summarise my current job search pipeline:
+                Please summarize my current job search pipeline:
 
-                1. Call `getPipelineSummary` for aggregate statistics.
-                2. Call `listApplications` (page=0, size=10, sort=createdAt,desc) for recent applications.
-                3. Call `getOverdueApplications` to identify follow-ups needing immediate action.
-                4. Call `getGamificationProfile` to include level and XP.
+                1. Read `resource://job-apply-tracker/pipeline-summary` for aggregate statistics.
+                2. Call `List-Applications` (page=0, size=10, sort=createdAt,desc) for recent applications.
+                3. Call `Get-Overdue-Applications` to identify follow-ups needing immediate action.
+                4. Read `resource://job-apply-tracker/gamification-profile` to include level and XP.
 
                 Report: total applications, status breakdown, interview count, overdue follow-ups,
                 daily/weekly rate, gamification level, XP, and streak.
                 """;
 
         return new GetPromptResult(
-                "Pipeline summary",
+                "Summarize-Pipeline",
                 List.of(new PromptMessage(Role.USER, new TextContent(text))));
     }
 

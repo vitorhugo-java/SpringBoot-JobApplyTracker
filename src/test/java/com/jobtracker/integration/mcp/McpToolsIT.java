@@ -70,20 +70,19 @@ class McpToolsIT extends AbstractIntegrationTest {
               "id": 3,
               "method": "tools/call",
               "params": {
-                "name": "listApplications",
+                "name": "List-Applications",
                 "arguments": {}
               }
             }
             """;
 
-    private static final String GET_PIPELINE_SUMMARY_CALL = """
+    private static final String GET_PIPELINE_SUMMARY_RESOURCE_READ = """
             {
               "jsonrpc": "2.0",
               "id": 4,
-              "method": "tools/call",
+              "method": "resources/read",
               "params": {
-                "name": "getPipelineSummary",
-                "arguments": {}
+                "uri": "resource://job-apply-tracker/pipeline-summary"
               }
             }
             """;
@@ -138,14 +137,14 @@ class McpToolsIT extends AbstractIntegrationTest {
         boolean hasCreateApplication = false;
         for (JsonNode tool : tools) {
             String name = tool.path("name").asText();
-            if ("listApplications".equals(name)) hasListApplications = true;
-            if ("createApplication".equals(name)) hasCreateApplication = true;
+            if ("List-Applications".equals(name)) hasListApplications = true;
+            if ("Create-Application".equals(name)) hasCreateApplication = true;
         }
         assertThat(hasListApplications)
-                .as("Expected 'listApplications' tool in tools/list response")
+                .as("Expected 'List-Applications' tool in tools/list response")
                 .isTrue();
         assertThat(hasCreateApplication)
-                .as("Expected 'createApplication' tool in tools/list response")
+                .as("Expected 'Create-Application' tool in tools/list response")
                 .isTrue();
     }
 
@@ -165,11 +164,11 @@ class McpToolsIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void getPipelineSummaryTool_authenticated_returnsValidResponse() throws Exception {
+    void getPipelineSummaryResource_authenticated_returnsValidResponse() throws Exception {
         MvcResult result = mockMvc.perform(post(MCP_ENDPOINT)
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(GET_PIPELINE_SUMMARY_CALL))
+                        .content(GET_PIPELINE_SUMMARY_RESOURCE_READ))
                 .andExpect(status().isOk())
                 .andReturn();
 
