@@ -1,43 +1,42 @@
 package com.jobtracker.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "app.mcp-oauth")
 public class McpOAuthProperties {
 
-    private String clientId = "";
-    private String clientSecret = "";
-    private List<String> redirectUris = new ArrayList<>();
-    private List<String> scopes = new ArrayList<>();
-    private long accessTokenExpirationSeconds = 900;
-    private long refreshTokenExpirationSeconds = 2592000;
+    @Value("${MCP_CLIENT_ID:}")
+    private String clientId;
+
+    @Value("${MCP_CLIENT_SECRET:}")
+    private String clientSecret;
+
+    @Value("#{'${MCP_REDIRECT_URIS:}'.split(',')}")
+    private List<String> redirectUris;
+
+    @Value("#{'${OPENAI_GPT_SCOPES:}'.split(',')}")
+    private List<String> scopes;
+
+    @Value("${jwt.access-token-expiration-ms}")
+    private long accessTokenExpirationSeconds;
+
+    @Value("${jwt.refresh-token-expiration-ms}")
+    private long refreshTokenExpirationSeconds;
 
     public String getClientId() {
         return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
     }
 
     public String getClientSecret() {
         return clientSecret;
     }
 
-    public void setClientSecret(String clientSecret) {
-        this.clientSecret = clientSecret;
-    }
-
     public List<String> getRedirectUris() {
         return sanitizeList(redirectUris);
-    }
-
-    public void setRedirectUris(List<String> redirectUris) {
-        this.redirectUris = redirectUris;
     }
 
     public List<String> getScopes() {
@@ -46,22 +45,6 @@ public class McpOAuthProperties {
 
     public void setScopes(List<String> scopes) {
         this.scopes = scopes;
-    }
-
-    public long getAccessTokenExpirationSeconds() {
-        return accessTokenExpirationSeconds;
-    }
-
-    public void setAccessTokenExpirationSeconds(long accessTokenExpirationSeconds) {
-        this.accessTokenExpirationSeconds = accessTokenExpirationSeconds;
-    }
-
-    public long getRefreshTokenExpirationSeconds() {
-        return refreshTokenExpirationSeconds;
-    }
-
-    public void setRefreshTokenExpirationSeconds(long refreshTokenExpirationSeconds) {
-        this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
     }
 
     public boolean isConfigured() {
