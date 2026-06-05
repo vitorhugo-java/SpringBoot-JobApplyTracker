@@ -1,12 +1,14 @@
 package com.jobtracker.dto.application;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "Job application details")
 public record ApplicationResponse(
         @Schema(description = "Unique application ID", example = "550e8400-e29b-41d4-a716-446655440000")
@@ -40,6 +42,8 @@ public record ApplicationResponse(
         LocalDateTime recruiterDmSentAt,
         @Schema(description = "Personal notes about this application", example = "Follow up next Monday")
         String note,
+        @Schema(description = "Platform or job board where the vacancy was found", example = "LinkedIn")
+        String platform,
         @Schema(description = "Whether the application is archived", example = "false")
         boolean archived,
         @Schema(description = "Timestamp when application was archived", example = "2024-06-10T09:15:00")

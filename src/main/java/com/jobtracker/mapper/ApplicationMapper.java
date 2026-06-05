@@ -23,6 +23,7 @@ public class ApplicationMapper {
             app.isRecruiterDmReminderEnabled(),
             app.getRecruiterDmSentAt(),
             app.getNote(),
+            app.getPlatform(),
             app.isArchived(),
             app.getArchivedAt(),
             app.getDriveVacancyFolderId(),

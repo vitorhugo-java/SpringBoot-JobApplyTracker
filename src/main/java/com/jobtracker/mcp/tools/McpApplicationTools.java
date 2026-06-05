@@ -128,7 +128,8 @@ public class McpApplicationTools {
             @McpToolParam(required = false, description = "Next follow-up date/time yyyy-MM-ddTHH:mm:ss") String nextStepDateTime,
             @McpToolParam(required = false, description = "Status display name — omit for no status") String status,
             @McpToolParam(required = true, description = "Whether a DM reminder to the recruiter is enabled") Boolean recruiterDmReminderEnabled,
-            @McpToolParam(required = false, description = "Personal notes about this application") String note) {
+            @McpToolParam(required = false, description = "Personal notes about this application") String note,
+            @McpToolParam(required = false, description = "Platform or job board where the vacancy was found, e.g. LinkedIn, Gupy, Indeed, Catho") String platform) {
         return applicationService.create(new ApplicationRequest(
                 vacancyName,
                 recruiterName,
@@ -140,7 +141,8 @@ public class McpApplicationTools {
                 nextStepDateTime != null ? LocalDateTime.parse(nextStepDateTime) : null,
                 status,
                 recruiterDmReminderEnabled != null ? recruiterDmReminderEnabled : Boolean.FALSE,
-                note));
+                note,
+                platform));
     }
 
     @McpTool(
@@ -165,7 +167,8 @@ public class McpApplicationTools {
             @McpToolParam(required = false, description = "Next follow-up date/time yyyy-MM-ddTHH:mm:ss") String nextStepDateTime,
             @McpToolParam(required = false, description = "Status display name") String status,
             @McpToolParam(required = true, description = "Whether a DM reminder to the recruiter is enabled") Boolean recruiterDmReminderEnabled,
-            @McpToolParam(required = false, description = "Personal notes about this application") String note) {
+            @McpToolParam(required = false, description = "Personal notes about this application") String note,
+            @McpToolParam(required = false, description = "Platform or job board where the vacancy was found, e.g. LinkedIn, Gupy, Indeed, Catho") String platform) {
         return applicationService.update(UUID.fromString(id), new ApplicationRequest(
                 vacancyName,
                 recruiterName,
@@ -177,7 +180,8 @@ public class McpApplicationTools {
                 nextStepDateTime != null ? LocalDateTime.parse(nextStepDateTime) : null,
                 status,
                 recruiterDmReminderEnabled != null ? recruiterDmReminderEnabled : Boolean.FALSE,
-                note));
+                note,
+                platform));
     }
 
     @McpTool(

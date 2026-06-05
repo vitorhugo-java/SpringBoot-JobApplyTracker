@@ -2,7 +2,6 @@ package com.jobtracker.repository;
 
 import com.jobtracker.entity.JobApplication;
 import com.jobtracker.entity.enums.ApplicationStatus;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -65,4 +64,11 @@ public interface ApplicationRepository extends JpaRepository<JobApplication, UUI
     @Transactional
     @Query("UPDATE JobApplication a SET a.driveVacancyFolderId = :folderId WHERE a.id = :id AND a.driveVacancyFolderId IS NULL")
     int setDriveVacancyFolderIdIfAbsent(@Param("id") UUID id, @Param("folderId") String folderId);
+
+    @Query("SELECT a FROM JobApplication a WHERE a.user.id = :userId AND a.archived = false AND " +
+           "(LOWER(a.vacancyName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(a.organization) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(a.recruiterName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(a.note) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<JobApplication> searchApplications(@Param("userId") UUID userId, @Param("query") String query, Pageable pageable);
 }

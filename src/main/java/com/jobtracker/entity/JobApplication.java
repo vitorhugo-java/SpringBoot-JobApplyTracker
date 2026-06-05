@@ -63,6 +63,9 @@ public class JobApplication {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "platform", length = 100)
+    private String platform;
+
     @Column(name = "application_created_xp_awarded", nullable = false)
     private boolean applicationCreatedXpAwarded;
 
@@ -161,6 +164,9 @@ public class JobApplication {
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
+
+    public String getPlatform() { return platform; }
+    public void setPlatform(String platform) { this.platform = platform; }
 
     public boolean isApplicationCreatedXpAwarded() { return applicationCreatedXpAwarded; }
     public void setApplicationCreatedXpAwarded(boolean applicationCreatedXpAwarded) { this.applicationCreatedXpAwarded = applicationCreatedXpAwarded; }

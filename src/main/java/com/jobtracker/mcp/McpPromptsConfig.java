@@ -162,6 +162,11 @@ public class McpPromptsConfig {
         return List.of();
     }
 
+    @McpComplete(prompt = McpPromptNames.ANALYZE_JOB_SEARCH)
+    public List<String> completeAnalyzeJobSearch(CompleteArgument argument) {
+        return List.of();
+    }
+
     @McpPrompt(
             name = McpPromptNames.TAILOR_RESUME,
             title = "Tailor Resume",
@@ -203,6 +208,51 @@ public class McpPromptsConfig {
 
         return new GetPromptResult(
                 "Summarize-Pipeline",
+                List.of(new PromptMessage(Role.USER, new TextContent(text))));
+    }
+
+    @McpPrompt(
+            name = McpPromptNames.ANALYZE_JOB_SEARCH,
+            title = "Analyze Job Search",
+            description = "Provides a comprehensive analysis of the user's job search performance with actionable insights")
+    public GetPromptResult analyzeJobSearchPrompt() {
+        String text = """
+                Please perform a comprehensive analysis of my job search performance. Communicate in PT-BR.
+
+                Execute these steps in order:
+                1. Call `Get-Analytics` (no date filters) to retrieve overall statistics.
+                2. Call `Get-Weekly-Summary` to get week-over-week trends.
+                3. Call `Get-Applications-By-Organization` to see pipeline distribution across companies.
+
+                Based on the collected data, produce a structured report with the following sections:
+
+                **Taxa de entrevista geral**
+                Report the overall interview conversion rate (interviewRate). Compare it to a healthy benchmark
+                of 15–25%. Flag if significantly below or above.
+
+                **Comparação semanal**
+                Compare thisWeekApplications vs lastWeekApplications, including weekOverWeekDelta.
+                Highlight whether application volume is growing, declining, or stable.
+                Include thisWeekInterviews and overdueCount with recommended follow-up actions.
+
+                **Empresas sem resposta**
+                From the organization breakdown, list companies with more than 1 application where
+                hasInterview is false and the latest status suggests an early stage (e.g., RH or
+                Aguardando Atualização). These warrant follow-up or deprioritization.
+
+                **Plataformas com melhor/pior conversão**
+                Only if platformBreakdown contains data: identify which platforms appear most frequently
+                and correlate with interview outcomes. Recommend which platforms deserve more focus.
+                Skip this section if no platform data is available.
+
+                **Recomendações acionáveis**
+                Based on the data above, provide 2–3 concrete and specific recommendations, such as:
+                follow up with named companies, increase weekly application volume, diversify platforms,
+                or adjust target role criteria. Be direct and data-driven.
+                """;
+
+        return new GetPromptResult(
+                "Analyze-Job-Search",
                 List.of(new PromptMessage(Role.USER, new TextContent(text))));
     }
 

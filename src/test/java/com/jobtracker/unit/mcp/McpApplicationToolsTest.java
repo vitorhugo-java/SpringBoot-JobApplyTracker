@@ -122,7 +122,8 @@ class McpApplicationToolsTest {
                 "2025-06-10T14:00:00",
                 "RH",
                 Boolean.TRUE,
-                "Follow up Monday");
+                "Follow up Monday",
+                "LinkedIn");
 
         verify(applicationService).create(captor.capture());
         ApplicationRequest req = captor.getValue();
@@ -136,6 +137,7 @@ class McpApplicationToolsTest {
         assertThat(req.status()).isEqualTo("RH");
         assertThat(req.recruiterDmReminderEnabled()).isTrue();
         assertThat(req.note()).isEqualTo("Follow up Monday");
+        assertThat(req.platform()).isEqualTo("LinkedIn");
     }
 
     @Test
@@ -143,7 +145,7 @@ class McpApplicationToolsTest {
         ArgumentCaptor<ApplicationRequest> captor = ArgumentCaptor.forClass(ApplicationRequest.class);
         when(applicationService.create(any())).thenReturn(applicationResponseWithId(UUID.randomUUID()));
 
-        tools.createApplication("Vacancy", null, null, null, null, null, null, null, null, null, null);
+        tools.createApplication("Vacancy", null, null, null, null, null, null, null, null, null, null, null);
 
         verify(applicationService).create(captor.capture());
         ApplicationRequest req = captor.getValue();
@@ -215,6 +217,7 @@ class McpApplicationToolsTest {
                 false, false,
                 null, null, null,
                 false, null, null,
+                null,
                 false, null,
                 null, null, null, null, null,
                 null, null);

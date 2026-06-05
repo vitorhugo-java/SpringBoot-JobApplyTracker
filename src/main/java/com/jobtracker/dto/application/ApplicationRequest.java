@@ -50,5 +50,8 @@ public record ApplicationRequest(
         Boolean recruiterDmReminderEnabled,
 
         @Schema(description = "Personal notes about this application", example = "Follow up next Monday")
-        String note
+        String note,
+
+        @Schema(description = "Platform or job board where the vacancy was found", example = "LinkedIn")
+        String platform
 ) {}

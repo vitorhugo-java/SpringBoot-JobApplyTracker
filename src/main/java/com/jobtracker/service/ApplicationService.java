@@ -221,6 +221,7 @@ public class ApplicationService {
         applyStatusChange(app, resolveStatus(request.status()));
         app.setRecruiterDmReminderEnabled(Boolean.TRUE.equals(request.recruiterDmReminderEnabled()));
         app.setNote(normalizeOptionalText(request.note()));
+        app.setPlatform(request.platform());
     }
 
     private void applyStatusChange(JobApplication app, ApplicationStatus newStatus) {

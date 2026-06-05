@@ -178,7 +178,8 @@ class ApplicationServiceTest {
                 null,
                 null,
                 false,
-                "Follow up this week"
+                "Follow up this week",
+                null
         );
         when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
         when(applicationRepository.findByIdAndUserId(APP_UUID, USER_UUID)).thenReturn(Optional.of(app));
@@ -350,14 +351,14 @@ class ApplicationServiceTest {
         return new ApplicationRequest(
             "Software Engineer", "Recruiter", "HR",
             "https://example.com/job", LocalDate.now(),
-            false, false, null, "RH", false, "Follow up this week"
+            false, false, null, "RH", false, "Follow up this week", null
         );
     }
 
     private ApplicationResponse buildApplicationResponse(UUID id) {
         return new ApplicationResponse(id, "Software Engineer", "Recruiter", "HR",
                 "https://example.com/job", LocalDate.now(), false, false, null, "RH", null,
-                false, LocalDateTime.now(), "Follow up this week", false, null, null, null, null, null, null,
+                false, LocalDateTime.now(), "Follow up this week", null, false, null, null, null, null, null, null,
                 LocalDateTime.now(), LocalDateTime.now());
     }
 }
