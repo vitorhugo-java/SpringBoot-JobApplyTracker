@@ -9,6 +9,7 @@ import com.jobtracker.entity.enums.ApplicationStatus;
 import com.jobtracker.mapper.ApplicationMapper;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.service.ApplicationService;
+import com.jobtracker.service.InterviewMetricsService;
 import com.jobtracker.util.SecurityUtils;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
@@ -33,16 +34,37 @@ public class McpAnalyticsTools {
     private final ApplicationRepository applicationRepository;
     private final ApplicationMapper applicationMapper;
     private final ApplicationService applicationService;
+    private final InterviewMetricsService interviewMetricsService;
     private final SecurityUtils securityUtils;
 
     public McpAnalyticsTools(ApplicationRepository applicationRepository,
                               ApplicationMapper applicationMapper,
                               ApplicationService applicationService,
+                              InterviewMetricsService interviewMetricsService,
                               SecurityUtils securityUtils) {
         this.applicationRepository = applicationRepository;
         this.applicationMapper = applicationMapper;
         this.applicationService = applicationService;
+        this.interviewMetricsService = interviewMetricsService;
         this.securityUtils = securityUtils;
+    }
+
+    @McpTool(
+            name = "Update-Interview-Count",
+            title = "Update Interview Count",
+            description = "Manually sets the cumulative interview count for the current user. Use this when the automatic counter missed interviews or needs correction.",
+            annotations = @McpAnnotations(
+                    title = "Update Interview Count",
+                    readOnlyHint = false,
+                    destructiveHint = false,
+                    idempotentHint = true,
+                    openWorldHint = false))
+    @Transactional
+    public String updateInterviewCount(
+            @McpToolParam(required = true, description = "The new total interview count (must be >= 0)") long count) {
+        UUID userId = securityUtils.getCurrentUserId();
+        interviewMetricsService.setInterviewCount(userId, count);
+        return "Interview count updated to " + count;
     }
 
     @McpTool(

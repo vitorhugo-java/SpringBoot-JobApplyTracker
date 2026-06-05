@@ -7,6 +7,7 @@ import com.jobtracker.entity.UserInterviewMetrics;
 import com.jobtracker.entity.enums.ApplicationStatus;
 import com.jobtracker.repository.InterviewEventRepository;
 import com.jobtracker.repository.UserInterviewMetricsRepository;
+import com.jobtracker.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,11 +30,14 @@ public class InterviewMetricsService {
 
     private final UserInterviewMetricsRepository metricsRepository;
     private final InterviewEventRepository eventRepository;
+    private final UserRepository userRepository;
 
     public InterviewMetricsService(UserInterviewMetricsRepository metricsRepository,
-                                   InterviewEventRepository eventRepository) {
+                                   InterviewEventRepository eventRepository,
+                                   UserRepository userRepository) {
         this.metricsRepository = metricsRepository;
         this.eventRepository = eventRepository;
+        this.userRepository = userRepository;
     }
 
     public boolean isInterviewStatus(String status) {
@@ -75,6 +79,21 @@ public class InterviewMetricsService {
         event.setNewStatus(newStatus);
         event.setOccurredAt(LocalDateTime.now());
         eventRepository.save(event);
+    }
+
+    @Transactional
+    public void setInterviewCount(UUID userId, long count) {
+        if (count < 0) throw new IllegalArgumentException("Interview count cannot be negative");
+        UserInterviewMetrics metrics = metricsRepository.findByUser_Id(userId)
+                .orElseGet(() -> {
+                    User user = userRepository.getReferenceById(userId);
+                    UserInterviewMetrics created = new UserInterviewMetrics();
+                    created.setUser(user);
+                    created.setInterviewCount(0);
+                    return created;
+                });
+        metrics.setInterviewCount(count);
+        metricsRepository.save(metrics);
     }
 
     @Transactional(readOnly = true)
