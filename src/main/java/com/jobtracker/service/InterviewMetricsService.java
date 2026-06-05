@@ -61,6 +61,8 @@ public class InterviewMetricsService {
             return;
         }
 
+        application.setInterviewCount(application.getInterviewCount() + 1);
+
         InterviewEvent event = new InterviewEvent();
         event.setUser(application.getUser());
         event.setApplication(application);

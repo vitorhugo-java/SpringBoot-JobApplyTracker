@@ -179,6 +179,7 @@ class ApplicationServiceTest {
                 null,
                 false,
                 "Follow up this week",
+                null,
                 null
         );
         when(securityUtils.getCurrentUserId()).thenReturn(USER_UUID);
@@ -351,7 +352,7 @@ class ApplicationServiceTest {
         return new ApplicationRequest(
             "Software Engineer", "Recruiter", "HR",
             "https://example.com/job", LocalDate.now(),
-            false, false, null, "RH", false, "Follow up this week", null
+            false, false, null, "RH", false, "Follow up this week", null, null
         );
     }
 
@@ -359,6 +360,6 @@ class ApplicationServiceTest {
         return new ApplicationResponse(id, "Software Engineer", "Recruiter", "HR",
                 "https://example.com/job", LocalDate.now(), false, false, null, "RH", null,
                 false, LocalDateTime.now(), "Follow up this week", null, false, null, null, null, null, null, null,
-                LocalDateTime.now(), LocalDateTime.now());
+                0, LocalDateTime.now(), LocalDateTime.now());
     }
 }

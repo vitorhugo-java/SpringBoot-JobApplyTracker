@@ -2,32 +2,28 @@ package com.jobtracker.unit;
 
 import com.jobtracker.entity.JobApplication;
 import com.jobtracker.entity.User;
-import com.jobtracker.entity.UserInterviewMetrics;
 import com.jobtracker.entity.enums.ApplicationStatus;
+import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.InterviewEventRepository;
-import com.jobtracker.repository.UserInterviewMetricsRepository;
 import com.jobtracker.service.InterviewMetricsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InterviewMetricsServiceTest {
 
     @Mock
-    private UserInterviewMetricsRepository metricsRepository;
+    private ApplicationRepository applicationRepository;
 
     @Mock
     private InterviewEventRepository eventRepository;
@@ -35,11 +31,10 @@ class InterviewMetricsServiceTest {
     private InterviewMetricsService service;
     private User user;
     private JobApplication application;
-    private UserInterviewMetrics metrics;
 
     @BeforeEach
     void setUp() {
-        service = new InterviewMetricsService(metricsRepository, eventRepository);
+        service = new InterviewMetricsService(applicationRepository, eventRepository);
 
         user = new User();
         user.setId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
@@ -47,10 +42,6 @@ class InterviewMetricsServiceTest {
         application = new JobApplication();
         application.setId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
         application.setUser(user);
-
-        metrics = new UserInterviewMetrics();
-        metrics.setUser(user);
-        metrics.setInterviewCount(2);
     }
 
     @Test
@@ -72,35 +63,27 @@ class InterviewMetricsServiceTest {
     }
 
     @Test
-    void recordStatusTransition_shouldIncrementAndLogWhenEnteringInterviewStatus() {
-        when(metricsRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(metrics));
-
+    void recordStatusTransition_shouldIncrementCountAndLogEventWhenEnteringInterviewStatus() {
         service.recordStatusTransition(application, ApplicationStatus.RH, ApplicationStatus.TESTE_TECNICO);
 
-        assertThat(metrics.getInterviewCount()).isEqualTo(3);
-        verify(metricsRepository).save(metrics);
+        assertThat(application.getInterviewCount()).isEqualTo(1);
         verify(eventRepository).save(any());
     }
 
     @Test
-    void recordStatusTransition_shouldCreateMetricsWhenMissing() {
-        when(metricsRepository.findByUser_Id(user.getId())).thenReturn(Optional.empty());
-        when(metricsRepository.save(any(UserInterviewMetrics.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        service.recordStatusTransition(application, ApplicationStatus.RH, ApplicationStatus.TESTE_TECNICO);
-
-        ArgumentCaptor<UserInterviewMetrics> metricsCaptor = ArgumentCaptor.forClass(UserInterviewMetrics.class);
-        verify(metricsRepository).save(metricsCaptor.capture());
-        assertThat(metricsCaptor.getAllValues().getLast().getInterviewCount()).isEqualTo(1);
-        verify(eventRepository).save(any());
-    }
-
-    @Test
-    void recordStatusTransition_shouldNotDoubleCountRepeatedSavesOrInterviewFlowMoves() {
-        service.recordStatusTransition(application, ApplicationStatus.TESTE_TECNICO, ApplicationStatus.TESTE_TECNICO);
+    void recordStatusTransition_shouldNotIncrementWhenStayingWithinInterviewStatuses() {
         service.recordStatusTransition(application, ApplicationStatus.TESTE_TECNICO, ApplicationStatus.RH_NEGOCIACAO);
 
-        verify(metricsRepository, never()).save(any());
+        assertThat(application.getInterviewCount()).isEqualTo(0);
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    void recordStatusTransition_shouldNotIncrementForNonInterviewTransitions() {
+        service.recordStatusTransition(application, ApplicationStatus.TESTE_TECNICO, ApplicationStatus.TESTE_TECNICO);
+        service.recordStatusTransition(application, ApplicationStatus.RH, ApplicationStatus.REJEITADO);
+
+        assertThat(application.getInterviewCount()).isEqualTo(0);
         verify(eventRepository, never()).save(any());
     }
 }

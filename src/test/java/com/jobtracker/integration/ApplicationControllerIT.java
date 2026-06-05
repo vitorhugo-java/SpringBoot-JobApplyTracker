@@ -294,7 +294,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         ApplicationRequest createRequest = new ApplicationRequest(
                 "Gamified App", "Recruiter", "Org",
                 "https://example.com/job", LocalDate.now(),
-                false, false, null, "RH", false, null, null
+                false, false, null, "RH", false, null, null, null
         );
 
         MvcResult createResult = mockMvc.perform(post("/api/v1/applications")
@@ -339,7 +339,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         ApplicationRequest addNoteRequest = new ApplicationRequest(
                 "Gamified App", "Recruiter", "Org",
                 "https://example.com/job", LocalDate.now(),
-                false, false, null, "Teste Técnico", false, "First note", null
+                false, false, null, "Teste Técnico", false, "First note", null, null
         );
 
         mockMvc.perform(put("/api/v1/applications/{id}", id)
@@ -352,7 +352,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         ApplicationRequest updateNoteRequest = new ApplicationRequest(
                 "Gamified App", "Recruiter", "Org",
                 "https://example.com/job", LocalDate.now(),
-                false, false, null, "Teste Técnico", false, "Edited note", null
+                false, false, null, "Teste Técnico", false, "Edited note", null, null
         );
 
         mockMvc.perform(put("/api/v1/applications/{id}", id)
@@ -382,7 +382,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         return new ApplicationRequest(
                 vacancyName, "Some Recruiter", "HR Department",
                 "https://example.com/job", LocalDate.now().minusDays(1),
-                false, false, null, "RH", false, "Remember to follow up", null
+                false, false, null, "RH", false, "Remember to follow up", null, null
         );
     }
 }
