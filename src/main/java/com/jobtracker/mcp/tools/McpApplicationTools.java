@@ -142,7 +142,8 @@ public class McpApplicationTools {
                 status,
                 recruiterDmReminderEnabled != null ? recruiterDmReminderEnabled : Boolean.FALSE,
                 note,
-                platform));
+                platform,
+                null));
     }
 
     @McpTool(
@@ -181,7 +182,8 @@ public class McpApplicationTools {
                 status,
                 recruiterDmReminderEnabled != null ? recruiterDmReminderEnabled : Boolean.FALSE,
                 note,
-                platform));
+                platform,
+                null));
     }
 
     @McpTool(
