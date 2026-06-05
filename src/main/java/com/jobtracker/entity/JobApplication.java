@@ -43,6 +43,9 @@ public class JobApplication {
     @Column(name = "interview_scheduled", nullable = false)
     private boolean interviewScheduled;
 
+    @Column(name = "interview_count", nullable = false)
+    private int interviewCount = 0;
+
     @Column(name = "next_step_date_time")
     private LocalDateTime nextStepDateTime;
 
@@ -146,6 +149,9 @@ public class JobApplication {
 
     public boolean isInterviewScheduled() { return interviewScheduled; }
     public void setInterviewScheduled(boolean interviewScheduled) { this.interviewScheduled = interviewScheduled; }
+
+    public int getInterviewCount() { return interviewCount; }
+    public void setInterviewCount(int interviewCount) { this.interviewCount = interviewCount; }
 
     public LocalDateTime getNextStepDateTime() { return nextStepDateTime; }
     public void setNextStepDateTime(LocalDateTime nextStepDateTime) { this.nextStepDateTime = nextStepDateTime; }

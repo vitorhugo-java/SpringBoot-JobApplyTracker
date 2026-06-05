@@ -23,6 +23,9 @@ public interface ApplicationRepository extends JpaRepository<JobApplication, UUI
 
     long countByUserIdAndArchivedFalse(UUID userId);
 
+    @Query("SELECT COALESCE(SUM(a.interviewCount), 0) FROM JobApplication a WHERE a.user.id = :userId AND a.archived = false")
+    long sumInterviewCountByUserId(@Param("userId") UUID userId);
+
     long countByUserIdAndInterviewScheduledTrueAndArchivedFalse(UUID userId);
 
     @Query("SELECT COUNT(a) FROM JobApplication a WHERE a.user.id = :userId AND a.status = :status AND a.archived = false")

@@ -31,6 +31,7 @@ public class ApplicationMapper {
             app.getDriveResumeFileName(),
             app.getDriveResumeDocumentUrl(),
             app.getDriveResumeGeneratedAt(),
+            app.getInterviewCount(),
             app.getCreatedAt(),
             app.getUpdatedAt()
         );

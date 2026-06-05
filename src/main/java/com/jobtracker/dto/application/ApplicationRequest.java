@@ -2,6 +2,7 @@ package com.jobtracker.dto.application;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
@@ -53,5 +54,9 @@ public record ApplicationRequest(
         String note,
 
         @Schema(description = "Platform or job board where the vacancy was found", example = "LinkedIn")
-        String platform
+        String platform,
+
+        @Schema(description = "Number of interviews held for this application", example = "2")
+        @Min(0)
+        Integer interviewCount
 ) {}

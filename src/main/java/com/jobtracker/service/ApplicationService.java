@@ -222,6 +222,9 @@ public class ApplicationService {
         app.setRecruiterDmReminderEnabled(Boolean.TRUE.equals(request.recruiterDmReminderEnabled()));
         app.setNote(normalizeOptionalText(request.note()));
         app.setPlatform(request.platform());
+        if (request.interviewCount() != null) {
+            app.setInterviewCount(request.interviewCount());
+        }
     }
 
     private void applyStatusChange(JobApplication app, ApplicationStatus newStatus) {

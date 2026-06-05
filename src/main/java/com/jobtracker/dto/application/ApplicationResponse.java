@@ -60,6 +60,8 @@ public record ApplicationResponse(
         @Schema(description = "Timestamp when the latest Google Docs resume was generated", example = "2024-06-11T14:45:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime driveResumeGeneratedAt,
+        @Schema(description = "Number of interviews held for this application", example = "2")
+        int interviewCount,
         @Schema(description = "Record creation timestamp", example = "2024-06-01T10:00:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime createdAt,
