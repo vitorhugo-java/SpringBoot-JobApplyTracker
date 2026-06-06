@@ -7,6 +7,7 @@ import com.jobtracker.dto.application.MarkDmSentRequest;
 import com.jobtracker.dto.application.UpdateReminderRequest;
 import com.jobtracker.dto.application.UpdateStatusRequest;
 import com.jobtracker.service.ApplicationService;
+import com.jobtracker.service.ToolMetricsCollector;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -14,16 +15,21 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Component
 public class McpApplicationTools {
 
     private final ApplicationService applicationService;
+    private final ToolMetricsCollector metricsCollector;
 
-    public McpApplicationTools(ApplicationService applicationService) {
+    public McpApplicationTools(ApplicationService applicationService,
+                               ToolMetricsCollector metricsCollector) {
         this.applicationService = applicationService;
+        this.metricsCollector = metricsCollector;
     }
 
     // --- Read tools ---
@@ -49,17 +55,17 @@ public class McpApplicationTools {
             @McpToolParam(required = false, description = "Page size (default 20)") Integer size,
             @McpToolParam(required = false, description = "Sort field,direction e.g. createdAt,desc") String sort) {
         LocalDate from = applicationDateFrom != null ? LocalDate.parse(applicationDateFrom) : null;
-        LocalDate to = applicationDateTo != null ? LocalDate.parse(applicationDateTo) : null;
-        return applicationService.getAll(
-                status,
-                recruiterName,
-                from, to,
-                interviewScheduled,
-                null,
-                archived,
-                page != null ? page : 0,
-                size != null ? size : 20,
-                sort != null ? sort : "createdAt,desc");
+        LocalDate to   = applicationDateTo   != null ? LocalDate.parse(applicationDateTo)   : null;
+        int       p    = page != null ? page : 0;
+        int       s    = size != null ? size : 20;
+        String    so   = sort != null ? sort : "createdAt,desc";
+
+        return metricsCollector.measure(
+                "List-Applications",
+                params("status", status, "recruiterName", recruiterName,
+                        "from", applicationDateFrom, "to", applicationDateTo,
+                        "page", p, "size", s, "sort", so),
+                () -> applicationService.getAll(status, recruiterName, from, to, interviewScheduled, null, archived, p, s, so));
     }
 
     @McpTool(
@@ -74,7 +80,10 @@ public class McpApplicationTools {
                     openWorldHint = false))
     public ApplicationResponse getApplication(
             @McpToolParam(required = true, description = "Application UUID") String id) {
-        return applicationService.getById(UUID.fromString(id));
+        return metricsCollector.measure(
+                "Get-Application",
+                params("id", id),
+                () -> applicationService.getById(UUID.fromString(id)));
     }
 
     @McpTool(
@@ -88,7 +97,10 @@ public class McpApplicationTools {
                     idempotentHint = true,
                     openWorldHint = false))
     public List<ApplicationResponse> getUpcomingApplications() {
-        return applicationService.getUpcoming();
+        return metricsCollector.measure(
+                "Get-Upcoming-Applications",
+                null,
+                applicationService::getUpcoming);
     }
 
     @McpTool(
@@ -102,7 +114,10 @@ public class McpApplicationTools {
                     idempotentHint = true,
                     openWorldHint = false))
     public List<ApplicationResponse> getOverdueApplications() {
-        return applicationService.getOverdue();
+        return metricsCollector.measure(
+                "Get-Overdue-Applications",
+                null,
+                applicationService::getOverdue);
     }
 
     // --- Write tools ---
@@ -130,20 +145,16 @@ public class McpApplicationTools {
             @McpToolParam(required = true, description = "Whether a DM reminder to the recruiter is enabled") Boolean recruiterDmReminderEnabled,
             @McpToolParam(required = false, description = "Personal notes about this application") String note,
             @McpToolParam(required = false, description = "Platform or job board where the vacancy was found, e.g. LinkedIn, Gupy, Indeed, Catho") String platform) {
-        return applicationService.create(new ApplicationRequest(
-                vacancyName,
-                recruiterName,
-                organization,
-                vacancyLink,
+        ApplicationRequest request = new ApplicationRequest(
+                vacancyName, recruiterName, organization, vacancyLink,
                 applicationDate != null ? LocalDate.parse(applicationDate) : null,
                 rhAcceptedConnection != null ? rhAcceptedConnection : Boolean.FALSE,
                 interviewScheduled != null ? interviewScheduled : Boolean.FALSE,
                 nextStepDateTime != null ? LocalDateTime.parse(nextStepDateTime) : null,
                 status,
                 recruiterDmReminderEnabled != null ? recruiterDmReminderEnabled : Boolean.FALSE,
-                note,
-                platform,
-                null));
+                note, platform, null);
+        return metricsCollector.measure("Create-Application", request, () -> applicationService.create(request));
     }
 
     @McpTool(
@@ -170,20 +181,19 @@ public class McpApplicationTools {
             @McpToolParam(required = true, description = "Whether a DM reminder to the recruiter is enabled") Boolean recruiterDmReminderEnabled,
             @McpToolParam(required = false, description = "Personal notes about this application") String note,
             @McpToolParam(required = false, description = "Platform or job board where the vacancy was found, e.g. LinkedIn, Gupy, Indeed, Catho") String platform) {
-        return applicationService.update(UUID.fromString(id), new ApplicationRequest(
-                vacancyName,
-                recruiterName,
-                organization,
-                vacancyLink,
+        ApplicationRequest request = new ApplicationRequest(
+                vacancyName, recruiterName, organization, vacancyLink,
                 applicationDate != null ? LocalDate.parse(applicationDate) : null,
                 rhAcceptedConnection != null ? rhAcceptedConnection : Boolean.FALSE,
                 interviewScheduled != null ? interviewScheduled : Boolean.FALSE,
                 nextStepDateTime != null ? LocalDateTime.parse(nextStepDateTime) : null,
                 status,
                 recruiterDmReminderEnabled != null ? recruiterDmReminderEnabled : Boolean.FALSE,
-                note,
-                platform,
-                null));
+                note, platform, null);
+        return metricsCollector.measure(
+                "Update-Application",
+                params("id", id, "request", request),
+                () -> applicationService.update(UUID.fromString(id), request));
     }
 
     @McpTool(
@@ -199,7 +209,10 @@ public class McpApplicationTools {
     public ApplicationResponse updateApplicationStatus(
             @McpToolParam(required = true, description = "Application UUID") String id,
             @McpToolParam(required = true, description = "New status display name") String status) {
-        return applicationService.updateStatus(UUID.fromString(id), new UpdateStatusRequest(status));
+        return metricsCollector.measure(
+                "Update-Application-Status",
+                params("id", id, "status", status),
+                () -> applicationService.updateStatus(UUID.fromString(id), new UpdateStatusRequest(status)));
     }
 
     @McpTool(
@@ -215,7 +228,10 @@ public class McpApplicationTools {
     public void updateApplicationReminder(
             @McpToolParam(required = true, description = "Application UUID") String id,
             @McpToolParam(required = true, description = "true to enable the DM reminder, false to disable it") boolean enabled) {
-        applicationService.updateReminder(UUID.fromString(id), new UpdateReminderRequest(enabled));
+        metricsCollector.measure(
+                "Update-Application-Reminder",
+                params("id", id, "enabled", enabled),
+                () -> { applicationService.updateReminder(UUID.fromString(id), new UpdateReminderRequest(enabled)); return null; });
     }
 
     @McpTool(
@@ -230,7 +246,10 @@ public class McpApplicationTools {
                     openWorldHint = false))
     public void markRecruiterDmSent(
             @McpToolParam(required = true, description = "Application UUID") String id) {
-        applicationService.markDmSent(UUID.fromString(id), new MarkDmSentRequest());
+        metricsCollector.measure(
+                "Mark-Recruiter-DM-Sent",
+                params("id", id),
+                () -> { applicationService.markDmSent(UUID.fromString(id), new MarkDmSentRequest()); return null; });
     }
 
     @McpTool(
@@ -245,7 +264,10 @@ public class McpApplicationTools {
                     openWorldHint = false))
     public void archiveApplication(
             @McpToolParam(required = true, description = "Application UUID") String id) {
-        applicationService.archive(UUID.fromString(id));
+        metricsCollector.measure(
+                "Archive-Application",
+                params("id", id),
+                () -> { applicationService.archive(UUID.fromString(id)); return null; });
     }
 
     @McpTool(
@@ -260,6 +282,22 @@ public class McpApplicationTools {
                     openWorldHint = false))
     public void deleteApplication(
             @McpToolParam(required = true, description = "Application UUID") String id) {
-        applicationService.delete(UUID.fromString(id));
+        metricsCollector.measure(
+                "Delete-Application",
+                params("id", id),
+                () -> { applicationService.delete(UUID.fromString(id)); return null; });
+    }
+
+    // --- helpers ---
+
+    /** Builds a null-safe parameter map for use as the request descriptor in measure(). */
+    private static Map<String, Object> params(Object... kvPairs) {
+        var map = new LinkedHashMap<String, Object>();
+        for (int i = 0; i + 1 < kvPairs.length; i += 2) {
+            if (kvPairs[i + 1] != null) {
+                map.put(kvPairs[i].toString(), kvPairs[i + 1]);
+            }
+        }
+        return map;
     }
 }
