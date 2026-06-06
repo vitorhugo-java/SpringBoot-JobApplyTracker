@@ -143,20 +143,20 @@ class GoogleDriveServiceTest {
     }
 
     @Test
-    void addBaseResume_shouldRejectNonGoogleDocsFiles() {
+    void addBaseResume_shouldRejectUnsupportedFileTypes() {
         when(securityUtils.getCurrentUserId()).thenReturn(USER_ID);
         when(connectionRepository.findByUserId(USER_ID)).thenReturn(Optional.of(connection));
         when(googleDriveApiClient.getFileMetadata("access-token", "not-a-doc"))
                 .thenReturn(new GoogleDriveApiClient.DriveFileMetadata(
                         "not-a-doc",
-                        "Resume.pdf",
-                        "application/pdf",
+                        "Resume.docx",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         null
                 ));
 
         assertThatThrownBy(() -> googleDriveService.addBaseResume(new GoogleDriveBaseResumeRequest("not-a-doc", null, false)))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Only Google Docs base resumes are supported");
+                .hasMessageContaining("Only Google Docs documents and PDF files are supported");
     }
 
     @Test

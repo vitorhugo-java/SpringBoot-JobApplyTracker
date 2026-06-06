@@ -31,7 +31,7 @@ class McpResumeContentResourcesTest {
     @Test
     void baseResumeContent_readsRequestedResourceAndReturnsText() {
         UUID resumeId = UUID.randomUUID();
-        BaseResumeContentResponse response = new BaseResumeContentResponse(resumeId, "Base CV", "EN", true, "base-text");
+        BaseResumeContentResponse response = new BaseResumeContentResponse(resumeId, "Base CV", "EN", true, false, "base-text");
         when(resumeGenerationService.getBaseResumeContent(resumeId)).thenReturn(response);
 
         String result = baseResumeContentResource.baseResumeContent(resumeId.toString());

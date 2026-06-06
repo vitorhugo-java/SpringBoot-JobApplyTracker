@@ -236,20 +236,20 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void addBaseResume_shouldRejectNonGoogleDocsFile() throws Exception {
+    void addBaseResume_shouldRejectUnsupportedFileType() throws Exception {
         googleDriveConnectionRepository.save(buildConnection());
-        googleDriveApiClient.fileMetadataById.put("pdf-file",
+        googleDriveApiClient.fileMetadataById.put("docx-file",
                 new GoogleDriveApiClient.DriveFileMetadata(
-                        "pdf-file",
-                        "Resume.pdf",
-                        "application/pdf",
+                        "docx-file",
+                        "Resume.docx",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         null
                 ));
 
         mockMvc.perform(post("/api/v1/google-drive/base-resumes")
                         .header("Authorization", "Bearer " + betaAccessToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"documentIdOrUrl\":\"pdf-file\"}"))
+                        .content("{\"documentIdOrUrl\":\"docx-file\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -670,6 +670,11 @@ class GoogleDriveControllerIT extends AbstractIntegrationTest {
         @Override
         public DriveFileMetadata exportGoogleDocAsPdf(String accessToken, String documentId, String targetFolderId, String pdfName) {
             return new DriveFileMetadata("pdf-file", pdfName, "application/pdf", null);
+        }
+
+        @Override
+        public byte[] downloadFileBytes(String accessToken, String fileId) {
+            return new byte[0];
         }
     }
 }
