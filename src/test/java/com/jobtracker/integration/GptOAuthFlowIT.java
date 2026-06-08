@@ -223,7 +223,7 @@ class GptOAuthFlowIT extends AbstractIntegrationTest {
     }
 
     private AuthResponse registerUser(String email, String password) throws Exception {
-        RegisterRequest request = new RegisterRequest("GPT User", email, password, password);
+        RegisterRequest request = new RegisterRequest("GPT User", email, password, password, true);
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

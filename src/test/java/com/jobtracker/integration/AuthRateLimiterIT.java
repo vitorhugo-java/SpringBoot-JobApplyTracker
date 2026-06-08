@@ -25,7 +25,7 @@ class AuthRateLimiterIT extends AbstractIntegrationTest {
 
     @Test
     void login_shouldReturn429_whenRateLimitIsExceeded() throws Exception {
-        RegisterRequest registerRequest = new RegisterRequest("Rate Limit User", "ratelimit@example.com", "pass1234", "pass1234");
+        RegisterRequest registerRequest = new RegisterRequest("Rate Limit User", "ratelimit@example.com", "pass1234", "pass1234", true);
         LoginRequest loginRequest = new LoginRequest("ratelimit@example.com", "pass1234");
 
         mockMvc.perform(post("/api/v1/auth/register")

@@ -59,7 +59,7 @@ class McpAuthIT extends AbstractIntegrationTest {
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
 
-        RegisterRequest reg = new RegisterRequest("MCP Test User", "mcp-test@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("MCP Test User", "mcp-test@example.com", "pass1234", "pass1234", true);
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))

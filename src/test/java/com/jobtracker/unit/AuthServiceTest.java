@@ -56,7 +56,7 @@ class AuthServiceTest {
 
     @Test
     void register_shouldReturnAuthResponse_whenValidRequest() {
-        RegisterRequest request = new RegisterRequest("John", "john@example.com", "pass1234", "pass1234");
+        RegisterRequest request = new RegisterRequest("John", "john@example.com", "pass1234", "pass1234", true);
         User savedUser = buildUser(USER_UUID, "john@example.com");
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
@@ -71,7 +71,7 @@ class AuthServiceTest {
                 "john@example.com",
                 LocalTime.of(9, 0),
                 Set.of("USER"),
-                false));
+                false, true));
 
         AuthResponse result = authService.register(request);
 
@@ -85,7 +85,7 @@ class AuthServiceTest {
 
     @Test
     void register_shouldThrow_whenPasswordsDoNotMatch() {
-        RegisterRequest request = new RegisterRequest("John", "john@example.com", "pass1234", "different");
+        RegisterRequest request = new RegisterRequest("John", "john@example.com", "pass1234", "different", true);
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Passwords do not match");
@@ -93,7 +93,7 @@ class AuthServiceTest {
 
     @Test
     void register_shouldThrow_whenEmailAlreadyExists() {
-        RegisterRequest request = new RegisterRequest("John", "john@example.com", "pass1234", "pass1234");
+        RegisterRequest request = new RegisterRequest("John", "john@example.com", "pass1234", "pass1234", true);
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(ConflictException.class)
@@ -115,7 +115,7 @@ class AuthServiceTest {
                 "john@example.com",
                 LocalTime.of(9, 0),
                 Set.of("USER"),
-                false));
+                false, true));
 
         AuthResponse result = authService.login(request);
 
