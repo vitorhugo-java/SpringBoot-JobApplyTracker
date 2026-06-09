@@ -4,8 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.RegisterRequest;
 import com.jobtracker.integration.AbstractIntegrationTest;
+import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.GoogleDriveConnectionRepository;
+import com.jobtracker.repository.InterviewEventRepository;
+import com.jobtracker.repository.PasswordResetTokenRepository;
 import com.jobtracker.repository.RefreshTokenRepository;
+import com.jobtracker.repository.UserAchievementRepository;
+import com.jobtracker.repository.UserGamificationRepository;
+import com.jobtracker.repository.UserInterviewMetricsRepository;
 import com.jobtracker.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +56,12 @@ class McpAuthIT extends AbstractIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
     @Autowired private GoogleDriveConnectionRepository googleDriveConnectionRepository;
+    @Autowired private InterviewEventRepository interviewEventRepository;
+    @Autowired private UserInterviewMetricsRepository userInterviewMetricsRepository;
+    @Autowired private ApplicationRepository applicationRepository;
+    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired private UserAchievementRepository userAchievementRepository;
+    @Autowired private UserGamificationRepository userGamificationRepository;
 
     private String accessToken;
 
@@ -57,6 +69,8 @@ class McpAuthIT extends AbstractIntegrationTest {
     void setUp() throws Exception {
         googleDriveConnectionRepository.deleteAll();
         refreshTokenRepository.deleteAll();
+        interviewEventRepository.deleteAll();
+        userInterviewMetricsRepository.deleteAll();
         userRepository.deleteAll();
 
         RegisterRequest reg = new RegisterRequest("MCP Test User", "mcp-test@example.com", "pass1234", "pass1234", true);
