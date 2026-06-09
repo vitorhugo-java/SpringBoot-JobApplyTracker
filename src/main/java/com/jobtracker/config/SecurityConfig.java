@@ -83,7 +83,7 @@ public class SecurityConfig {
                                 "/.well-known/oauth-protected-resource",
                                 "/.well-known/oauth-protected-resource/**",
                                 "/.well-known/oauth-authorization-server/**").permitAll()
-                        .requestMatchers("/connect/register").denyAll()
+                        .requestMatchers("/connect/register").permitAll()
                         .requestMatchers("/mcp", "/mcp/**").authenticated()
                         .requestMatchers("/api/v1/**").authenticated()
                         .anyRequest().authenticated())

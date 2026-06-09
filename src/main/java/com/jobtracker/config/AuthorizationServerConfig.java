@@ -100,7 +100,6 @@ public class AuthorizationServerConfig {
                 .securityMatcher(authServerMatcher)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login", "/default-ui.css").permitAll()
-                        .requestMatchers("/connect/register").denyAll()
                         .anyRequest().authenticated())
                 .with(authorizationServerConfigurer, authorizationServer -> authorizationServer
                         .oidc(oidc -> oidc
