@@ -6,15 +6,19 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.web.client.RestClient;
 
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -56,6 +60,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.UUID;
@@ -122,9 +127,35 @@ public class AuthorizationServerConfig {
         return http.build();
     }
 
-    @Bean
-    public RegisteredClientRepository registeredClientRepository(JdbcOperations jdbcOperations) {
+    @Bean(name = "jdbcRegisteredClientRepository")
+    public RegisteredClientRepository jdbcRegisteredClientRepository(JdbcOperations jdbcOperations) {
         return new JdbcRegisteredClientRepository(jdbcOperations);
+    }
+
+    /**
+     * Primary {@link RegisteredClientRepository}: adds CIMD (Client ID Metadata Document) support
+     * on top of the persistent JDBC repository. URL client IDs are resolved as ephemeral CIMD
+     * clients; all other lookups (bootstrap clients, DCR-registered clients) delegate to JDBC.
+     */
+    @Bean
+    @Primary
+    public RegisteredClientRepository registeredClientRepository(
+            @Qualifier("jdbcRegisteredClientRepository") RegisteredClientRepository jdbcRegisteredClientRepository,
+            McpOAuthProperties mcpOAuthProperties,
+            @Qualifier("cimdRestClient") RestClient cimdRestClient) {
+        return new CimdRegisteredClientRepository(jdbcRegisteredClientRepository, mcpOAuthProperties, cimdRestClient);
+    }
+
+    /**
+     * Dedicated {@link RestClient} for fetching CIMD documents, with tight timeouts
+     * (3s connect, 5s read) so a slow or hostile client_id URL cannot stall the authorization flow.
+     */
+    @Bean(name = "cimdRestClient")
+    public RestClient cimdRestClient() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout((int) Duration.ofSeconds(3).toMillis());
+        requestFactory.setReadTimeout((int) Duration.ofSeconds(5).toMillis());
+        return RestClient.builder().requestFactory(requestFactory).build();
     }
 
     @Bean
