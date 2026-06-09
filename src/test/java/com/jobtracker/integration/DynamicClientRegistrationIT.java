@@ -66,6 +66,26 @@ class DynamicClientRegistrationIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void protectedResourceMetadata_shouldAdvertiseRegistrationEndpointAndCimd() throws Exception {
+        mockMvc.perform(get("/.well-known/oauth-protected-resource/mcp"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registration_endpoint")
+                        .value("https://jobapply-api.hugojava.dev/connect/register"))
+                .andExpect(jsonPath("$.client_registration_types_supported").isArray())
+                .andExpect(jsonPath("$.client_registration_types_supported[0]").value("automatic"))
+                .andExpect(jsonPath("$.authorization_servers[0]")
+                        .value("https://jobapply-api.hugojava.dev"));
+    }
+
+    @Test
+    void getConnectRegister_shouldReturnMethodNotAllowed() throws Exception {
+        // DCR is POST-only; a GET must surface as 405 (not 500 from the generic handler).
+        mockMvc.perform(get("/connect/register"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.error").value("method_not_allowed"));
+    }
+
+    @Test
     void dcrEndpoint_shouldBePublic() throws Exception {
         mockMvc.perform(post("/connect/register")
                         .contentType(MediaType.APPLICATION_JSON)

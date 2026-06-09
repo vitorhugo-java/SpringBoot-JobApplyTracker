@@ -6,6 +6,7 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,11 +52,33 @@ public class OAuthProtectedResourceMetadataController {
                 : "";
         String resource = issuer + suffix;
 
-        return Map.of(
-                "resource", resource,
-                "authorization_servers", List.of(issuer),
-                "bearer_methods_supported", List.of("header"),
-                "scopes_supported", mcpOAuthProperties.getScopes()
-        );
+        // LinkedHashMap (not Map.of) so the JSON field order is stable and readable.
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("resource", resource);
+        metadata.put("authorization_servers", List.of(issuer));
+        metadata.put("bearer_methods_supported", List.of("header"));
+        metadata.put("scopes_supported", mcpOAuthProperties.getScopes());
+
+        // Advertise the Dynamic Client Registration endpoint (RFC 7591). ChatGPT reads the
+        // protected-resource metadata first and only enables DCR when it finds a
+        // "registration_endpoint" here — it does not fall through to /.well-known/openid-configuration.
+        metadata.put("registration_endpoint", registrationEndpoint(issuer));
+
+        // Advertise CIMD (Client ID Metadata Documents, draft-ietf-oauth-client-id-metadata-document)
+        // so ChatGPT can present a metadata-document URL as its client_id instead of registering first.
+        // "automatic" means the AS will fetch the CIMD document on demand from the client_id URL.
+        metadata.put("client_registration_types_supported", List.of("automatic"));
+
+        return metadata;
+    }
+
+    // The DCR endpoint URL, derived from AuthorizationServerSettings (the path defaults to
+    // "/connect/register") rather than hardcoded, so it tracks any issuer/path reconfiguration.
+    private String registrationEndpoint(String issuer) {
+        String path = authorizationServerSettings.getOidcClientRegistrationEndpoint();
+        if (path == null || path.isBlank()) {
+            path = "/connect/register";
+        }
+        return issuer + path;
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -85,6 +86,18 @@ public class GlobalExceptionHandler {
         body.put("error", "Validation failed");
         body.put("fieldErrors", fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    // Map an unsupported HTTP method to 405 (not 500). Without this, the generic Exception
+    // handler below catches HttpRequestMethodNotSupportedException and returns 500 — e.g. a
+    // GET /connect/register (DCR is POST-only) would surface as a server error to clients.
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        log.warn("event=METHOD_NOT_ALLOWED message={}", ex.getMessage());
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "method_not_allowed");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(body);
     }
 
     @ExceptionHandler(Exception.class)
