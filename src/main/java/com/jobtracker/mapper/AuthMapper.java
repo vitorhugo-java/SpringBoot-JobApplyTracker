@@ -22,6 +22,7 @@ public class AuthMapper {
                 user.getEmail(),
                 user.getReminderTime(),
                 roles,
-                roles.contains(RoleName.BETA.name()));
+                roles.contains(RoleName.BETA.name()),
+                user.isPrivacyPolicyAccepted());
     }
 }

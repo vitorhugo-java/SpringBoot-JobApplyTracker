@@ -121,7 +121,7 @@ class GamificationControllerIT extends AbstractIntegrationTest {
     }
 
     private String registerAndGetAccessToken(String email) throws Exception {
-        RegisterRequest request = new RegisterRequest("Gamification User", email, "pass1234", "pass1234");
+        RegisterRequest request = new RegisterRequest("Gamification User", email, "pass1234", "pass1234", true);
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

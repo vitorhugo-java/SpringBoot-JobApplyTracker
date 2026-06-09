@@ -92,6 +92,8 @@ public class AuthService {
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRoles(Set.of(resolveDefaultUserRole()));
+        user.setPrivacyPolicyAccepted(true);
+        user.setPrivacyPolicyAcceptedAt(java.time.LocalDateTime.now());
         user = userRepository.save(user);
         log.info("event=REGISTRATION_SUCCESS email={} userId={}", user.getEmail(), user.getId());
         return buildAuthResponse(user);

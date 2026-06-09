@@ -19,5 +19,7 @@ public record UserResponse(
         @Schema(description = "Granted application roles", example = "[\"USER\", \"BETA\"]")
         Set<String> roles,
         @Schema(description = "Whether the user can access Google integration features", example = "true")
-        boolean canUseGoogleIntegration
+        boolean canUseGoogleIntegration,
+        @Schema(description = "Whether the user has accepted the Privacy Policy", example = "true")
+        boolean privacyPolicyAccepted
 ) {}

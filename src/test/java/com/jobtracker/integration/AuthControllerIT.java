@@ -68,7 +68,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void register_shouldReturn201_setRefreshTokenCookie_andReturnAccessToken() throws Exception {
-        RegisterRequest request = new RegisterRequest("Test User", "register@example.com", "pass1234", "pass1234");
+        RegisterRequest request = new RegisterRequest("Test User", "register@example.com", "pass1234", "pass1234", true);
 
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -99,7 +99,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void register_shouldReturn409_whenEmailAlreadyExists() throws Exception {
-        RegisterRequest request = new RegisterRequest("Test User", "duplicate@example.com", "pass1234", "pass1234");
+        RegisterRequest request = new RegisterRequest("Test User", "duplicate@example.com", "pass1234", "pass1234", true);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -114,7 +114,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void register_shouldReturn400_whenPasswordsDoNotMatch() throws Exception {
-        RegisterRequest request = new RegisterRequest("Test User", "mismatch@example.com", "pass1234", "different");
+        RegisterRequest request = new RegisterRequest("Test User", "mismatch@example.com", "pass1234", "different", true);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -125,7 +125,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Test
     void login_shouldReturn200_setRefreshTokenCookie_andReturnAccessToken() throws Exception {
         // First register
-        RegisterRequest reg = new RegisterRequest("Login User", "login@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Login User", "login@example.com", "pass1234", "pass1234", true);
         mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(reg)));
@@ -164,7 +164,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Test
     void refresh_shouldReadFromCookie_returnNewAccessToken_andRotateRefreshTokenCookie() throws Exception {
         // Register to get initial tokens
-        RegisterRequest reg = new RegisterRequest("Refresh User", "refresh@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Refresh User", "refresh@example.com", "pass1234", "pass1234", true);
         MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
@@ -213,7 +213,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Test
     void logout_shouldClearRefreshTokenCookie() throws Exception {
         // Register
-        RegisterRequest reg = new RegisterRequest("Logout User", "logout@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Logout User", "logout@example.com", "pass1234", "pass1234", true);
         MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
@@ -247,7 +247,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void me_shouldReturn200_whenAuthenticated() throws Exception {
-        RegisterRequest reg = new RegisterRequest("Me User", "me@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Me User", "me@example.com", "pass1234", "pass1234", true);
         MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
@@ -271,7 +271,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void me_shouldReturn403_whenTokenDoesNotContainRoleUser() throws Exception {
-        RegisterRequest reg = new RegisterRequest("Admin Token User", "admin-token@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Admin Token User", "admin-token@example.com", "pass1234", "pass1234", true);
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
@@ -290,7 +290,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
         @Test
         void sendTestEmail_shouldReturn200_whenAuthenticated() throws Exception {
-                RegisterRequest reg = new RegisterRequest("Mail User", "mail-user@example.com", "pass1234", "pass1234");
+                RegisterRequest reg = new RegisterRequest("Mail User", "mail-user@example.com", "pass1234", "pass1234", true);
                 MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(objectMapper.writeValueAsString(reg)))
@@ -321,7 +321,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void updateProfile_shouldReturn200_whenAuthenticated() throws Exception {
-        RegisterRequest reg = new RegisterRequest("Profile User", "profile@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Profile User", "profile@example.com", "pass1234", "pass1234", true);
         MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
@@ -340,7 +340,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void changePassword_shouldReturn200_andAllowLoginWithNewPassword() throws Exception {
-        RegisterRequest reg = new RegisterRequest("Password User", "password-change@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Password User", "password-change@example.com", "pass1234", "pass1234", true);
         MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
@@ -365,7 +365,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void changePassword_shouldReturn400_whenCurrentPasswordIsInvalid() throws Exception {
-        RegisterRequest reg = new RegisterRequest("Password User", "password-invalid@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Password User", "password-invalid@example.com", "pass1234", "pass1234", true);
         MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))
@@ -383,7 +383,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void passkeyLoginOptions_shouldReturnFallbackWhenUserHasNoPasskeys() throws Exception {
-        RegisterRequest reg = new RegisterRequest("No Passkey User", "no-passkey@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("No Passkey User", "no-passkey@example.com", "pass1234", "pass1234", true);
         mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(reg)))
@@ -407,7 +407,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
     @Test
     void passkeyMe_shouldReturnHasPasskeysFalseByDefault() throws Exception {
-        RegisterRequest reg = new RegisterRequest("Passkey Status User", "passkey-status@example.com", "pass1234", "pass1234");
+        RegisterRequest reg = new RegisterRequest("Passkey Status User", "passkey-status@example.com", "pass1234", "pass1234", true);
         MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reg)))

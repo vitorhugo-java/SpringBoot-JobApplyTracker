@@ -1,6 +1,7 @@
 package com.jobtracker.dto.auth;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -25,5 +26,9 @@ public record RegisterRequest(
 
         @Schema(description = "Confirm password (must match password)", example = "secureP@ss1")
         @NotBlank(message = "Confirm password is required")
-        String confirmPassword
+        String confirmPassword,
+
+        @Schema(description = "User must accept the Privacy Policy to register", example = "true")
+        @AssertTrue(message = "You must accept the Privacy Policy to create an account")
+        boolean acceptedPrivacyPolicy
 ) {}

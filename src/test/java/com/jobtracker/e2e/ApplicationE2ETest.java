@@ -47,7 +47,8 @@ class ApplicationE2ETest extends AbstractE2ETest {
                           "name": "App E2E User",
                           "email": "appe2e@example.com",
                           "password": "pass1234",
-                          "confirmPassword": "pass1234"
+                          "confirmPassword": "pass1234",
+                          "acceptedPrivacyPolicy": true
                         }
                         """)
                 .post("/api/v1/auth/register")
@@ -282,7 +283,8 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .contentType("application/json")
                 .body("""
                         {"name": "Other User", "email": "other@example.com",
-                         "password": "pass1234", "confirmPassword": "pass1234"}
+                         "password": "pass1234", "confirmPassword": "pass1234",
+                         "acceptedPrivacyPolicy": true}
                         """)
                 .post("/api/v1/auth/register");
 

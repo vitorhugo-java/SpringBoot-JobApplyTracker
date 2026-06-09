@@ -32,6 +32,12 @@ public class User {
     @Column(name = "reminder_time", nullable = false)
     private LocalTime reminderTime;
 
+    @Column(name = "privacy_policy_accepted", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private boolean privacyPolicyAccepted;
+
+    @Column(name = "privacy_policy_accepted_at")
+    private LocalDateTime privacyPolicyAcceptedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -79,4 +85,10 @@ public class User {
 
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
+
+    public boolean isPrivacyPolicyAccepted() { return privacyPolicyAccepted; }
+    public void setPrivacyPolicyAccepted(boolean privacyPolicyAccepted) { this.privacyPolicyAccepted = privacyPolicyAccepted; }
+
+    public LocalDateTime getPrivacyPolicyAcceptedAt() { return privacyPolicyAcceptedAt; }
+    public void setPrivacyPolicyAcceptedAt(LocalDateTime privacyPolicyAcceptedAt) { this.privacyPolicyAcceptedAt = privacyPolicyAcceptedAt; }
 }

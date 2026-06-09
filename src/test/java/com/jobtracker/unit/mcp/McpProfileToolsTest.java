@@ -62,7 +62,7 @@ class McpProfileToolsTest {
                 "john@example.com",
                 java.time.LocalTime.of(19, 0),
                 java.util.Set.of("USER", "BETA"),
-                true);
+                true, true);
         when(securityUtils.getCurrentUser()).thenReturn(user);
         when(authMapper.toUserResponse(user)).thenReturn(expected);
 

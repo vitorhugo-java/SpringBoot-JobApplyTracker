@@ -57,7 +57,8 @@ class AuthE2ETest extends AbstractE2ETest {
                           "name": "E2E User",
                           "email": "e2e@example.com",
                           "password": "pass1234",
-                          "confirmPassword": "pass1234"
+                          "confirmPassword": "pass1234",
+                          "acceptedPrivacyPolicy": true
                         }
                         """)
                 .when()
@@ -168,7 +169,8 @@ class AuthE2ETest extends AbstractE2ETest {
                           "name": "Cookie User",
                           "email": "cookies@example.com",
                           "password": "pass1234",
-                          "confirmPassword": "pass1234"
+                          "confirmPassword": "pass1234",
+                          "acceptedPrivacyPolicy": true
                         }
                         """)
                 .when()
@@ -192,7 +194,8 @@ class AuthE2ETest extends AbstractE2ETest {
                   "name": "Dup User",
                   "email": "dup@example.com",
                   "password": "pass1234",
-                  "confirmPassword": "pass1234"
+                  "confirmPassword": "pass1234",
+                  "acceptedPrivacyPolicy": true
                 }
                 """;
 
@@ -212,7 +215,8 @@ class AuthE2ETest extends AbstractE2ETest {
                           "name": "Mismatch User",
                           "email": "mismatch@example.com",
                           "password": "pass1234",
-                          "confirmPassword": "different"
+                          "confirmPassword": "different",
+                          "acceptedPrivacyPolicy": true
                         }
                         """)
                 .when()
@@ -231,7 +235,8 @@ class AuthE2ETest extends AbstractE2ETest {
                           "name": "Wrong Pass",
                           "email": "wrongpass@example.com",
                           "password": "pass1234",
-                          "confirmPassword": "pass1234"
+                          "confirmPassword": "pass1234",
+                          "acceptedPrivacyPolicy": true
                         }
                         """)
                 .post("/api/v1/auth/register")
@@ -265,7 +270,8 @@ class AuthE2ETest extends AbstractE2ETest {
                           "name": "Logout User",
                           "email": "logout@example.com",
                           "password": "pass1234",
-                          "confirmPassword": "pass1234"
+                          "confirmPassword": "pass1234",
+                          "acceptedPrivacyPolicy": true
                         }
                         """)
                 .when()
