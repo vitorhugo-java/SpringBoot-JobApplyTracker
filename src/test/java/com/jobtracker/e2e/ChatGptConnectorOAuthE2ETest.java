@@ -295,6 +295,10 @@ class ChatGptConnectorOAuthE2ETest {
         assertThat(token.jsonPath().getString("token_type")).isEqualToIgnoringCase("Bearer");
         String accessToken = token.jsonPath().getString("access_token");
         assertThat(accessToken).isNotBlank();
+        assertThat(token.jsonPath().getString("refresh_token"))
+                .as("public clients with the refresh_token grant must receive a refresh token — "
+                        + "without it the connector dies when the short-lived access token expires")
+                .isNotBlank();
 
         // --- Step 5b: ChatGPT has "OIDC enabled" and calls /userinfo with the access
         // token right after the exchange (authorization domain claiming). Spring AS
@@ -321,6 +325,50 @@ class ChatGptConnectorOAuthE2ETest {
         assertThat(mcp.statusCode())
                 .as("initialize with the issued token must not be rejected: %s", mcp.asString())
                 .isEqualTo(200);
+
+        // --- Step 7: refresh exchange, exactly how a public MCP client renews after the
+        // 15-minute access token expires: client_id only, no secret, no PKCE params.
+        String refreshToken = token.jsonPath().getString("refresh_token");
+        Response refreshed = given()
+                .contentType(ContentType.URLENC)
+                .formParam("grant_type", "refresh_token")
+                .formParam("refresh_token", refreshToken)
+                .formParam("client_id", clientId)
+                .post("/oauth2/token");
+
+        assertThat(refreshed.statusCode())
+                .as("public-client refresh must succeed: %s", refreshed.asString())
+                .isEqualTo(200);
+        String refreshedAccessToken = refreshed.jsonPath().getString("access_token");
+        assertThat(refreshedAccessToken).isNotBlank();
+        assertThat(refreshed.jsonPath().getString("refresh_token"))
+                .as("refresh tokens must rotate for public clients (OAuth 2.1)")
+                .isNotBlank()
+                .isNotEqualTo(refreshToken);
+
+        // the refreshed access token must keep the identity claims the MCP tools rely on
+        Map<String, Object> refreshedClaims = decodeJwtPayload(refreshedAccessToken);
+        assertThat(refreshedClaims.get("sub")).isEqualTo(USER_EMAIL);
+        assertThat(refreshedClaims.get("user_id"))
+                .as("user_id claim must survive the refresh grant — SecurityUtils resolves the user from it")
+                .isNotNull();
+
+        Response mcpAfterRefresh = given()
+                .contentType(ContentType.JSON)
+                .accept("application/json, text/event-stream")
+                .header("Authorization", "Bearer " + refreshedAccessToken)
+                .body(MCP_INITIALIZE_BODY)
+                .post("/mcp");
+        assertThat(mcpAfterRefresh.statusCode())
+                .as("the refreshed token must keep working on /mcp: %s", mcpAfterRefresh.asString())
+                .isEqualTo(200);
+    }
+
+    private static Map<String, Object> decodeJwtPayload(String jwt) throws Exception {
+        String payload = jwt.split("\\.")[1];
+        byte[] json = Base64.getUrlDecoder().decode(payload);
+        return new com.fasterxml.jackson.databind.ObjectMapper()
+                .readValue(json, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
     }
 
     /**

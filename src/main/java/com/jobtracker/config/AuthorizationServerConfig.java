@@ -41,8 +41,13 @@ import org.springframework.security.oauth2.server.authorization.oidc.authenticat
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -77,7 +82,8 @@ public class AuthorizationServerConfig {
             AuthorizationServerSettings authorizationServerSettings,
             UserRepository userRepository,
             McpOAuthProperties mcpOAuthProperties,
-            FormLoginRateLimitFilter formLoginRateLimitFilter) throws Exception {
+            FormLoginRateLimitFilter formLoginRateLimitFilter,
+            RegisteredClientRepository registeredClientRepository) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
         RequestMatcher authServerMatcher = new OrRequestMatcher(
@@ -109,6 +115,15 @@ public class AuthorizationServerConfig {
                         .requestMatchers("/login", "/default-ui.css").permitAll()
                         .anyRequest().authenticated())
                 .with(authorizationServerConfigurer, authorizationServer -> authorizationServer
+                        // Public clients (Claude/ChatGPT MCP connectors) must be able to
+                        // refresh tokens with just their client_id: SAS's built-in public
+                        // client support only covers the PKCE authorization_code request.
+                        .clientAuthentication(clientAuth -> clientAuth
+                                .authenticationConverters(converters ->
+                                        converters.add(new PublicClientRefreshTokenAuthenticationConverter()))
+                                .authenticationProviders(providers ->
+                                        providers.add(0, new PublicClientRefreshTokenAuthenticationProvider(
+                                                registeredClientRepository))))
                         .oidc(oidc -> oidc
                                 // Advertise DCR endpoint so ChatGPT (and other clients) can
                                 // discover it from /.well-known/openid-configuration.
@@ -214,6 +229,24 @@ public class AuthorizationServerConfig {
     @Bean
     public JwtDecoder authorizationServerJwtDecoder(JWKSource<SecurityContext> jwkSource) {
         return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+    }
+
+    /**
+     * Replaces the default token generator so refresh tokens are also issued to public
+     * clients (see {@link PublicClientRefreshTokenGenerator}). The JWT generator keeps
+     * the existing {@link #jwtTokenCustomizer} so access tokens still carry
+     * {@code user_id} and {@code roles}.
+     */
+    @Bean
+    public OAuth2TokenGenerator<?> tokenGenerator(
+            JWKSource<SecurityContext> jwkSource,
+            OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer) {
+        JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwtEncoder(jwkSource));
+        jwtGenerator.setJwtCustomizer(jwtTokenCustomizer);
+        return new DelegatingOAuth2TokenGenerator(
+                jwtGenerator,
+                new OAuth2AccessTokenGenerator(),
+                new PublicClientRefreshTokenGenerator());
     }
 
     @Bean
