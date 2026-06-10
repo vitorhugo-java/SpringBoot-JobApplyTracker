@@ -106,12 +106,21 @@ public class DynamicClientRegistrationController {
         String clientId = "dcr-" + UUID.randomUUID().toString().replace("-", "");
         Instant issuedAt = Instant.now();
 
-        RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
+        // ChatGPT registers with grant_types [authorization_code, refresh_token]. Honour the
+        // refresh_token request: without it the granted grant_types diverge from the request
+        // and the connector dies as soon as the short-lived access token expires.
+        List<String> grantedGrantTypes = resolveGrantTypes(request.get("grant_types"));
+
+        RegisteredClient.Builder clientBuilder = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId(clientId)
                 .clientIdIssuedAt(issuedAt)
                 .clientName(clientName)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE);
+        if (grantedGrantTypes.contains(AuthorizationGrantType.REFRESH_TOKEN.getValue())) {
+            clientBuilder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
+        }
+        RegisteredClient registeredClient = clientBuilder
                 .redirectUris(uris -> uris.addAll(redirectUris))
                 .scopes(scopes -> scopes.addAll(grantedScopes))
                 .clientSettings(ClientSettings.builder()
@@ -131,7 +140,7 @@ public class DynamicClientRegistrationController {
         response.put("client_id", clientId);
         response.put("client_id_issued_at", issuedAt.getEpochSecond());
         response.put("redirect_uris", redirectUris);
-        response.put("grant_types", List.of("authorization_code"));
+        response.put("grant_types", grantedGrantTypes);
         response.put("response_types", List.of("code"));
         response.put("token_endpoint_auth_method", "none");
         response.put("scope", String.join(" ", grantedScopes));
@@ -139,6 +148,18 @@ public class DynamicClientRegistrationController {
         response.put("code_challenge_methods_supported", List.of("S256"));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // authorization_code is always granted; refresh_token is granted when requested.
+    // Anything else (client_credentials, implicit, ...) is silently dropped per RFC 7591 §2.
+    private List<String> resolveGrantTypes(Object grantTypesClaim) {
+        List<String> granted = new ArrayList<>();
+        granted.add(AuthorizationGrantType.AUTHORIZATION_CODE.getValue());
+        if (grantTypesClaim instanceof List<?> requested
+                && requested.contains(AuthorizationGrantType.REFRESH_TOKEN.getValue())) {
+            granted.add(AuthorizationGrantType.REFRESH_TOKEN.getValue());
+        }
+        return granted;
     }
 
     private Set<String> resolveScopes(Object scopeClaim, List<String> allowed) {

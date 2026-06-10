@@ -1,5 +1,6 @@
 package com.jobtracker.config;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManagerResolver
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -60,12 +62,20 @@ public class SecurityConfig {
             HttpSecurity http,
             AuthenticationManagerResolver<HttpServletRequest> apiAuthenticationManagerResolver,
             BearerTokenResolver bearerTokenResolver,
-            McpAuthenticationEntryPoint mcpAuthenticationEntryPoint) throws Exception {
+            McpAuthenticationEntryPoint mcpAuthenticationEntryPoint,
+            McpOAuthProperties mcpOAuthProperties) throws Exception {
+        boolean dcrEnabled = mcpOAuthProperties.isDcrEnabled();
         http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // The container re-runs the security filters on the ERROR dispatch to
+                        // /error. Without this rule, the 401 sent by McpAuthenticationEntryPoint
+                        // is re-processed as an anonymous request to /error and downgraded to a
+                        // 403 — which breaks ChatGPT's MCP connector (it requires the literal
+                        // 401 + WWW-Authenticate challenge to bootstrap OAuth).
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/register",
@@ -83,7 +93,10 @@ public class SecurityConfig {
                                 "/.well-known/oauth-protected-resource",
                                 "/.well-known/oauth-protected-resource/**",
                                 "/.well-known/oauth-authorization-server/**").permitAll()
-                        .requestMatchers("/connect/register").denyAll()
+                        // RFC 7591 DCR: anonymous by design (rate-limited in the controller).
+                        // ChatGPT's MCP connector cannot connect without it.
+                        .requestMatchers("/connect/register")
+                                .access((authentication, context) -> new AuthorizationDecision(dcrEnabled))
                         .requestMatchers("/mcp", "/mcp/**").authenticated()
                         .requestMatchers("/api/v1/**").authenticated()
                         .anyRequest().authenticated())

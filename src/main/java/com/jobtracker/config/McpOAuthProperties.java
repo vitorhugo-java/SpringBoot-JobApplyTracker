@@ -16,6 +16,15 @@ public class McpOAuthProperties {
     private long accessTokenExpirationSeconds = 900;
     private long refreshTokenExpirationSeconds = 2592000;
 
+    /**
+     * RFC 7591 Dynamic Client Registration toggle. ChatGPT's MCP connector cannot
+     * connect without DCR, so this defaults to enabled. When disabled, the
+     * /connect/register endpoint is denied AND the registration_endpoint is dropped
+     * from every discovery document (advertising an endpoint that returns 403 makes
+     * MCP clients fail with a generic connection error).
+     */
+    private boolean dcrEnabled = true;
+
     public String getClientId() {
         return clientId;
     }
@@ -62,6 +71,14 @@ public class McpOAuthProperties {
 
     public void setRefreshTokenExpirationSeconds(long refreshTokenExpirationSeconds) {
         this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
+    }
+
+    public boolean isDcrEnabled() {
+        return dcrEnabled;
+    }
+
+    public void setDcrEnabled(boolean dcrEnabled) {
+        this.dcrEnabled = dcrEnabled;
     }
 
     public boolean isConfigured() {

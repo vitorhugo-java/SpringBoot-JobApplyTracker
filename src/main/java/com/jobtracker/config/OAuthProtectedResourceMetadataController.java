@@ -62,7 +62,11 @@ public class OAuthProtectedResourceMetadataController {
         // Advertise the Dynamic Client Registration endpoint (RFC 7591). ChatGPT reads the
         // protected-resource metadata first and only enables DCR when it finds a
         // "registration_endpoint" here — it does not fall through to /.well-known/openid-configuration.
-        metadata.put("registration_endpoint", registrationEndpoint(issuer));
+        // Never advertise it while the endpoint is disabled: clients that find a
+        // registration_endpoint returning 403 abort with a generic connection error.
+        if (mcpOAuthProperties.isDcrEnabled()) {
+            metadata.put("registration_endpoint", registrationEndpoint(issuer));
+        }
 
         // Advertise CIMD (Client ID Metadata Documents, draft-ietf-oauth-client-id-metadata-document)
         // so ChatGPT can present a metadata-document URL as its client_id instead of registering first.

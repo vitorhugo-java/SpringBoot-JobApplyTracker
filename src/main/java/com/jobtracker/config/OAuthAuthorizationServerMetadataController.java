@@ -48,7 +48,9 @@ public class OAuthAuthorizationServerMetadataController {
         metadata.put("authorization_endpoint", issuer + settings.getAuthorizationEndpoint());
         metadata.put("token_endpoint", issuer + settings.getTokenEndpoint());
         metadata.put("jwks_uri", issuer + settings.getJwkSetEndpoint());
-        metadata.put("registration_endpoint", issuer + registrationPath());
+        if (mcpOAuthProperties.isDcrEnabled()) {
+            metadata.put("registration_endpoint", issuer + registrationPath());
+        }
         metadata.put("scopes_supported", mcpOAuthProperties.getScopes());
         metadata.put("response_types_supported", List.of("code"));
         metadata.put("grant_types_supported", List.of("authorization_code", "refresh_token"));

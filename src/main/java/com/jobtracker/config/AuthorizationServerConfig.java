@@ -74,7 +74,8 @@ public class AuthorizationServerConfig {
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http,
             AuthorizationServerSettings authorizationServerSettings,
-            UserRepository userRepository) throws Exception {
+            UserRepository userRepository,
+            McpOAuthProperties mcpOAuthProperties) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
         RequestMatcher authServerMatcher = new OrRequestMatcher(
@@ -109,8 +110,10 @@ public class AuthorizationServerConfig {
                                 // so public-client flows are not rejected before they start.
                                 .providerConfigurationEndpoint(endpoint -> endpoint
                                         .providerConfigurationCustomizer(metadata -> {
-                                            metadata.claim("registration_endpoint",
-                                                    issuer + "/connect/register");
+                                            if (mcpOAuthProperties.isDcrEnabled()) {
+                                                metadata.claim("registration_endpoint",
+                                                        issuer + "/connect/register");
+                                            }
                                             metadata.tokenEndpointAuthenticationMethod("none");
                                         }))
                                 .userInfoEndpoint(userInfo -> userInfo
