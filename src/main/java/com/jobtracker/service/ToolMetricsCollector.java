@@ -58,7 +58,7 @@ public class ToolMetricsCollector {
         int requestTokens = safeCountTokens(request);
         int requestBytes  = safeCountBytes(request);
 
-        log.debug("[MCP-EXEC] tool={} user={}", toolName, resolveCurrentUserEmail());
+        log.info("[MCP-EXEC] tool={} user={}", toolName, resolveCurrentUserEmail());
 
         Span span = tracer.nextSpan().name("mcp.tool." + toolName).start();
         try (Tracer.SpanInScope ws = tracer.withSpan(span)) {
@@ -70,7 +70,7 @@ public class ToolMetricsCollector {
             T    response = execution.get();
             long elapsed  = System.currentTimeMillis() - start;
 
-            log.debug("[MCP-RESULT] tool={} responseType={}", toolName,
+            log.info("[MCP-RESULT] tool={} responseType={}", toolName,
                     response == null ? "null" : response.getClass().getName());
 
             int responseTokens = safeCountTokens(response);
