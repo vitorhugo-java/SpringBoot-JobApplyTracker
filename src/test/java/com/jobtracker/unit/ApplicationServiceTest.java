@@ -276,7 +276,7 @@ class ApplicationServiceTest {
         when(applicationMapper.toResponse(app)).thenReturn(response);
 
         ApplicationPageResponse result = applicationService.getAll(null, null, null, null, null, null, false, 0, 10, null);
-        assertThat(result.content()).hasSize(1);
+        assertThat(result.applications()).hasSize(1);
         assertThat(result.totalElements()).isEqualTo(1);
     }
 

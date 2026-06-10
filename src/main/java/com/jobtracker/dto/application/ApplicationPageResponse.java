@@ -7,7 +7,7 @@ import java.util.List;
 @Schema(description = "Paginated list of job applications")
 public record ApplicationPageResponse(
         @Schema(description = "Applications on this page")
-        List<ApplicationResponse> content,
+        List<ApplicationResponse> applications,
         @Schema(description = "Current page number (0-based)", example = "0")
         int pageNumber,
         @Schema(description = "Number of items per page", example = "10")

@@ -153,7 +153,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .get("/api/v1/applications")
                 .then()
                 .statusCode(200)
-                .body("content", hasSize(1))
+                .body("applications", hasSize(1))
                 .body("totalElements", equalTo(1));
 
         // 7. Archive
@@ -231,7 +231,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .then()
                 .statusCode(200)
                 .body("totalElements", equalTo(1))
-                .body("content[0].vacancyName", equalTo("App RH"));
+                .body("applications[0].vacancyName", equalTo("App RH"));
 
         // Filter by interviewScheduled
         given()
@@ -241,7 +241,7 @@ class ApplicationE2ETest extends AbstractE2ETest {
                 .then()
                 .statusCode(200)
                 .body("totalElements", equalTo(1))
-                .body("content[0].vacancyName", equalTo("App Tecnico"));
+                .body("applications[0].vacancyName", equalTo("App Tecnico"));
     }
 
     @Test

@@ -266,7 +266,7 @@ class ApplicationControllerIT extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/applications")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.applications").isArray())
                 .andExpect(jsonPath("$.totalElements").value(2));
     }
 
