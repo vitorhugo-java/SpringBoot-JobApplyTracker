@@ -46,6 +46,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -75,7 +76,8 @@ public class AuthorizationServerConfig {
             HttpSecurity http,
             AuthorizationServerSettings authorizationServerSettings,
             UserRepository userRepository,
-            McpOAuthProperties mcpOAuthProperties) throws Exception {
+            McpOAuthProperties mcpOAuthProperties,
+            FormLoginRateLimitFilter formLoginRateLimitFilter) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
         RequestMatcher authServerMatcher = new OrRequestMatcher(
@@ -133,7 +135,10 @@ public class AuthorizationServerConfig {
                         request -> "/oauth2/token".equals(request.getServletPath()),
                         request -> "/oauth2/revoke".equals(request.getServletPath()),
                         request -> "/oauth2/introspect".equals(request.getServletPath())))
-                .formLogin(Customizer.withDefaults());
+                .formLogin(Customizer.withDefaults())
+                // Before CsrfFilter so every POST /login consumes a permit — otherwise
+                // CSRF-rejected probes would not count against the brute-force budget.
+                .addFilterBefore(formLoginRateLimitFilter, CsrfFilter.class);
 
         return http.build();
     }

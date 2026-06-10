@@ -102,3 +102,7 @@ resilience4j:
         limit-for-period: 1000
         limit-refresh-period: 1m
         timeout-duration: 0
+      formLogin:
+        limit-for-period: 1000
+        limit-refresh-period: 1m
+        timeout-duration: 0
