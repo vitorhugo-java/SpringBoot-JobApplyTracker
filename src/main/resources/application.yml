@@ -1,6 +1,8 @@
 spring:
   config:
     import: optional:file:.env[.properties]
+  activate:
+    on-profile: prod
   ai:
     mcp:
       server:
@@ -60,9 +62,9 @@ spring:
           writetimeout: 5000
           starttls:
             enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
-logging:
-  level:
-    root: ${LOG_LEVEL:DEBUG}
+app:
+  logging:
+    jobtracker-level: ${JOBTRACKER_LOG_LEVEL:DEBUG}
 
 server:
   port: ${SERVER_PORT:8080}
