@@ -304,6 +304,22 @@ public class McpApplicationTools {
                 () -> { applicationService.delete(UUID.fromString(id)); return null; });
     }
 
+    // --- diagnostics ---
+
+    @McpTool(
+            name = "Ping",
+            title = "Ping",
+            description = "Returns 'hello'. Use this to verify MCP transport connectivity before calling data tools.",
+            annotations = @McpAnnotations(
+                    title = "Ping",
+                    readOnlyHint = true,
+                    destructiveHint = false,
+                    idempotentHint = true,
+                    openWorldHint = false))
+    public String ping() {
+        return "hello";
+    }
+
     // --- helpers ---
 
     /** Builds a null-safe parameter map for use as the request descriptor in measure(). */

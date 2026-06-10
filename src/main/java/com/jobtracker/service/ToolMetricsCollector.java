@@ -2,6 +2,9 @@ package com.jobtracker.service;
 
 import com.jobtracker.entity.ToolExecutionMetric;
 import com.jobtracker.repository.ToolExecutionMetricRepository;
+import com.jobtracker.util.SecurityUtils;
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -29,11 +32,17 @@ public class ToolMetricsCollector {
 
     private final ToolExecutionMetricRepository repository;
     private final TokenEstimatorService tokenEstimator;
+    private final SecurityUtils securityUtils;
+    private final Tracer tracer;
 
     public ToolMetricsCollector(ToolExecutionMetricRepository repository,
-                                TokenEstimatorService tokenEstimator) {
+                                TokenEstimatorService tokenEstimator,
+                                SecurityUtils securityUtils,
+                                Tracer tracer) {
         this.repository = repository;
         this.tokenEstimator = tokenEstimator;
+        this.securityUtils = securityUtils;
+        this.tracer = tracer;
     }
 
     /**
@@ -49,23 +58,53 @@ public class ToolMetricsCollector {
         int requestTokens = safeCountTokens(request);
         int requestBytes  = safeCountBytes(request);
 
-        long start    = System.currentTimeMillis();
-        T    response = execution.get();                          // business exceptions propagate
-        long elapsed  = System.currentTimeMillis() - start;
+        log.debug("[MCP-EXEC] tool={} user={}", toolName, resolveCurrentUserEmail());
 
-        persistMetrics(toolName, requestTokens, requestBytes, response, elapsed);
-        return response;
+        Span span = tracer.nextSpan().name("mcp.tool." + toolName).start();
+        try (Tracer.SpanInScope ws = tracer.withSpan(span)) {
+            span.tag("mcp.tool.name", toolName);
+            if (requestBytes > 0)  span.tag("mcp.tool.request_bytes",  String.valueOf(requestBytes));
+            if (requestTokens > 0) span.tag("mcp.tool.request_tokens", String.valueOf(requestTokens));
+
+            long start    = System.currentTimeMillis();
+            T    response = execution.get();
+            long elapsed  = System.currentTimeMillis() - start;
+
+            log.debug("[MCP-RESULT] tool={} responseType={}", toolName,
+                    response == null ? "null" : response.getClass().getName());
+
+            int responseTokens = safeCountTokens(response);
+            int responseBytes  = safeCountBytes(response);
+
+            span.tag("mcp.tool.duration_ms", String.valueOf(elapsed));
+            if (responseTokens > 0) span.tag("mcp.tool.response_tokens", String.valueOf(responseTokens));
+            if (responseBytes  > 0) span.tag("mcp.tool.response_bytes",  String.valueOf(responseBytes));
+
+            persistMetrics(toolName, requestTokens, requestBytes, responseTokens, responseBytes, elapsed);
+            return response;
+        } catch (Exception e) {
+            span.error(e);
+            throw e;
+        } finally {
+            span.end();
+        }
     }
 
     // --- private helpers ---
 
-    private void persistMetrics(String toolName, int requestTokens, int requestBytes,
-                                Object response, long executionTimeMs) {
+    private String resolveCurrentUserEmail() {
         try {
-            int responseTokens = safeCountTokens(response);
-            int responseBytes  = safeCountBytes(response);
-            int totalTokens    = requestTokens + responseTokens;
-            boolean expensive  = totalTokens > EXPENSIVE_TOKEN_THRESHOLD;
+            return securityUtils.getCurrentUser().getEmail();
+        } catch (Exception e) {
+            return "<unavailable>";
+        }
+    }
+
+    private void persistMetrics(String toolName, int requestTokens, int requestBytes,
+                                int responseTokens, int responseBytes, long executionTimeMs) {
+        try {
+            int totalTokens   = requestTokens + responseTokens;
+            boolean expensive = totalTokens > EXPENSIVE_TOKEN_THRESHOLD;
 
             if (responseTokens > EXPENSIVE_TOKEN_THRESHOLD) {
                 log.warn("[MCP-METRICS] High-token response — tool={} responseTokens={} responseBytes={}",

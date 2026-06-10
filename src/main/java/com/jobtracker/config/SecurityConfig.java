@@ -1,5 +1,6 @@
 package com.jobtracker.config;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -11,6 +12,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -54,6 +56,13 @@ public class SecurityConfig {
             RequestLoggingFilter requestLoggingFilter) {
         this.gptFallbackAuthFilter = gptFallbackAuthFilter;
         this.requestLoggingFilter = requestLoggingFilter;
+    }
+
+    @PostConstruct
+    public void configureSecurityContextStrategy() {
+        // Propagate SecurityContext to child threads (including virtual threads spawned
+        // by Spring's SSE async dispatch in WebMvcStreamableServerTransportProvider).
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
     }
 
     @Bean
