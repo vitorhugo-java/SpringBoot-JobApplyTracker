@@ -58,7 +58,7 @@ public class ToolMetricsCollector {
         int requestTokens = safeCountTokens(request);
         int requestBytes  = safeCountBytes(request);
 
-        log.info("[MCP-EXEC] tool={} user={}", toolName, resolveCurrentUserEmail());
+        log.debug("[MCP-EXEC] tool={} user={}", toolName, resolveCurrentUserEmail());
 
         Span span = tracer.nextSpan().name("mcp.tool." + toolName).start();
         try (Tracer.SpanInScope ws = tracer.withSpan(span)) {
@@ -126,7 +126,7 @@ public class ToolMetricsCollector {
             repository.save(metric);
 
         } catch (Exception e) {
-            log.error("[MCP-METRICS] Failed to persist metrics for tool={}: {}", toolName, e.getMessage());
+            log.debug("[MCP-METRICS] Failed to persist metrics for tool={}: {}", toolName, e.getMessage());
         }
     }
 
