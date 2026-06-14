@@ -2,10 +2,12 @@ package com.jobtracker.mcp.tools;
 
 import com.jobtracker.dto.gdrive.BaseInformationContentResponse;
 import com.jobtracker.dto.gdrive.BaseInformationResponse;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.service.BaseInformationService;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
+import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +50,8 @@ public class McpBaseInformationTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
-    public List<BaseInformationResponse> listBaseInformation() {
+    @AuditMcpOperation(action = "List-Base-Information")
+    public List<BaseInformationResponse> listBaseInformation(McpSyncRequestContext ctx) {
         return baseInformationService.listBaseInformation();
     }
 
@@ -66,7 +69,9 @@ public class McpBaseInformationTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = true))
+    @AuditMcpOperation(action = "Get-Base-Information-Content")
     public BaseInformationContentResponse getBaseInformationContent(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "UUID of the base information document — obtain from List-Base-Information") String id) {
         return baseInformationService.getBaseInformationContent(UUID.fromString(id));
     }

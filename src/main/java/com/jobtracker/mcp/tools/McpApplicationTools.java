@@ -7,30 +7,26 @@ import com.jobtracker.dto.application.ApplicationResponse;
 import com.jobtracker.dto.application.MarkDmSentRequest;
 import com.jobtracker.dto.application.UpdateReminderRequest;
 import com.jobtracker.dto.application.UpdateStatusRequest;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.service.ApplicationService;
-import com.jobtracker.service.ToolMetricsCollector;
 import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
+import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Component
 public class McpApplicationTools {
 
     private final ApplicationService applicationService;
-    private final ToolMetricsCollector metricsCollector;
 
-    public McpApplicationTools(ApplicationService applicationService,
-                               ToolMetricsCollector metricsCollector) {
+    public McpApplicationTools(ApplicationService applicationService) {
         this.applicationService = applicationService;
-        this.metricsCollector = metricsCollector;
     }
 
     // --- Status tools ---
@@ -45,8 +41,9 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
-    public List<String> listStatuses() {
-        return metricsCollector.measure("List-Statuses", null, applicationService::listStatuses);
+    @AuditMcpOperation(action = "List-Statuses")
+    public List<String> listStatuses(McpSyncRequestContext ctx) {
+        return applicationService.listStatuses();
     }
 
     // --- Read tools ---
@@ -61,7 +58,9 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "List-Applications")
     public ApplicationPageResponse listApplications(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = false, description = "Status filter — display name, e.g. 'RH' or 'Teste Técnico'") String status,
             @McpToolParam(required = false, description = "Recruiter name partial match") String recruiterName,
             @McpToolParam(required = false, description = "Application date range start yyyy-MM-dd (inclusive)") String applicationDateFrom,
@@ -81,12 +80,7 @@ public class McpApplicationTools {
                 null, status, null, recruiterName, null, null, null,
                 from, to, null, null, interviewScheduled, null, null, null, null, null, archived);
 
-        return metricsCollector.measure(
-                "List-Applications",
-                params("status", status, "recruiterName", recruiterName,
-                        "from", applicationDateFrom, "to", applicationDateTo,
-                        "page", p, "size", s, "sort", so),
-                () -> applicationService.getAll(filter, p, s, so));
+        return applicationService.getAll(filter, p, s, so);
     }
 
     @McpTool(
@@ -99,12 +93,11 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Get-Application")
     public ApplicationResponse getApplication(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "Application UUID") String id) {
-        return metricsCollector.measure(
-                "Get-Application",
-                params("id", id),
-                () -> applicationService.getById(UUID.fromString(id)));
+        return applicationService.getById(UUID.fromString(id));
     }
 
     @McpTool(
@@ -117,11 +110,9 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
-    public List<ApplicationResponse> getUpcomingApplications() {
-        return metricsCollector.measure(
-                "Get-Upcoming-Applications",
-                null,
-                applicationService::getUpcoming);
+    @AuditMcpOperation(action = "Get-Upcoming-Applications")
+    public List<ApplicationResponse> getUpcomingApplications(McpSyncRequestContext ctx) {
+        return applicationService.getUpcoming();
     }
 
     @McpTool(
@@ -134,11 +125,9 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
-    public List<ApplicationResponse> getOverdueApplications() {
-        return metricsCollector.measure(
-                "Get-Overdue-Applications",
-                null,
-                applicationService::getOverdue);
+    @AuditMcpOperation(action = "Get-Overdue-Applications")
+    public List<ApplicationResponse> getOverdueApplications(McpSyncRequestContext ctx) {
+        return applicationService.getOverdue();
     }
 
     // --- Write tools ---
@@ -153,7 +142,9 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Create-Application")
     public ApplicationResponse createApplication(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = false, description = "Job title or vacancy name") String vacancyName,
             @McpToolParam(required = false, description = "Recruiter name") String recruiterName,
             @McpToolParam(required = false, description = "Company or organization name") String organization,
@@ -175,7 +166,7 @@ public class McpApplicationTools {
                 status,
                 recruiterDmReminderEnabled != null ? recruiterDmReminderEnabled : Boolean.FALSE,
                 note, platform, null);
-        return metricsCollector.measure("Create-Application", request, () -> applicationService.create(request));
+        return applicationService.create(request);
     }
 
     @McpTool(
@@ -188,7 +179,9 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Update-Application")
     public ApplicationResponse updateApplication(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "Application UUID to update") String id,
             @McpToolParam(required = false, description = "Job title or vacancy name") String vacancyName,
             @McpToolParam(required = false, description = "Recruiter name") String recruiterName,
@@ -211,10 +204,7 @@ public class McpApplicationTools {
                 status,
                 recruiterDmReminderEnabled != null ? recruiterDmReminderEnabled : Boolean.FALSE,
                 note, platform, null);
-        return metricsCollector.measure(
-                "Update-Application",
-                params("id", id, "request", request),
-                () -> applicationService.update(UUID.fromString(id), request));
+        return applicationService.update(UUID.fromString(id), request);
     }
 
     @McpTool(
@@ -227,13 +217,12 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Update-Application-Status")
     public ApplicationResponse updateApplicationStatus(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "Application UUID") String id,
             @McpToolParam(required = true, description = "New status display name") String status) {
-        return metricsCollector.measure(
-                "Update-Application-Status",
-                params("id", id, "status", status),
-                () -> applicationService.updateStatus(UUID.fromString(id), new UpdateStatusRequest(status)));
+        return applicationService.updateStatus(UUID.fromString(id), new UpdateStatusRequest(status));
     }
 
     @McpTool(
@@ -246,13 +235,12 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Update-Application-Reminder")
     public void updateApplicationReminder(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "Application UUID") String id,
             @McpToolParam(required = true, description = "true to enable the DM reminder, false to disable it") boolean enabled) {
-        metricsCollector.measure(
-                "Update-Application-Reminder",
-                params("id", id, "enabled", enabled),
-                () -> { applicationService.updateReminder(UUID.fromString(id), new UpdateReminderRequest(enabled)); return null; });
+        applicationService.updateReminder(UUID.fromString(id), new UpdateReminderRequest(enabled));
     }
 
     @McpTool(
@@ -265,12 +253,11 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Mark-Recruiter-DM-Sent")
     public void markRecruiterDmSent(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "Application UUID") String id) {
-        metricsCollector.measure(
-                "Mark-Recruiter-DM-Sent",
-                params("id", id),
-                () -> { applicationService.markDmSent(UUID.fromString(id), new MarkDmSentRequest()); return null; });
+        applicationService.markDmSent(UUID.fromString(id), new MarkDmSentRequest());
     }
 
     @McpTool(
@@ -283,12 +270,11 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Archive-Application")
     public void archiveApplication(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "Application UUID") String id) {
-        metricsCollector.measure(
-                "Archive-Application",
-                params("id", id),
-                () -> { applicationService.archive(UUID.fromString(id)); return null; });
+        applicationService.archive(UUID.fromString(id));
     }
 
     @McpTool(
@@ -301,12 +287,11 @@ public class McpApplicationTools {
                     destructiveHint = true,
                     idempotentHint = false,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Delete-Application")
     public void deleteApplication(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "Application UUID") String id) {
-        metricsCollector.measure(
-                "Delete-Application",
-                params("id", id),
-                () -> { applicationService.delete(UUID.fromString(id)); return null; });
+        applicationService.delete(UUID.fromString(id));
     }
 
     // --- diagnostics ---
@@ -321,20 +306,8 @@ public class McpApplicationTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
-    public String ping() {
+    @AuditMcpOperation(action = "Ping")
+    public String ping(McpSyncRequestContext ctx) {
         return "hello";
-    }
-
-    // --- helpers ---
-
-    /** Builds a null-safe parameter map for use as the request descriptor in measure(). */
-    private static Map<String, Object> params(Object... kvPairs) {
-        var map = new LinkedHashMap<String, Object>();
-        for (int i = 0; i + 1 < kvPairs.length; i += 2) {
-            if (kvPairs[i + 1] != null) {
-                map.put(kvPairs[i].toString(), kvPairs[i + 1]);
-            }
-        }
-        return map;
     }
 }

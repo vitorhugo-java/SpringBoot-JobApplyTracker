@@ -6,12 +6,14 @@ import com.jobtracker.dto.analytics.WeeklySummaryResponse;
 import com.jobtracker.dto.application.ApplicationResponse;
 import com.jobtracker.entity.JobApplication;
 import com.jobtracker.mapper.ApplicationMapper;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.service.ApplicationService;
 import com.jobtracker.util.SecurityUtils;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
+import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,8 +56,10 @@ public class McpAnalyticsTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Get-Analytics")
     @Transactional(readOnly = true)
     public AnalyticsResponse getAnalytics(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = false, description = "Filter start date yyyy-MM-dd (inclusive), based on applicationDate") String dateFrom,
             @McpToolParam(required = false, description = "Filter end date yyyy-MM-dd (inclusive), based on applicationDate") String dateTo) {
         UUID userId = securityUtils.getCurrentUserId();
@@ -124,8 +128,9 @@ public class McpAnalyticsTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Get-Applications-By-Organization")
     @Transactional(readOnly = true)
-    public List<OrganizationSummary> getApplicationsByOrganization() {
+    public List<OrganizationSummary> getApplicationsByOrganization(McpSyncRequestContext ctx) {
         UUID userId = securityUtils.getCurrentUserId();
         List<JobApplication> apps = applicationRepository.findAllByUser_IdAndArchivedFalse(userId);
 
@@ -163,8 +168,10 @@ public class McpAnalyticsTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Search-Applications")
     @Transactional(readOnly = true)
     public List<ApplicationResponse> searchApplications(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "Search term — case-insensitive, matched against vacancyName, organization, recruiterName, note") String query) {
         UUID userId = securityUtils.getCurrentUserId();
         return applicationRepository.searchApplications(userId, query, Pageable.ofSize(20))
@@ -183,8 +190,9 @@ public class McpAnalyticsTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Get-Weekly-Summary")
     @Transactional(readOnly = true)
-    public WeeklySummaryResponse getWeeklySummary() {
+    public WeeklySummaryResponse getWeeklySummary(McpSyncRequestContext ctx) {
         UUID userId = securityUtils.getCurrentUserId();
         LocalDate today = LocalDate.now();
         LocalDate thisWeekStart = today.minusDays(6);

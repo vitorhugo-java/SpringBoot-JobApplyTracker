@@ -33,7 +33,7 @@ class McpBaseInformationToolsTest {
                 UUID.randomUUID(), "about-me.md", "MARKDOWN", "https://drive/file", LocalDateTime.now()));
         when(baseInformationService.listBaseInformation()).thenReturn(expected);
 
-        assertThat(tools.listBaseInformation()).isSameAs(expected);
+        assertThat(tools.listBaseInformation(null)).isSameAs(expected);
         verify(baseInformationService).listBaseInformation();
     }
 
@@ -44,7 +44,7 @@ class McpBaseInformationToolsTest {
                 new BaseInformationContentResponse(infoId, "about-me.md", "MARKDOWN", "Senior Java Developer");
         when(baseInformationService.getBaseInformationContent(infoId)).thenReturn(expected);
 
-        BaseInformationContentResponse result = tools.getBaseInformationContent(infoId.toString());
+        BaseInformationContentResponse result = tools.getBaseInformationContent(null, infoId.toString());
 
         assertThat(result).isSameAs(expected);
         verify(baseInformationService).getBaseInformationContent(infoId);

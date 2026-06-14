@@ -6,6 +6,7 @@ import com.jobtracker.dto.gdrive.GoogleDriveResumeCopyResponse;
 import com.jobtracker.dto.gdrive.ResumePlaceholderDetectionResponse;
 import com.jobtracker.dto.gdrive.ResumePlaceholderRequest;
 import com.jobtracker.dto.gdrive.ResumePlaceholderResponse;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.service.GoogleDriveGeneratedResumeDownloadService;
 import com.jobtracker.service.GoogleDriveGeneratedResumeDownloadService.DownloadedFile;
 import com.jobtracker.service.GoogleDriveService;
@@ -13,6 +14,7 @@ import com.jobtracker.service.ResumeGenerationService;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
+import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
@@ -68,7 +70,8 @@ public class McpGoogleDriveTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = false))
-    public List<BaseResumeResponse> listBaseResumes() {
+    @AuditMcpOperation(action = "List-Base-Resumes")
+    public List<BaseResumeResponse> listBaseResumes(McpSyncRequestContext ctx) {
         return googleDriveService.listBaseResumes();
     }
 
@@ -89,7 +92,9 @@ public class McpGoogleDriveTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = true))
+    @AuditMcpOperation(action = "Copy-Resume-To-Application")
     public GoogleDriveResumeCopyResponse copyResumeToApplication(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "UUID of the job application (from Create-Application or List-Applications)") String applicationId,
             @McpToolParam(required = true, description = "UUID of the base resume template — obtain from List-Base-Resumes, NOT a Google Drive file ID") String baseResumeId) {
         return googleDriveService.copyBaseResumeToApplication(
@@ -113,7 +118,9 @@ public class McpGoogleDriveTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = true))
+    @AuditMcpOperation(action = "Detect-Resume-Placeholders")
     public ResumePlaceholderDetectionResponse detectResumePlaceholders(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "UUID of the base resume template — obtain from List-Base-Resumes") String baseResumeId) {
         return resumeGenerationService.detectPlaceholders(UUID.fromString(baseResumeId));
     }
@@ -142,7 +149,9 @@ public class McpGoogleDriveTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = true))
+    @AuditMcpOperation(action = "Generate-Resume")
     public ResumePlaceholderResponse generateResume(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "UUID of the job application — must already exist (from Create-Application)") String applicationId,
             @McpToolParam(required = true, description = "UUID of the base resume template — obtain from List-Base-Resumes, NOT a Google Drive file ID") String baseResumeId,
             @McpToolParam(required = true, description = "Placeholder values keyed by the exact names returned by Detect-Resume-Placeholders (without braces), e.g. {\"RESUMO\":\"...\", \"STACK\":\"Java, Spring Boot\"}")
@@ -162,7 +171,9 @@ public class McpGoogleDriveTools {
                     destructiveHint = false,
                     idempotentHint = true,
                     openWorldHint = true))
+    @AuditMcpOperation(action = "Download-Generated-Resume-PDF")
     public GeneratedResumePdf downloadGeneratedResumePdf(
+            McpSyncRequestContext ctx,
             @McpToolParam(required = true, description = "UUID of the job application") String applicationId) {
         DownloadedFile file = generatedResumeDownloadService.downloadAsPdf(UUID.fromString(applicationId));
         return new GeneratedResumePdf(

@@ -1,0 +1,157 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus datasource scraping the app's /actuator/prometheus endpoint",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "title": "MCP Audit",
+  "uid": "mcp-audit",
+  "tags": ["mcp", "audit"],
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "",
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0,
+        "label": "Datasource"
+      },
+      {
+        "name": "provider",
+        "type": "query",
+        "datasource": "${datasource}",
+        "query": "label_values(mcp_tool_invocations_total, provider)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "label": "Provider"
+      },
+      {
+        "name": "action",
+        "type": "query",
+        "datasource": "${datasource}",
+        "query": "label_values(mcp_tool_invocations_total, action)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "label": "Action"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total invocations (range)",
+      "datasource": "${datasource}",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(mcp_tool_invocations_total{action=~\"$action\", provider=~\"$provider\"}[$__range]))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (range)",
+      "datasource": "${datasource}",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 0.05 } ] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(mcp_tool_invocations_total{status=\"ERROR\", action=~\"$action\", provider=~\"$provider\"}[$__range])) / clamp_min(sum(increase(mcp_tool_invocations_total{action=~\"$action\", provider=~\"$provider\"}[$__range])), 1)"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Invocations / sec by provider",
+      "datasource": "${datasource}",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{provider}}",
+          "expr": "sum(rate(mcp_tool_invocations_total{action=~\"$action\", provider=~\"$provider\"}[$__rate_interval])) by (provider)"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Error % by action",
+      "datasource": "${datasource}",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{action}}",
+          "expr": "sum(rate(mcp_tool_invocations_total{status=\"ERROR\", action=~\"$action\", provider=~\"$provider\"}[$__rate_interval])) by (action) / clamp_min(sum(rate(mcp_tool_invocations_total{action=~\"$action\", provider=~\"$provider\"}[$__rate_interval])) by (action), 0.0001)"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 execution time by action",
+      "datasource": "${datasource}",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{action}}",
+          "expr": "histogram_quantile(0.95, sum(rate(mcp_tool_duration_seconds_bucket{action=~\"$action\", provider=~\"$provider\"}[$__rate_interval])) by (le, action))"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tokens / sec by provider (total)",
+      "datasource": "${datasource}",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{provider}}",
+          "expr": "sum(rate(mcp_tool_tokens_sum{kind=\"total\", action=~\"$action\", provider=~\"$provider\"}[$__rate_interval])) by (provider)"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top actions by call volume (range)",
+      "datasource": "${datasource}",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "instant": true,
+          "expr": "topk(15, sum(increase(mcp_tool_invocations_total{action=~\"$action\", provider=~\"$provider\"}[$__range])) by (action, provider))"
+        }
+      ]
+    }
+  ]
+}

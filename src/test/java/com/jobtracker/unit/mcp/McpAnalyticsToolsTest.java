@@ -53,7 +53,7 @@ class McpAnalyticsToolsTest {
         when(securityUtils.getCurrentUserId()).thenReturn(USER_ID);
         when(applicationRepository.findAllByUser_IdAndArchivedFalse(USER_ID)).thenReturn(List.of());
 
-        AnalyticsResponse result = tools.getAnalytics(null, null);
+        AnalyticsResponse result = tools.getAnalytics(null, null, null);
 
         assertThat(result.totalApplications()).isZero();
         assertThat(result.interviewCount()).isZero();
@@ -77,7 +77,7 @@ class McpAnalyticsToolsTest {
         when(applicationRepository.findAllByUser_IdAndArchivedFalse(USER_ID))
                 .thenReturn(List.of(rh, interview, rejected, ghost, noStatus));
 
-        AnalyticsResponse result = tools.getAnalytics(null, null);
+        AnalyticsResponse result = tools.getAnalytics(null, null, null);
 
         assertThat(result.totalApplications()).isEqualTo(5);
         assertThat(result.interviewCount()).isEqualTo(1);
@@ -102,6 +102,7 @@ class McpAnalyticsToolsTest {
                 .thenReturn(List.of(inRange, outOfRange));
 
         AnalyticsResponse result = tools.getAnalytics(
+                null,
                 today.minusDays(7).toString(),
                 today.toString());
 
@@ -121,7 +122,7 @@ class McpAnalyticsToolsTest {
         when(applicationRepository.findAllByUser_IdAndArchivedFalse(USER_ID))
                 .thenReturn(List.of(withStatus, nullStatus));
 
-        AnalyticsResponse result = tools.getAnalytics(null, null);
+        AnalyticsResponse result = tools.getAnalytics(null, null, null);
 
         assertThat(result.averageDaysToResponse()).isEqualTo(5.0);
     }
@@ -139,7 +140,7 @@ class McpAnalyticsToolsTest {
         when(applicationRepository.findAllByUser_IdAndArchivedFalse(USER_ID))
                 .thenReturn(List.of(a1, a2, a3));
 
-        List<OrganizationSummary> result = tools.getApplicationsByOrganization();
+        List<OrganizationSummary> result = tools.getApplicationsByOrganization(null);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).organization()).isEqualTo("Acme");
@@ -157,7 +158,7 @@ class McpAnalyticsToolsTest {
         when(applicationRepository.findAllByUser_IdAndArchivedFalse(USER_ID))
                 .thenReturn(List.of(noOrg));
 
-        List<OrganizationSummary> result = tools.getApplicationsByOrganization();
+        List<OrganizationSummary> result = tools.getApplicationsByOrganization(null);
 
         assertThat(result).isEmpty();
     }
@@ -173,7 +174,7 @@ class McpAnalyticsToolsTest {
                 .thenReturn(List.of(entity));
         when(applicationMapper.toResponse(entity)).thenReturn(response);
 
-        List<ApplicationResponse> result = tools.searchApplications("java");
+        List<ApplicationResponse> result = tools.searchApplications(null, "java");
 
         assertThat(result).containsExactly(response);
         verify(applicationRepository).searchApplications(eq(userId), eq("java"), any(Pageable.class));
@@ -193,7 +194,7 @@ class McpAnalyticsToolsTest {
                 .thenReturn(List.of(thisWeek1, thisWeek2, lastWeekApp));
         when(applicationService.getOverdue()).thenReturn(List.of());
 
-        WeeklySummaryResponse result = tools.getWeeklySummary();
+        WeeklySummaryResponse result = tools.getWeeklySummary(null);
 
         assertThat(result.thisWeekApplications()).isEqualTo(2);
         assertThat(result.lastWeekApplications()).isEqualTo(1);
@@ -211,7 +212,7 @@ class McpAnalyticsToolsTest {
                 applicationResponseWithId(UUID.randomUUID()),
                 applicationResponseWithId(UUID.randomUUID())));
 
-        WeeklySummaryResponse result = tools.getWeeklySummary();
+        WeeklySummaryResponse result = tools.getWeeklySummary(null);
 
         assertThat(result.overdueCount()).isEqualTo(2);
     }

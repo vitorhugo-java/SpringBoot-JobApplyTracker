@@ -56,7 +56,7 @@ class McpGoogleDriveToolsTest {
                 .thenReturn(expected);
 
         GoogleDriveResumeCopyResponse result =
-                tools.copyResumeToApplication(applicationId.toString(), baseResumeId.toString());
+                tools.copyResumeToApplication(null, applicationId.toString(), baseResumeId.toString());
 
         assertThat(result).isSameAs(expected);
         verify(googleDriveService).copyBaseResumeToApplication(eq(applicationId), captor.capture());
@@ -69,7 +69,7 @@ class McpGoogleDriveToolsTest {
         ResumePlaceholderDetectionResponse expected = mock(ResumePlaceholderDetectionResponse.class);
         when(resumeGenerationService.detectPlaceholders(baseResumeId)).thenReturn(expected);
 
-        ResumePlaceholderDetectionResponse result = tools.detectResumePlaceholders(baseResumeId.toString());
+        ResumePlaceholderDetectionResponse result = tools.detectResumePlaceholders(null, baseResumeId.toString());
 
         assertThat(result).isSameAs(expected);
         verify(resumeGenerationService).detectPlaceholders(baseResumeId);
@@ -87,7 +87,7 @@ class McpGoogleDriveToolsTest {
                 .thenReturn(expected);
 
         ResumePlaceholderResponse result =
-                tools.generateResume(applicationId.toString(), baseResumeId.toString(), values);
+                tools.generateResume(null, applicationId.toString(), baseResumeId.toString(), values);
 
         assertThat(result).isSameAs(expected);
         verify(resumeGenerationService).generateTemplateResume(eq(applicationId), captor.capture());
@@ -103,7 +103,7 @@ class McpGoogleDriveToolsTest {
         when(generatedResumeDownloadService.downloadAsPdf(applicationId)).thenReturn(file);
 
         McpGoogleDriveTools.GeneratedResumePdf result =
-                tools.downloadGeneratedResumePdf(applicationId.toString());
+                tools.downloadGeneratedResumePdf(null, applicationId.toString());
 
         assertThat(result.fileName()).isEqualTo("resume.pdf");
         assertThat(result.contentType()).isEqualTo("application/pdf");

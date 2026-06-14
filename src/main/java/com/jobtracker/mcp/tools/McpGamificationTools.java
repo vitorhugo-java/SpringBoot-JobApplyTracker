@@ -4,6 +4,7 @@ import com.jobtracker.dto.gamification.GamificationEventRequest;
 import com.jobtracker.dto.gamification.GamificationEventSummary;
 import com.jobtracker.entity.enums.GamificationEventType;
 import com.jobtracker.gamification.GamificationProgressCallback;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.service.GamificationService;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
@@ -37,6 +38,7 @@ public class McpGamificationTools {
                     destructiveHint = false,
                     idempotentHint = false,
                     openWorldHint = false))
+    @AuditMcpOperation(action = "Apply-Gamification-Event")
     public GamificationEventSummary applyGamificationEvent(
             McpSyncRequestContext mcpContext,
             @McpToolParam(required = true,
