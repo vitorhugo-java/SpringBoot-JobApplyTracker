@@ -34,7 +34,7 @@ class McpResumeContentResourcesTest {
         BaseResumeContentResponse response = new BaseResumeContentResponse(resumeId, "Base CV", "EN", true, false, "base-text");
         when(resumeGenerationService.getBaseResumeContent(resumeId)).thenReturn(response);
 
-        String result = baseResumeContentResource.baseResumeContent(resumeId.toString());
+        String result = baseResumeContentResource.baseResumeContent(null, resumeId.toString());
 
         assertThat(result).isEqualTo("base-text");
     }
@@ -45,7 +45,7 @@ class McpResumeContentResourcesTest {
         GeneratedResumeContentResponse response = new GeneratedResumeContentResponse(applicationId, "file-1", "resume.docx", "generated-text");
         when(resumeGenerationService.getGeneratedResumeContent(applicationId)).thenReturn(response);
 
-        String result = generatedResumeContentResource.generatedResumeContent(applicationId.toString());
+        String result = generatedResumeContentResource.generatedResumeContent(null, applicationId.toString());
 
         assertThat(result).isEqualTo("generated-text");
     }

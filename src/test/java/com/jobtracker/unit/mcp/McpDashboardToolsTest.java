@@ -67,7 +67,7 @@ class McpDashboardToolsTest {
                 25L, 10L, 3L, 7L, 2L, 5L, 4L, 2L, 1L, 1.2d, 6.5d, 18.0d);
         when(dashboardService.getSummary()).thenReturn(expected);
 
-        String result = resources.pipelineSummary();
+        String result = resources.pipelineSummary(null);
 
         assertThat(result).isEqualTo(objectMapper.writeValueAsString(expected));
         verify(dashboardService).getSummary();
@@ -79,7 +79,7 @@ class McpDashboardToolsTest {
                 75L, 1, 0L, 100L, 25L, 75, "Desempregado de Aluguel", 4);
         when(gamificationService.getProfile()).thenReturn(expected);
 
-        String result = resources.gamificationProfile();
+        String result = resources.gamificationProfile(null);
 
         assertThat(result).isEqualTo(objectMapper.writeValueAsString(expected));
         verify(gamificationService).getProfile();
@@ -93,7 +93,7 @@ class McpDashboardToolsTest {
         );
         when(gamificationService.getAchievements()).thenReturn(expected);
 
-        String result = resources.achievements();
+        String result = resources.achievements(null);
 
         assertThat(result).isEqualTo(objectMapper.writeValueAsString(expected));
         verify(gamificationService).getAchievements();

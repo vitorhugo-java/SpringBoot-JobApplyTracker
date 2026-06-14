@@ -2,7 +2,9 @@ package com.jobtracker.mcp.resources;
 
 import com.jobtracker.dto.gdrive.BaseInformationContentResponse;
 import com.jobtracker.mcp.McpResourcesConfig;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.service.BaseInformationService;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpResource.McpAnnotations;
@@ -33,7 +35,8 @@ public class McpBaseInformationContentResource {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.95d))
-    public String baseInformationContent(String infoId) {
+    @AuditMcpOperation(action = "Base Information Content")
+    public String baseInformationContent(McpSyncServerExchange exchange, String infoId) {
         BaseInformationContentResponse response = baseInformationService.getBaseInformationContent(UUID.fromString(infoId));
         return response.content();
     }

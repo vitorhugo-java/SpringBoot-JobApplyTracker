@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jobtracker.dto.auth.UserResponse;
 import com.jobtracker.mapper.AuthMapper;
 import com.jobtracker.mcp.McpResourcesConfig;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.service.BaseInformationService;
 import com.jobtracker.service.DashboardService;
 import com.jobtracker.service.GamificationService;
 import com.jobtracker.service.GoogleDriveService;
 import com.jobtracker.util.SecurityUtils;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpResource.McpAnnotations;
@@ -55,7 +57,8 @@ public class McpReadOnlySnapshotResources {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 1.0d))
-    public String pipelineSummary() {
+    @AuditMcpOperation(action = "Pipeline Summary")
+    public String pipelineSummary(McpSyncServerExchange exchange) {
         return toJson(dashboardService.getSummary());
     }
 
@@ -69,7 +72,8 @@ public class McpReadOnlySnapshotResources {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.7d))
-    public String gamificationProfile() {
+    @AuditMcpOperation(action = "Gamification Profile")
+    public String gamificationProfile(McpSyncServerExchange exchange) {
         return toJson(gamificationService.getProfile());
     }
 
@@ -83,7 +87,8 @@ public class McpReadOnlySnapshotResources {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.6d))
-    public String achievements() {
+    @AuditMcpOperation(action = "Achievements")
+    public String achievements(McpSyncServerExchange exchange) {
         return toJson(gamificationService.getAchievements());
     }
 
@@ -98,7 +103,8 @@ public class McpReadOnlySnapshotResources {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.5d))
-    public String driveStatus() {
+    @AuditMcpOperation(action = "Drive Status")
+    public String driveStatus(McpSyncServerExchange exchange) {
         return toJson(googleDriveService.getStatus());
     }
 
@@ -113,7 +119,8 @@ public class McpReadOnlySnapshotResources {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.9d))
-    public String baseResumes() {
+    @AuditMcpOperation(action = "Base Resumes")
+    public String baseResumes(McpSyncServerExchange exchange) {
         return toJson(googleDriveService.listBaseResumes());
     }
 
@@ -131,7 +138,8 @@ public class McpReadOnlySnapshotResources {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.95d))
-    public String baseInformation() {
+    @AuditMcpOperation(action = "Base Information")
+    public String baseInformation(McpSyncServerExchange exchange) {
         return toJson(baseInformationService.listBaseInformation());
     }
 
@@ -145,7 +153,8 @@ public class McpReadOnlySnapshotResources {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.8d))
-    public String currentUser() {
+    @AuditMcpOperation(action = "Current User")
+    public String currentUser(McpSyncServerExchange exchange) {
         UserResponse response = authMapper.toUserResponse(securityUtils.getCurrentUser());
         return toJson(response);
     }

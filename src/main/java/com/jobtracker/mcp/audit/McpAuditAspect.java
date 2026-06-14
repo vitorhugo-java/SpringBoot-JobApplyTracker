@@ -3,6 +3,8 @@ package com.jobtracker.mcp.audit;
 import com.jobtracker.service.McpAuditService;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.spec.McpSchema;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -46,8 +48,7 @@ public class McpAuditAspect {
         String action = auditMcpOperation.action();
         String methodName = signature.getName();
 
-        McpSyncRequestContext ctx = findContext(joinPoint.getArgs());
-        ClientIdentity client = resolveClientIdentity(ctx);
+        ClientIdentity client = resolveClientIdentity(joinPoint.getArgs());
         McpProvider provider = resolveProvider(auditMcpOperation, signature, joinPoint.getArgs(), client);
         Object requestPayload = buildPayload(signature, joinPoint.getArgs());
 
@@ -88,32 +89,41 @@ public class McpAuditAspect {
         return McpProvider.fromClientName(client.name());
     }
 
-    private static McpSyncRequestContext findContext(Object[] args) {
+    /**
+     * Extracts the MCP client identity from whichever framework context the method declares:
+     * {@link McpSyncRequestContext} (tools) or {@link McpSyncServerExchange} (resources). Both
+     * expose the {@code clientInfo()} captured during the MCP initialize handshake.
+     */
+    private static ClientIdentity resolveClientIdentity(Object[] args) {
         if (args == null) {
-            return null;
+            return ClientIdentity.UNKNOWN;
         }
         for (Object arg : args) {
-            if (arg instanceof McpSyncRequestContext context) {
-                return context;
+            McpSchema.Implementation info = clientInfoOf(arg);
+            if (info != null) {
+                return new ClientIdentity(info.name(), info.version());
             }
+        }
+        return ClientIdentity.UNKNOWN;
+    }
+
+    private static McpSchema.Implementation clientInfoOf(Object arg) {
+        try {
+            if (arg instanceof McpSyncRequestContext ctx) {
+                return ctx.clientInfo();
+            }
+            if (arg instanceof McpSyncServerExchange exchange) {
+                return exchange.getClientInfo();
+            }
+        } catch (Exception e) {
+            // clientInfo() may be unavailable outside an active MCP request — degrade gracefully.
+            return null;
         }
         return null;
     }
 
-    private static ClientIdentity resolveClientIdentity(McpSyncRequestContext ctx) {
-        if (ctx == null) {
-            return ClientIdentity.UNKNOWN;
-        }
-        try {
-            var info = ctx.clientInfo();
-            if (info == null) {
-                return ClientIdentity.UNKNOWN;
-            }
-            return new ClientIdentity(info.name(), info.version());
-        } catch (Exception e) {
-            // clientInfo() may be unavailable outside an active MCP request — degrade gracefully.
-            return ClientIdentity.UNKNOWN;
-        }
+    private static boolean isFrameworkParam(Object arg) {
+        return arg instanceof McpSyncRequestContext || arg instanceof McpSyncServerExchange;
     }
 
     private static String findProviderParameter(MethodSignature signature, Object[] args) {
@@ -138,7 +148,7 @@ public class McpAuditAspect {
         Map<String, Object> payload = new LinkedHashMap<>();
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
-            if (arg == null || arg instanceof McpSyncRequestContext) {
+            if (arg == null || isFrameworkParam(arg)) {
                 continue;
             }
             String key = (names != null && i < names.length) ? names[i] : ("arg" + i);

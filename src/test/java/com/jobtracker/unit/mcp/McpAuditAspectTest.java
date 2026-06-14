@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -109,6 +110,23 @@ class McpAuditAspectTest {
         assertThat(meterRegistry.get("mcp.tool.invocations")
                 .tag("action", "List-Statuses")
                 .tag("provider", "CLAUDE")
+                .counter().count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void providerResolvedFromMcpServerExchangeClientInfo() throws Throwable {
+        McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+        when(exchange.getClientInfo()).thenReturn(new McpSchema.Implementation("chatgpt", "ChatGPT", "1.0"));
+
+        ProceedingJoinPoint jp = joinPoint("pipelineSummary",
+                new String[] {"exchange"}, new Object[] {exchange});
+        when(jp.proceed()).thenReturn("{}");
+
+        aspect.audit(jp, annotation("Pipeline Summary", ""));
+
+        assertThat(meterRegistry.get("mcp.tool.invocations")
+                .tag("action", "Pipeline Summary")
+                .tag("provider", "CHATGPT")
                 .counter().count()).isEqualTo(1.0);
     }
 

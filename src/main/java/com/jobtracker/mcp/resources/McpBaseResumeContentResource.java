@@ -2,7 +2,9 @@ package com.jobtracker.mcp.resources;
 
 import com.jobtracker.dto.gdrive.BaseResumeContentResponse;
 import com.jobtracker.mcp.McpResourcesConfig;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.service.ResumeGenerationService;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpResource.McpAnnotations;
@@ -33,7 +35,8 @@ public class McpBaseResumeContentResource {
                     audience = {Role.USER, Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.8d))
-    public String baseResumeContent(String resumeId) {
+    @AuditMcpOperation(action = "Base Resume Content")
+    public String baseResumeContent(McpSyncServerExchange exchange, String resumeId) {
         BaseResumeContentResponse response = resumeGenerationService.getBaseResumeContent(UUID.fromString(resumeId));
         return response.content();
     }

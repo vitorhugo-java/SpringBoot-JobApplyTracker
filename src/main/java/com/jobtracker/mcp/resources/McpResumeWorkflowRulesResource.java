@@ -1,6 +1,8 @@
 package com.jobtracker.mcp.resources;
 
 import com.jobtracker.mcp.McpResourcesConfig;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpResource.McpAnnotations;
@@ -21,7 +23,8 @@ public class McpResumeWorkflowRulesResource {
                     audience = {Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 1.0d))
-    public String resumeWorkflowRules() {
+    @AuditMcpOperation(action = "Resume Workflow Rules")
+    public String resumeWorkflowRules(McpSyncServerExchange exchange) {
         return """
                 # Resume Workflow Rules
 

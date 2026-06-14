@@ -2,7 +2,9 @@ package com.jobtracker.mcp.resources;
 
 import com.jobtracker.entity.ApplicationStatusEntity;
 import com.jobtracker.mcp.McpResourcesConfig;
+import com.jobtracker.mcp.audit.AuditMcpOperation;
 import com.jobtracker.repository.ApplicationStatusRepository;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpResource.McpAnnotations;
@@ -29,7 +31,8 @@ public class McpApplicationStatusesResource {
                     audience = {Role.ASSISTANT},
                     lastModified = LAST_MODIFIED,
                     priority = 0.9d))
-    public String applicationStatuses() {
+    @AuditMcpOperation(action = "Application Statuses")
+    public String applicationStatuses(McpSyncServerExchange exchange) {
         StringBuilder text = new StringBuilder("""
                 # Valid Application Status Values
 

@@ -71,7 +71,7 @@ class McpProfileToolsTest {
         when(securityUtils.getCurrentUser()).thenReturn(user);
         when(authMapper.toUserResponse(user)).thenReturn(expected);
 
-        String result = resources.currentUser();
+        String result = resources.currentUser(null);
 
         assertThat(result).isEqualTo(objectMapper.writeValueAsString(expected));
         verify(securityUtils).getCurrentUser();
